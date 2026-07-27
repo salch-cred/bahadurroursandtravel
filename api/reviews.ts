@@ -39,12 +39,14 @@ export default async function handler(req:any,res:any){
         media_url=blob.url;
         media_type=String(b.mimeType).startsWith('video/')?'video':'image';
       }
+      const text=clean(b.text||b.review||b.comment||'',5000);
+      if(text.length<10)return res.status(400).json({error:'Review must be at least 10 characters'});
       const row={
         name:clean(b.name,120),trip:clean(b.trip,160),
         rating:Math.max(1,Math.min(5,Number(b.rating)||5)),
         booking_ref:clean(b.bookingRef,80).replace(/^#/,'').toUpperCase(),
         package_slug:clean(b.packageSlug,160)||null,
-        text:clean(b.text,1200),media_url,media_type,consent:true
+        text,media_url,media_type,consent:true
       };
       if(!row.name||!row.trip||!row.booking_ref||!row.text)return res.status(400).json({error:'Complete all required fields'});
       const booking=await sql`select booking_id from bookings where upper(booking_id)=${row.booking_ref} limit 1`;

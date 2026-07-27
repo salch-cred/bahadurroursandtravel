@@ -99,11 +99,27 @@ document.querySelectorAll('.ai-chip').forEach(chip => {
     }
   });
 });
+function cleanAiText(text) {
+  return String(text || '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/`{1,3}([^`\n]*)`{1,3}/g, '$1')
+    .replace(/#{1,6}\s*/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 function addChatMessage(role, content) {
   if (!chat) return;
   const paragraph = document.createElement('p');
   paragraph.className = role === 'user' ? 'user' : 'bot';
-  paragraph.textContent = content;
+  const cleaned = role !== 'user' ? cleanAiText(content) : content;
+  paragraph.innerHTML = cleaned
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
   chat.appendChild(paragraph);
   chat.scrollTop = chat.scrollHeight;
 }

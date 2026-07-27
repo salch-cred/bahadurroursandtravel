@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Travel Guides — Bahadur Tours</title>
+  <meta name="description" content="Travel guides, tips and destination insights from Bahadur Tours. Lakshadweep, Kashmir, Umrah, Dubai and more.">
+<link rel="canonical" href="https://bahadurtours.com/blog">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bahadurtours.com/blog">
+<meta property="og:title" content="Travel Guides — Bahadur Tours & Travels">
+<meta property="og:description" content="Destination guides, travel tips and stories from Bahadur Tours. Lakshadweep, Kashmir, Umrah, Dubai and more.">
+<meta property="og:image" content="https://bahadurtours.com/assets/bahadur-logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Travel Guides — Bahadur Tours">
+<meta name="twitter:description" content="Destination guides and tips from our travel experts.">
+<meta name="twitter:image" content="https://bahadurtours.com/assets/bahadur-logo.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
   <style>
@@ -67,8 +78,8 @@
       <p>Expert tips, destination insights, and travel inspiration from the Bahadur Tours team.</p>
     </section>
     
-    <main class="blog-grid" id="posts-container">
-      <p style="grid-column: 1/-1; text-align: center; color: #666; padding: 60px;">Loading guides...</p>
+    <main class="blog-grid" id="blog-grid">
+      
     </main>
   </div>
 
@@ -180,5 +191,41 @@
     window.addEventListener('hashchange', checkHash);
     loadPosts();
   </script>
+<script type="module">
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+async function loadBlog(){
+  const grid=$('#blog-grid');
+  if(!grid)return;
+  grid.innerHTML='<div class="blog-empty"><i class="hgi-stroke hgi-loading-03"></i><p>Loading guides…</p></div>';
+  try{
+    const r=await fetch('/api/blog');
+    const d=await r.json();
+    const posts=(d.posts||d||[]).filter(p=>p.status==='published'||p.published);
+    if(!posts.length){
+      grid.innerHTML='<div class="blog-empty"><i class="hgi-stroke hgi-document-validation"></i><p>Travel guides coming soon.</p></div>';
+      return;
+    }
+    grid.innerHTML=posts.map(p=>`
+      <article class="blog-card" onclick="window.location.href='blog.html?slug=${esc(p.slug||p.id)}'">
+        ${p.image_url?`<img class="blog-card-img" src="${esc(p.image_url)}" alt="${esc(p.title)}" loading="lazy" onerror="this.style.display='none'">`:'<div class="blog-card-img" style="background:#e8f0ec;display:flex;align-items:center;justify-content:center"><i class="hgi-stroke hgi-document-validation" style="font-size:40px;color:#0b4a3f;opacity:.3"></i></div>'}
+        <div class="blog-card-body">
+          <span class="kicker">${esc(p.category||'Travel Guide')}</span>
+          <h3>${esc(p.title)}</h3>
+          <p>${esc(p.summary||p.excerpt||'')}</p>
+          <div class="blog-card-meta">
+            <i class="hgi-stroke hgi-calendar-01"></i>
+            ${p.published_at?new Date(p.published_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):''}
+          </div>
+        </div>
+      </article>
+    `).join('');
+  }catch(e){
+    grid.innerHTML='<div class="blog-empty"><i class="hgi-stroke hgi-alert-02"></i><p>Could not load guides.</p></div>';
+  }
+}
+loadBlog();
+</script>
 </body>
 </html>

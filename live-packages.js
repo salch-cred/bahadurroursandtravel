@@ -40,7 +40,7 @@ function cardHTML(p) {
   const img = p.image_url||'assets/images/island-beach.jpg';
   return `<article class="package-card" data-category="${p.package_type||'domestic'}" data-name="${p.name} ${p.region}" data-slug="${p.slug}">
     <div class="package-image">
-      <img src="${img}" alt="${p.name}" loading="lazy">
+      <img src="${img}" alt="${p.name}" loading="lazy" onerror="this.classList.add('img-error');this.src='assets/bahadur-logo.png';this.style.objectFit='contain';this.style.padding='20px'">
       <span class="pkg-cat-badge">${typeLabel}</span>
       <span class="pkg-rating-badge"><i class="hgi-stroke hgi-star-01"></i> 4.9</span>
     </div>
@@ -64,6 +64,11 @@ async function load(){
   const grid=document.querySelector('#managed-package-grid');
   if(!grid)return;
   try{
+    // Show skeleton while loading
+    const grids = ['#managed-package-grid','#more-package-grid'].map(s=>document.querySelector(s)).filter(Boolean);
+    grids.forEach(g=>{
+      g.innerHTML = Array(6).fill('<div class="package-card skel-card"><div class="pkg-img skel-img"></div><div class="pkg-body"><div class="skel-line" style="width:60%;height:18px;margin-bottom:10px"></div><div class="skel-line" style="width:90%;height:12px;margin-bottom:6px"></div><div class="skel-line" style="width:70%;height:12px"></div></div></div>').join('');
+    });
     const res=await fetch('/api/packages');
     if(!res.ok)throw 0;
     const d=await res.json();
@@ -72,6 +77,11 @@ async function load(){
       return;
     }
     grid.innerHTML=d.packages.map(cardHTML).join('');
+    const moreGrid = document.querySelector('#more-package-grid');
+    if(moreGrid){
+      // Show all packages in the expanded grid too
+      moreGrid.innerHTML = document.querySelector('#managed-package-grid')?.innerHTML || '';
+    }
     
     const select = document.querySelector('#trip-select');
     if(select) {

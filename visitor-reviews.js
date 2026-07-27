@@ -86,7 +86,7 @@ function renderUserQueue() {
       <span class="uq-icon">${isVid?'🎬':'📸'}</span>
       <span class="uq-name" title="${esc(f.name)}">${esc(f.name.length>22?f.name.slice(0,19)+'…':f.name)}</span>
       <span class="uq-sz">${sz}</span>
-      <button type="button" class="uq-rm" onclick="window.__rmUserFile(${i})"><i class="hgi-stroke hgi-cancel-01"></i></button>
+      <button type="button" class="uq-rm" onclick="window.__rmUserFile(${i})">×</button>
     </div>`;
   }).join('');
 }
@@ -133,29 +133,38 @@ async function load() {
 host.querySelector('form').onsubmit = async e => {
   e.preventDefault();
   const form  = e.target;
-  const reviewText = (form.querySelector('textarea[name="text"]') || form.querySelector('#review-text'))?.value?.trim() || '';
-  if(reviewText.length < 30){
-    alert('Please write at least 30 characters in your review.');
-    return;
-  }
   const state = form.querySelector('[data-review-state]');
   const fd    = new FormData(form);
-  state.textContent = userFiles.length ? `Uploading ${userFiles.length} file(s)…` : 'Sending securely…';
+
+  // Validate review text length
+  const reviewText = (fd.get('text')||'').trim();
+  if(reviewText.length < 30){
+    state.textContent = '⚠️ Please write at least 30 characters in your review.';
+    form.querySelector('textarea[name="text"]')?.focus();
+    return;
+  }
 
   // Build media list
+  // Build base payload
+  const payload = Object.fromEntries(fd);
+  delete payload.media;
+  payload.consent     = Boolean(payload.consent);
+  payload.packageSlug = window.currentPackage?.slug || '';
+
+  // Encode files as base64
   const files = [];
-  for (const f of userFiles) {
+  for (let i=0; i<userFiles.length; i++) {
+    const f = userFiles[i];
+    state.textContent = userFiles.length > 1 ? `Preparing file ${i+1} of ${userFiles.length}…` : 'Preparing file…';
     try {
       const base64 = await toBase64(f);
       files.push({ data: base64, fileName: f.name, mimeType: f.type });
-    } catch { /* skip broken file */ }
+    } catch { /* skip unreadable file */ }
   }
-
-  const payload = Object.fromEntries(fd);
-  delete payload.media;
-  payload.consent      = Boolean(payload.consent);
-  payload.packageSlug  = window.currentPackage?.slug || '';
   if (files.length) payload.files = files;
+
+  if (files.length) state.textContent = `Uploading ${files.length} file(s)… This may take a moment for videos.`;
+  else state.textContent = 'Sending…';
 
   try {
     const res = await fetch('/api/reviews', {
@@ -164,13 +173,17 @@ host.querySelector('form').onsubmit = async e => {
       body: JSON.stringify(payload)
     });
     const out = await res.json();
-    if (!res.ok) throw new Error(out.error);
-    state.textContent = 'Submitted! It will appear after booking verification and approval.';
+    if (!res.ok) throw new Error(out.error || 'Submission failed');
+    const msg = out.status === 'approved'
+      ? '✅ Review published! Thank you.'
+      : '✅ Submitted for approval. We'll review it shortly.';
+    state.textContent = msg;
     form.reset();
     userFiles = [];
     renderUserQueue();
+    setTimeout(() => dlg.close(), 3000);
   } catch (err) {
-    state.textContent = err.message || 'Submission unavailable';
+    state.textContent = '⚠️ ' + (err.message || 'Submission unavailable. Please try again.');
   }
 };
 

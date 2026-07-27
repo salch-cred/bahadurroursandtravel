@@ -91,6 +91,14 @@
   .admin-login h2{font-size:28px}
 }
 </style>
+
+<style>
+.tier-card.is-open .tier-body { max-height: 2000px !important; opacity: 1 !important; }
+.tier-head::after { content: ''; display: inline-block; width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-top: 7px solid currentColor; margin-left: 10px; transition: transform .3s; vertical-align: middle; }
+.tier-card.is-open .tier-head::after { transform: rotate(180deg); }
+</style>
 </head>
 <body>
 <header class="nav-wrap">
@@ -287,5 +295,63 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
 </script>
 <script src="performance.js" type="module"></script>
 <script src="site-ui.js"></script>
+
+<script>
+// ── Umrah package tier accordion ────────────────────────────
+(function(){
+  const tiers = document.querySelectorAll('.tier-card');
+
+  // Open first tier by default
+  if(tiers.length > 0){
+    tiers[0].classList.add('is-open');
+  }
+
+  tiers.forEach(function(card){
+    const head = card.querySelector('.tier-head');
+    if(!head) return;
+    head.style.cursor = 'pointer';
+    head.addEventListener('click', function(){
+      const isOpen = card.classList.contains('is-open');
+      // Close all
+      tiers.forEach(function(c){ c.classList.remove('is-open'); });
+      // Toggle clicked
+      if(!isOpen) card.classList.add('is-open');
+    });
+  });
+
+  // Also fix package tier CTA buttons — scroll to booking form  
+  document.querySelectorAll('.tier-cta, .tier-book-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      const tier = btn.closest('.tier-card');
+      const tierName = tier ? (tier.querySelector('.tier-name, h3')?.textContent||'Umrah package') : 'Umrah package';
+      // Open booking modal or scroll to book section
+      const bookingSelect = document.querySelector('#trip-select');
+      if(bookingSelect){
+        // Find matching option or add it
+        let found = false;
+        for(const opt of bookingSelect.options){
+          if(opt.text.toLowerCase().includes('umrah')){
+            bookingSelect.value = opt.value;
+            found = true;
+            break;
+          }
+        }
+        if(!found){
+          const opt = new Option(tierName, tierName);
+          bookingSelect.add(opt);
+          bookingSelect.value = tierName;
+        }
+      }
+      const modal = document.querySelector('#booking-modal');
+      if(modal && modal.classList !== undefined){
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden','false');
+        document.body.style.overflow='hidden';
+      }
+    });
+  });
+})();
+</script>
+
 </body>
 </html>

@@ -24,7 +24,7 @@ function renderReceipt(inv){
 
   const flightCard=isIntl&&flight.included?`
     <div class="receipt-travel-card">
-      <small>✈ Flight</small>
+      <small><i class="hgi-stroke hgi-airplane-01"></i> Flight</small>
       <strong>${esc([flight.airline,flight.number].filter(Boolean).join(' · ')||'Flight booking')}</strong>
       <dl>
         ${dl([
@@ -40,7 +40,7 @@ function renderReceipt(inv){
 
   const hotelCard=hotel.included?`
     <div class="receipt-travel-card">
-      <small>🏨 Accommodation</small>
+      <small><i class="hgi-stroke hgi-building-05"></i> Accommodation</small>
       <strong>${esc(hotel.name||'Hotel booking')}</strong>
       <dl>
         ${dl([

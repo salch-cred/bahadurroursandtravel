@@ -19,10 +19,22 @@ function renderBookings(rows){
     :'<tr><td colspan="7" class="empty-cell">No bookings recorded yet.</td></tr>';
 }
 
+let allInvoices=[];
 function renderInvoices(rows){
   $('#invoice-rows').innerHTML=rows.length
-    ?rows.map(x=>`<tr><td><strong>${x.invoice_number||'—'}</strong></td><td>${x.customer_name||'—'}</td><td>${x.booking_ref||'—'}</td><td>${x.invoice_date||'—'}</td><td><span class="${statusClass(x.status)}">${x.status||'Draft'}</span></td><td>${money(x.total)}</td></tr>`).join('')
-    :'<tr><td colspan="6" class="empty-cell">No invoices saved yet.</td></tr>';
+    ?rows.map(x=>`<tr>
+      <td><strong>${x.invoice_number||'—'}</strong></td>
+      <td>${x.customer_name||'—'}<small>${x.phone||''}</small></td>
+      <td>${x.booking_ref||'—'}</td>
+      <td>${x.invoice_date||'—'}</td>
+      <td><span class="${statusClass(x.status)}">${x.status||'Draft'}</span></td>
+      <td>${money(x.total)}</td>
+      <td class="invoice-actions">
+        <a href="billing.html?id=${x.id}" class="mini-action-btn" title="Edit invoice"><i class="hgi-stroke hgi-edit-01"></i></a>
+        ${(x.status==='Paid'||x.status==='Part paid')?`<a href="paid-bill.html?id=${x.id}" class="mini-action-btn paid" title="View paid bill" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`:''}
+      </td>
+    </tr>`).join('')
+    :'<tr><td colspan="7" class="empty-cell">No invoices saved yet.</td></tr>';
 }
 
 function renderActivity(rows){
@@ -102,7 +114,7 @@ async function load(){
     bars('#traffic-chart',d.traffic||[],'visitors',x=>new Date(x.d).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
     bars('#revenue-chart',d.monthlyRevenue||[],'revenue',x=>new Date(x.m).toLocaleDateString('en-IN',{month:'short'}),money);
     renderBookings(bookings);
-    renderInvoices(d.invoices||[]);
+    allInvoices=d.invoices||[];renderInvoices(allInvoices);
     renderActivity(d.activity||[]);
     setSyncState('is-live',`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`);
   }catch(e){
@@ -131,6 +143,10 @@ $('#admin-lock')?.addEventListener('click',()=>{
   sessionStorage.removeItem('bahadur-admin-token');
   setSyncState(null,'Locked');
   login('Dashboard locked. Enter your token to continue.');
+});
+$('#invoice-search')?.addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase();
+  renderInvoices(allInvoices.filter(x=>`${x.invoice_number} ${x.customer_name} ${x.booking_ref}`.toLowerCase().includes(q)));
 });
 $('#booking-search').oninput=e=>{
   const q=e.target.value.toLowerCase();

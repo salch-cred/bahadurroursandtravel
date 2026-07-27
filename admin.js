@@ -2,7 +2,7 @@ const $=s=>document.querySelector(s);let bookings=[];
 const money=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(v||0));
 const token=()=>sessionStorage.getItem('bahadur-admin-token')||'';
 const auth=()=>({Authorization:`Bearer ${token()}`});
-const statusClass=v=>String(v||'').toLowerCase().includes('confirm')||v==='paid'?'status':String(v||'').toLowerCase().includes('cancel')?'status danger':'status pending';
+const statusClass=v=>{const s=String(v||'').toLowerCase();return s.includes('confirm')||s.includes('complet')||s==='paid'?'status':s.includes('cancel')?'status danger':'status pending'};
 
 async function safeJson(res){
   const ct=res.headers.get('content-type')||'';
@@ -15,8 +15,53 @@ async function safeJson(res){
 
 function renderBookings(rows){
   $('#booking-rows').innerHTML=rows.length
-    ?rows.map(x=>`<tr><td><strong>#${x.booking_id||'—'}</strong></td><td>${x.name||'—'}<small>${x.phone||''}</small></td><td>${x.trip||'—'}</td><td>${x.travel_date||'—'}</td><td>${x.guests||'—'}</td><td><span class="${statusClass(x.status)}">${x.status||'New request'}</span></td><td>${x.amount?money(x.amount):'—'}</td></tr>`).join('')
-    :'<tr><td colspan="7" class="empty-cell">No bookings recorded yet.</td></tr>';
+    ?rows.map(x=>`<tr>
+      <td><strong>#${x.booking_ref||x.booking_id||'—'}</strong><small>${x.source||'website'}</small></td>
+      <td><strong>${x.name||'—'}</strong><small>${x.phone||''}</small><small>${x.email||''}</small></td>
+      <td>${x.trip||'—'}</td>
+      <td>${x.travel_date||'—'}</td>
+      <td>${x.guests||'—'}</td>
+      <td>${x.city||'—'}</td>
+      <td><span class="${statusClass(x.status)}">${x.status||'New request'}</span></td>
+      <td class="booking-actions">
+        <button class="mini-action-btn" data-action="wa" data-id="${x.id}" data-ref="${x.booking_ref||x.booking_id||''}" data-name="${(x.name||'').replace(/"/g,'&quot;')}" data-phone="${x.phone||''}" data-trip="${(x.trip||'').replace(/"/g,'&quot;')}" data-date="${x.travel_date||''}" data-guests="${x.guests||''}" data-city="${x.city||''}" title="Open WhatsApp"><i class="hgi-stroke hgi-whatsapp"></i></button>
+        <select class="status-select mini-select" data-id="${x.id}" title="Update status">
+          ${['pending','confirmed','completed','cancelled'].map(s=>`<option${x.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+        <a href="billing.html?booking_ref=${x.booking_ref||x.booking_id||''}" class="mini-action-btn" title="Create/view invoice"><i class="hgi-stroke hgi-receipt-02"></i></a>
+      </td>
+    </tr>
+    ${x.note?`<tr class="booking-note-row"><td colspan="8"><small>📝 Note: ${x.note}</small></td></tr>`:''}`).join('')
+    :'<tr><td colspan="8" class="empty-cell">No bookings recorded yet.</td></tr>';
+
+  // Bind status selects
+  document.querySelectorAll('.status-select').forEach(sel=>{
+    sel.onchange=async()=>{
+      const id=sel.dataset.id;
+      const status=sel.value;
+      try{
+        const r=await fetch(`/api/bookings?id=${encodeURIComponent(id)}`,{method:'PUT',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({status})});
+        const d=await safeJson(r);
+        if(!r.ok)throw new Error(d.error||'Update failed');
+        // Update in local array
+        const b=bookings.find(x=>x.id===id);
+        if(b)b.status=status;
+        // Update status badge in same row
+        const row=sel.closest('tr');
+        const badge=row?.querySelector('.status,.status.danger,.status.pending');
+        if(badge){badge.textContent=status;badge.className=statusClass(status);}
+      }catch(e){alert('Status update failed: '+e.message);sel.value=bookings.find(x=>x.id===id)?.status||sel.value;}
+    };
+  });
+
+  // Bind WA buttons
+  document.querySelectorAll('[data-action="wa"]').forEach(btn=>{
+    btn.onclick=()=>{
+      const {name,phone,trip,date,guests,city,ref}=btn.dataset;
+      const msg=`Hello Bahadur Tours! 👋\n\n*Booking Reference:* ${ref}\n*Name:* ${name}\n*Trip:* ${trip}\n*Travel Date:* ${date||'TBD'}\n*Guests:* ${guests||'—'}\n*Starting City:* ${city||'—'}\n*Phone:* ${phone}`;
+      window.open(`https://wa.me/919187440916?text=${encodeURIComponent(msg)}`,'_blank');
+    };
+  });
 }
 
 let allInvoices=[];
@@ -120,7 +165,7 @@ async function load(){
   }catch(e){
     setSyncState('is-error','Error: '+e.message);
     clearSkeletons();
-    $('#booking-rows').innerHTML='<tr><td colspan="7" class="empty-cell">'+e.message+'<br><small>Check that DATABASE_URL is set in Vercel environment variables.</small></td></tr>';
+    $('#booking-rows').innerHTML='<tr><td colspan="8" class="empty-cell">'+e.message+'<br><small>Check that DATABASE_URL is set in Vercel environment variables.</small></td></tr>';
   }finally{
     refreshBtn?.classList.remove('is-loading');
     refreshBtn?.removeAttribute('disabled');
@@ -150,7 +195,7 @@ $('#invoice-search')?.addEventListener('input',e=>{
 });
 $('#booking-search').oninput=e=>{
   const q=e.target.value.toLowerCase();
-  renderBookings(bookings.filter(x=>`${x.booking_id} ${x.name} ${x.trip} ${x.phone}`.toLowerCase().includes(q)));
+  renderBookings(bookings.filter(x=>`${x.booking_ref||x.booking_id||''} ${x.name} ${x.trip} ${x.phone} ${x.email||''} ${x.city||''}`.toLowerCase().includes(q)));
 };
 $('#admin-date').textContent=new Intl.DateTimeFormat('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());
 load();

@@ -21,6 +21,28 @@ function bindBookingButtons() {
 }
 bindBookingButtons();
 window.addEventListener('bahadur:destinations-ready', bindBookingButtons);
+
+// Load all packages from API into booking form trip select
+async function loadPackageOptions() {
+  const select = $('#trip-select');
+  if (!select) return;
+  try {
+    const res = await fetch('/api/packages');
+    if (!res.ok) return;
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return;
+    const data = await res.json();
+    const packages = data.packages || [];
+    packages.forEach(p => {
+      const name = p.name || p.slug;
+      if (name && !Array.from(select.options).some(o => o.value === name)) {
+        select.add(new Option(name, name));
+      }
+    });
+  } catch (e) { /* packages API not configured yet, skip */ }
+}
+loadPackageOptions();
+
 $$('[data-close]').forEach((button) => button.addEventListener('click', () => closeModal(bookingModal)));
 $('#finder')?.addEventListener('submit', (event) => { event.preventDefault(); openModal(bookingModal); });
 $('#add-review')?.addEventListener('click', () => { window.location.href = 'community.html#share'; });

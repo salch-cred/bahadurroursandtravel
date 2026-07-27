@@ -18,7 +18,7 @@
   }
   const enrich=()=>document.querySelectorAll('.package-card:not([data-enriched])').forEach(card=>{
     card.dataset.enriched='true'; const body=card.querySelector('.package-body'),footer=card.querySelector('.package-footer');
-    if(body&&footer){const d=document.createElement('div');d.className='package-details';d.innerHTML='<span>✓ Tailored itinerary</span><span>✓ Stay & transfer options</span><span>✓ WhatsApp support</span>';body.insertBefore(d,footer)}
+    if(body&&footer){const d=document.createElement('div');d.className='package-details';d.innerHTML='<span><i class="hgi-stroke hgi-checkmark-02"></i> Tailored itinerary</span><span><i class="hgi-stroke hgi-checkmark-02"></i> Stay & transfer options</span><span><i class="hgi-stroke hgi-checkmark-02"></i> WhatsApp support</span>';body.insertBefore(d,footer)}
     card.querySelectorAll('img').forEach(img=>{img.loading='lazy';img.decoding='async';img.onerror=()=>{img.onerror=null;img.src='assets/images/island-beach.jpg'}});
   });
   enrich(); window.addEventListener('bahadur:destinations-ready',enrich); new MutationObserver(enrich).observe(document.body,{childList:true,subtree:true});

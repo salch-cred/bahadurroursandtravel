@@ -54,8 +54,8 @@ dialog.innerHTML=`
       </select>
     </label>
 
-    <label>Booking reference
-      <input name="bookingRef" required placeholder="e.g. BT12345678 · kept private">
+    <label>Booking reference <span class="vr-optional">(optional)</span>
+      <input name="bookingRef" placeholder="e.g. BT12345678 · Helps verify your review">
     </label>
 
     <label class="span-2">Your review

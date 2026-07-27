@@ -56,7 +56,7 @@ export default async function handler(req: any, res: any) {
       )
     `;
 
-    // Create reviews table (matches api/reviews.ts and the review submission form)
+    // Create reviews table (matches api/reviews.ts and api/community.ts column expectations)
     await sql`
       CREATE TABLE IF NOT EXISTS reviews (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,14 +65,23 @@ export default async function handler(req: any, res: any) {
         rating INTEGER NOT NULL DEFAULT 5,
         booking_ref TEXT NOT NULL DEFAULT '',
         package_slug TEXT,
-        text TEXT NOT NULL,
+        text TEXT NOT NULL DEFAULT '',
         media_url TEXT,
         media_type TEXT,
         consent BOOLEAN NOT NULL DEFAULT false,
-        status TEXT DEFAULT 'pending',
+        status TEXT NOT NULL DEFAULT 'pending',
         created_at TIMESTAMPTZ DEFAULT now()
       )
     `;
+    // Repair any existing reviews table created with the older, mismatched schema
+    // (name/location/trip/rating/body/photo/status) so it matches what
+    // api/reviews.ts and api/community.ts actually query.
+    await sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_ref TEXT NOT NULL DEFAULT ''`;
+    await sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS package_slug TEXT`;
+    await sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS text TEXT NOT NULL DEFAULT ''`;
+    await sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS media_url TEXT`;
+    await sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS media_type TEXT`;
+    await sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS consent BOOLEAN NOT NULL DEFAULT false`;
 
     // Create invoices table
     await sql`
@@ -170,7 +179,7 @@ export default async function handler(req: any, res: any) {
 
     return res.status(200).json({
       ok: true,
-      message: 'All tables created successfully: packages, bookings, reviews, invoices, blog_posts'
+      message: 'All tables created/repaired successfully: packages, bookings, reviews (schema repaired), invoices, blog_posts, media, customers'
     });
   } catch (error) {
     console.error('Migration error:', error);

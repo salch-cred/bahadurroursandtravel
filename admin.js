@@ -40,28 +40,56 @@ function login(message=''){
   const d=$('#admin-login');
   $('#login-error').textContent=message;
   if(!d.open)d.showModal();
+  setTimeout(()=>$('#admin-token')?.focus(),50);
+}
+
+function setSyncState(state,text){
+  const pill=$('#admin-state');
+  if(!pill)return;
+  pill.classList.remove('is-live','is-busy','is-error');
+  if(state)pill.classList.add(state);
+  const t=pill.querySelector('.sync-text');
+  if(t)t.textContent=text; else pill.textContent=text;
+}
+
+function showSkeletons(){
+  ['#turnover-24h','#turnover-14d','#turnover-30d','#turnover-year','#metric-bookings','#metric-pending','#metric-rating','#visitors-daily','#visitors-monthly'].forEach(sel=>{
+    const el=$(sel);
+    if(el&&!el.dataset.loaded)el.innerHTML='<span class="skel-value"></span>';
+  });
+}
+
+function markLoaded(sel,html){
+  const el=$(sel);
+  if(!el)return;
+  el.dataset.loaded='1';
+  el.textContent=html;
 }
 
 async function load(){
   if(!token()){login();return;}
-  $('#admin-state').textContent='Refreshing business data…';
+  const refreshBtn=$('#admin-refresh');
+  refreshBtn?.classList.add('is-loading');
+  refreshBtn?.setAttribute('disabled','');
+  setSyncState('is-busy','Refreshing business data…');
+  showSkeletons();
   try{
     const res=await fetch('/api/admin',{headers:auth()});
     const d=await safeJson(res);
-    if(res.status===401){sessionStorage.removeItem('bahadur-admin-token');login('Incorrect or expired token.');return;}
+    if(res.status===401){sessionStorage.removeItem('bahadur-admin-token');setSyncState('is-error','Sign-in required');login('Incorrect or expired token.');return;}
     if(!res.ok)throw new Error(d.error||'Unknown error');
     bookings=d.bookings||[];
     const m=d.metrics;
-    $('#turnover-24h').textContent=money(m.turnover.h24);
-    $('#turnover-14d').textContent=money(m.turnover.d14);
-    $('#turnover-30d').textContent=money(m.turnover.d30);
-    $('#turnover-year').textContent=money(m.turnover.yearly);
-    $('#metric-bookings').textContent=m.bookings;
-    $('#metric-pending').textContent=m.pending;
-    $('#metric-rating').textContent=m.rating?Number(m.rating).toFixed(1):'—';
+    markLoaded('#turnover-24h',money(m.turnover.h24));
+    markLoaded('#turnover-14d',money(m.turnover.d14));
+    markLoaded('#turnover-30d',money(m.turnover.d30));
+    markLoaded('#turnover-year',money(m.turnover.yearly));
+    markLoaded('#metric-bookings',m.bookings);
+    markLoaded('#metric-pending',m.pending);
+    markLoaded('#metric-rating',m.rating?Number(m.rating).toFixed(1):'—');
     $('#metric-rating-note').textContent=`${m.reviewCount} approved reviews`;
-    $('#visitors-daily').textContent=m.visitors.daily;
-    $('#visitors-monthly').textContent=m.visitors.monthly;
+    markLoaded('#visitors-daily',m.visitors.daily);
+    markLoaded('#visitors-monthly',m.visitors.monthly);
     $('#views-daily').textContent=`${m.visitors.viewsDaily} page views`;
     $('#views-monthly').textContent=`${m.visitors.viewsMonthly} page views`;
     bars('#traffic-chart',d.traffic||[],'visitors',x=>new Date(x.d).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
@@ -69,10 +97,13 @@ async function load(){
     renderBookings(bookings);
     renderInvoices(d.invoices||[]);
     renderActivity(d.activity||[]);
-    $('#admin-state').textContent=`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+    setSyncState('is-live',`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`);
   }catch(e){
-    $('#admin-state').textContent='Error: '+e.message;
+    setSyncState('is-error','Error: '+e.message);
     $('#booking-rows').innerHTML='<tr><td colspan="7" class="empty-cell">'+e.message+'<br><small>Check that DATABASE_URL is set in Vercel environment variables.</small></td></tr>';
+  }finally{
+    refreshBtn?.classList.remove('is-loading');
+    refreshBtn?.removeAttribute('disabled');
   }
 }
 
@@ -82,7 +113,17 @@ $('#admin-login-form').onsubmit=e=>{
   $('#admin-login').close();
   load();
 };
-$('#admin-refresh').onclick=load;
+$('#admin-token-toggle')?.addEventListener('click',()=>{
+  const input=$('#admin-token');
+  input.type=input.type==='text'?'password':'text';
+  input.focus();
+});
+$('#admin-refresh')?.addEventListener('click',load);
+$('#admin-lock')?.addEventListener('click',()=>{
+  sessionStorage.removeItem('bahadur-admin-token');
+  setSyncState(null,'Locked');
+  login('Dashboard locked. Enter your token to continue.');
+});
 $('#booking-search').oninput=e=>{
   const q=e.target.value.toLowerCase();
   renderBookings(bookings.filter(x=>`${x.booking_id} ${x.name} ${x.trip} ${x.phone}`.toLowerCase().includes(q)));

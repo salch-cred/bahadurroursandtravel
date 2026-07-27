@@ -1,2 +1,422 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Guest Media Manager — Bahadur Tours</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css">    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
-</head><body class="admin-page"><header class="nav-wrap"><nav class="nav glass"><a class="brand" href="admin.html"><img src="assets/bahadur-logo.png" alt="Bahadur"><span>Media manager</span></a><div class="nav-links"><a href="admin.html">Dashboard</a><a href="billing.html">Billing</a><a href="community.html">Public stories</a></div><a class="btn btn-small" href="community.html">View public page <i class="hgi-stroke hgi-arrow-up-right-01"></i></a></nav></header><main class="media-admin-shell"><section class="media-upload glass"><span class="kicker">Authorised publishing</span><h1>Add guest media.</h1><p>Upload an image or short video only after obtaining permission. New items can be published immediately or saved for review.</p><form id="media-upload-form"><div class="form-grid"><label>Media type<select name="type" id="media-type"><option value="photo">Explorer photo</option><option value="video">Visitor video</option></select></label><label>Visibility<select name="status"><option value="approved">Publish now</option><option value="pending">Pending review</option></select></label><label>Guest / credit<input name="guestName" required></label><label>Trip or location<input name="trip" required></label><label class="span-2">Caption<textarea name="caption" rows="3" maxlength="400"></textarea></label><label class="upload-zone span-2">Choose image or video<input type="file" id="media-file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" required><span>JPEG, PNG, WebP, MP4 or WebM · maximum 3 MB</span></label><label class="consent span-2"><input type="checkbox" name="consent" required> Guest publication consent has been recorded.</label><button class="btn span-2" type="submit">Upload securely</button><small class="span-2" id="media-state"></small></div></form></section><section class="media-library glass"><div class="panel-head"><div><span class="kicker">Supabase media library</span><h2>Published & pending.</h2></div><button class="mini-btn" id="media-refresh">Refresh</button></div><div class="admin-media-grid" id="admin-media-grid"><div class="community-empty">Unlock the admin session to load media.</div></div></section></main><dialog class="admin-login" id="media-login"><form method="dialog" id="media-login-form"><img src="assets/bahadur-logo.png" alt="Bahadur"><span class="kicker">Authorised staff only</span><h2>Unlock media manager</h2><label>Admin token<input type="password" id="media-token" required></label><button class="btn btn-dark full" value="default">Continue</button><small id="media-login-error"></small></form></dialog><script type="module" src="media-manager.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Guest Media Manager — Bahadur Tours</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<style>
+/* ── Upload zone ──────────────────────────────────────────── */
+.drop-zone{border:2px dashed var(--line);border-radius:18px;padding:48px 24px;text-align:center;cursor:pointer;transition:.2s;background:#fafcfb;position:relative}
+.drop-zone.dragover{border-color:var(--green);background:#eef9f5}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-zone i{font-size:42px;color:#b0c4bc;display:block;margin-bottom:10px}
+.drop-zone h3{font-size:18px;margin:0 0 6px}
+.drop-zone p{color:#8fa099;font-size:13px;margin:0}
+.drop-zone .unlimited{display:inline-block;margin-top:10px;background:#e8f4f0;color:var(--green);border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800}
+
+/* ── Upload queue ─────────────────────────────────────────── */
+.upload-queue{display:flex;flex-direction:column;gap:8px;margin-top:16px;max-height:300px;overflow-y:auto}
+.queue-item{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.queue-thumb{width:52px;height:44px;object-fit:cover;border-radius:8px;background:#eef4f1}
+.queue-thumb.video-icon{display:flex;align-items:center;justify-content:center;font-size:22px;color:#8fa099}
+.queue-meta{display:flex;flex-direction:column;gap:2px}
+.queue-meta strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.queue-meta span{font-size:11px;color:#8fa099}
+.queue-progress{width:100%;height:4px;background:#e8f4f0;border-radius:99px;margin-top:4px;overflow:hidden}
+.queue-progress-bar{height:100%;background:var(--green);border-radius:99px;transition:width .3s}
+.queue-status{font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.queue-status.uploading{background:#fff3d9;color:#8b6214}
+.queue-status.done{background:#e8f4f0;color:var(--green)}
+.queue-status.error{background:#fff0ef;color:#b94040}
+.queue-status.waiting{background:#f0f4f2;color:#8fa099}
+
+/* ── Upload form meta fields ──────────────────────────────── */
+.upload-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.upload-meta label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#65736e}
+.upload-meta input,.upload-meta select,.upload-meta textarea{border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit}
+.upload-meta input:focus,.upload-meta select:focus{outline:none;border-color:var(--green)}
+.upload-meta .span-2{grid-column:1/-1}
+.upload-meta textarea{resize:vertical;min-height:60px}
+.upload-actions{display:flex;gap:10px;align-items:center;margin-top:8px}
+.upload-actions .btn{flex:1}
+.upload-count{font-size:13px;color:#8fa099}
+
+/* ── Media library ────────────────────────────────────────── */
+.media-lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.media-lib-head h2{font-size:22px;margin:0}
+.media-filter-tabs{display:flex;gap:6px;background:#f0f4f2;border-radius:99px;padding:4px}
+.media-filter-tabs button{border:0;background:transparent;padding:7px 14px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.media-filter-tabs button.active{background:var(--ink);color:#fff}
+.media-masonry-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.media-tile{position:relative;border-radius:14px;overflow:hidden;background:#eef4f1;aspect-ratio:1;cursor:pointer;transition:.2s}
+.media-tile:hover{transform:scale(1.02);box-shadow:0 8px 28px #04241f1a}
+.media-tile img,.media-tile video{width:100%;height:100%;object-fit:cover;display:block}
+.media-tile .tile-overlay{position:absolute;inset:0;background:linear-gradient(0deg,#031c19dd,transparent 50%);opacity:0;transition:.2s;display:flex;flex-direction:column;justify-content:flex-end;padding:10px}
+.media-tile:hover .tile-overlay{opacity:1}
+.tile-actions{display:flex;gap:6px}
+.tile-actions button{border:0;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:800;cursor:pointer}
+.tile-approve{background:#41c799;color:#fff}
+.tile-pending{background:#ffd977;color:#664d00}
+.tile-delete{background:#f04040;color:#fff}
+.tile-type{position:absolute;top:8px;left:8px;background:#000000aa;color:#fff;border-radius:6px;padding:3px 7px;font-size:10px;font-weight:700;backdrop-filter:blur(4px)}
+.tile-status-badge{position:absolute;top:8px;right:8px;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:800}
+.tile-status-badge.approved{background:#41c799;color:#fff}
+.tile-status-badge.pending{background:#ffd977;color:#664d00}
+.media-empty{grid-column:1/-1;text-align:center;padding:60px;color:#8fa099}
+.media-empty i{font-size:48px;display:block;margin-bottom:12px;opacity:.3}
+
+/* ── Panel layout ─────────────────────────────────────────── */
+.media-shell{display:grid;grid-template-columns:400px 1fr;gap:18px;height:100%}
+.media-left{display:flex;flex-direction:column;gap:14px}
+.media-panel{border-radius:18px;padding:22px;background:#ffffffd4;border:1px solid var(--line)}
+.media-panel h2{font-size:20px;margin:0 0 16px}
+
+@media(max-width:900px){.media-shell{grid-template-columns:1fr;height:auto}}
+@media(max-width:540px){.upload-meta{grid-template-columns:1fr}.media-masonry-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
+</style>
+</head>
+<body>
+<main class="admin-shell">
+<div class="admin-grid">
+
+<!-- ── Sidebar ─────────────────────────────────────────────── -->
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Package manager</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html" class="active"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
+    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
+  </nav>
+</aside>
+
+<!-- ── Main ────────────────────────────────────────────────── -->
+<section class="admin-main glass">
+  <div class="admin-top" style="margin-bottom:18px">
+    <div>
+      <span class="kicker">Explorer gallery</span>
+      <h1>Guest media</h1>
+    </div>
+    <div class="admin-actions">
+      <a class="btn btn-light" href="community.html" target="_blank"><i class="hgi-stroke hgi-arrow-up-right-01"></i> Public page</a>
+    </div>
+  </div>
+
+  <div class="media-shell">
+
+    <!-- ── Left: Upload panel ──────────────────────────────── -->
+    <div class="media-left">
+      <div class="media-panel">
+        <h2><i class="hgi-stroke hgi-upload-04" style="color:var(--green)"></i> Bulk upload</h2>
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/webm,video/quicktime">
+          <i class="hgi-stroke hgi-image-upload"></i>
+          <h3>Drop photos &amp; videos here</h3>
+          <p>Or click to browse — select as many as you want</p>
+          <span class="unlimited">No file size limit</span>
+        </div>
+
+        <!-- Queue -->
+        <div class="upload-queue" id="upload-queue" style="display:none"></div>
+
+        <!-- Meta fields -->
+        <div class="upload-meta">
+          <label>Guest / Credit
+            <input id="meta-guest" placeholder="e.g. Mohammed Salman" required>
+          </label>
+          <label>Trip / Location
+            <input id="meta-trip" placeholder="e.g. Lakshadweep, Wayanad">
+          </label>
+          <label class="span-2">Caption (optional)
+            <textarea id="meta-caption" rows="2" placeholder="Short description for the gallery"></textarea>
+          </label>
+          <label>Visibility
+            <select id="meta-status">
+              <option value="approved">Publish immediately</option>
+              <option value="pending">Save for review</option>
+            </select>
+          </label>
+          <label style="justify-content:flex-end">
+            <span style="font-size:12px;color:#8fa099;margin-top:auto">Consent recorded by admin.</span>
+          </label>
+        </div>
+
+        <div class="upload-actions">
+          <button class="btn" onclick="startUpload()" id="upload-btn" disabled>
+            <i class="hgi-stroke hgi-upload-04"></i> Upload all
+          </button>
+          <button class="btn btn-light" onclick="clearQueue()">Clear</button>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:#65736e" id="upload-summary"></div>
+      </div>
+    </div>
+
+    <!-- ── Right: Library ──────────────────────────────────── -->
+    <div>
+      <div class="media-panel" style="height:100%;display:flex;flex-direction:column">
+        <div class="media-lib-head">
+          <h2>Media library</h2>
+          <div class="media-filter-tabs">
+            <button class="active" data-filter="all" onclick="setFilter('all',this)">All</button>
+            <button data-filter="approved" onclick="setFilter('approved',this)">Published</button>
+            <button data-filter="pending" onclick="setFilter('pending',this)">Pending</button>
+          </div>
+          <button class="btn btn-light btn-small" onclick="loadLibrary()"><i class="hgi-stroke hgi-refresh"></i> Refresh</button>
+        </div>
+        <div class="media-masonry-grid" id="media-grid">
+          <div class="media-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading media library…</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /media-shell -->
+</section>
+</div>
+</main>
+
+<!-- Login dialog -->
+<dialog class="admin-login" id="admin-login">
+  <form method="dialog" id="admin-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span>
+    <h2>Unlock media manager</h2>
+    <p>Enter the private admin token configured in Vercel.</p>
+    <label>Admin token<input type="password" id="admin-token" required></label>
+    <button class="btn btn-dark full">Open manager</button>
+    <small id="login-error"></small>
+  </form>
+</dialog>
+
+<script>
+/* ── Auth ─────────────────────────────────────────────────── */
+const TOKEN_KEY = 'bahadur-admin-token';
+const getToken  = () => sessionStorage.getItem(TOKEN_KEY) || '';
+const hdrs      = () => ({ 'Content-Type': 'application/json', 'x-admin-token': getToken() });
+
+document.getElementById('admin-login-form').onsubmit = async () => {
+  const tok = document.getElementById('admin-token').value;
+  sessionStorage.setItem(TOKEN_KEY, tok);
+  const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
+  if (r.ok) { document.getElementById('admin-login').close(); init(); }
+  else { document.getElementById('login-error').textContent = 'Invalid token.'; }
+};
+
+/* ── Queue state ──────────────────────────────────────────── */
+let queueFiles = [];
+
+/* ── Drop zone setup ──────────────────────────────────────── */
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadBtn = document.getElementById('upload-btn');
+
+dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('dragover'); };
+dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+dropZone.ondrop = e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  addFiles([...e.dataTransfer.files]);
+};
+fileInput.onchange = () => { addFiles([...fileInput.files]); fileInput.value = ''; };
+
+function addFiles(files) {
+  files.forEach(f => {
+    if (!queueFiles.find(x => x.file.name === f.name && x.file.size === f.size)) {
+      queueFiles.push({ file: f, status: 'waiting', progress: 0, id: Math.random().toString(36).slice(2) });
+    }
+  });
+  renderQueue();
+  uploadBtn.disabled = !queueFiles.length;
+}
+
+function clearQueue() {
+  queueFiles = [];
+  renderQueue();
+  uploadBtn.disabled = true;
+  document.getElementById('upload-summary').textContent = '';
+}
+
+function renderQueue() {
+  const el = document.getElementById('upload-queue');
+  if (!queueFiles.length) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = queueFiles.map(q => {
+    const isVideo = q.file.type.startsWith('video/');
+    const size = q.file.size > 1024*1024 ? (q.file.size/1024/1024).toFixed(1)+'MB' : (q.file.size/1024).toFixed(0)+'KB';
+    const thumbHtml = isVideo
+      ? `<div class="queue-thumb video-icon"><i class="hgi-stroke hgi-video-replay"></i></div>`
+      : `<img class="queue-thumb" id="thumb-${q.id}" src="" alt="">`;
+    const statusClass = q.status;
+    const statusLabel = { waiting:'Waiting', uploading:'Uploading…', done:'Done', error:'Error' }[q.status] || q.status;
+    return `<div class="queue-item" id="qi-${q.id}">
+      ${thumbHtml}
+      <div class="queue-meta">
+        <strong title="${esc(q.file.name)}">${esc(q.file.name.length>28 ? q.file.name.slice(0,25)+'…' : q.file.name)}</strong>
+        <span>${size} · ${isVideo?'Video':'Image'}</span>
+        <div class="queue-progress"><div class="queue-progress-bar" id="pb-${q.id}" style="width:${q.progress}%"></div></div>
+      </div>
+      <span class="queue-status ${statusClass}">${statusLabel}</span>
+    </div>`;
+  }).join('');
+  // Load thumbnails for images
+  queueFiles.forEach(q => {
+    if (!q.file.type.startsWith('video/')) {
+      const th = document.getElementById('thumb-'+q.id);
+      if (th && !th.src.startsWith('data:')) {
+        const url = URL.createObjectURL(q.file);
+        th.src = url;
+        th.onload = () => {}; // keep alive
+      }
+    }
+  });
+}
+
+/* ── Upload all ───────────────────────────────────────────── */
+async function startUpload() {
+  const guest   = document.getElementById('meta-guest').value.trim();
+  const trip    = document.getElementById('meta-trip').value.trim();
+  const caption = document.getElementById('meta-caption').value.trim();
+  const status  = document.getElementById('meta-status').value;
+  if (!guest)  { alert('Please enter a guest name before uploading.'); return; }
+
+  uploadBtn.disabled = true;
+  let done = 0, errors = 0;
+
+  for (const q of queueFiles) {
+    if (q.status === 'done') { done++; continue; }
+    q.status = 'uploading'; q.progress = 20; renderQueue();
+
+    try {
+      const base64 = await toBase64(q.file);
+      q.progress = 60; renderQueueItem(q);
+
+      const body = {
+        files: [{ data: base64, fileName: q.file.name, mimeType: q.file.type }],
+        guestName: guest, trip, caption, status, consent: true
+      };
+      const r = await fetch('/api/media', { method: 'POST', headers: hdrs(), body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Upload failed');
+      q.status = 'done'; q.progress = 100;
+      done++;
+    } catch (e) {
+      q.status = 'error'; q.progress = 0;
+      errors++;
+      console.error(q.file.name, e);
+    }
+    renderQueueItem(q);
+  }
+
+  document.getElementById('upload-summary').textContent =
+    `${done} uploaded${errors ? ', ' + errors + ' failed' : ''}.`;
+  uploadBtn.disabled = false;
+  if (done > 0) loadLibrary();
+}
+
+function renderQueueItem(q) {
+  const el = document.getElementById('qi-'+q.id);
+  if (!el) return;
+  el.querySelector('.queue-status').className = 'queue-status ' + q.status;
+  el.querySelector('.queue-status').textContent = { waiting:'Waiting', uploading:'Uploading…', done:'Done', error:'Error' }[q.status] || q.status;
+  const pb = document.getElementById('pb-'+q.id);
+  if (pb) pb.style.width = q.progress + '%';
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+/* ── Library ──────────────────────────────────────────────── */
+let currentFilter = 'all';
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.media-filter-tabs button').forEach(b => b.classList.toggle('active', b === btn));
+  loadLibrary();
+}
+
+async function loadLibrary() {
+  const grid = document.getElementById('media-grid');
+  grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-loading-03" style="font-size:32px;opacity:.3;display:block;margin-bottom:8px"></i>Loading…</div>';
+  try {
+    const url = currentFilter === 'all' ? '/api/media' : `/api/media?status=${currentFilter}`;
+    const r   = await fetch(url, { headers: hdrs() });
+    const d   = await r.json();
+    const items = d.media || [];
+    if (!items.length) {
+      grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-image-upload"></i>No media yet. Upload some files!</div>';
+      return;
+    }
+    grid.innerHTML = items.map(m => {
+      const isVideo = m.type === 'video' || (m.mime_type||'').startsWith('video/');
+      const media   = isVideo
+        ? `<video src="${m.url}" preload="none" muted style="width:100%;height:100%;object-fit:cover"></video>`
+        : `<img src="${m.url}" alt="${esc(m.guest_name||'')}" loading="lazy">`;
+      const statusBadge = m.status === 'approved'
+        ? `<span class="tile-status-badge approved">Live</span>`
+        : `<span class="tile-status-badge pending">Pending</span>`;
+      return `<div class="media-tile" data-id="${m.id}">
+        ${media}
+        ${statusBadge}
+        <span class="tile-type">${isVideo?'Video':'Photo'}</span>
+        <div class="tile-overlay">
+          <small style="color:#fff;font-size:11px;margin-bottom:6px;display:block">${esc(m.guest_name||'')} · ${esc(m.trip||'')}</small>
+          <div class="tile-actions">
+            ${m.status!=='approved'
+              ? `<button class="tile-approve" onclick="setStatus('${m.id}','approved',this)">Publish</button>`
+              : `<button class="tile-pending" onclick="setStatus('${m.id}','pending',this)">Unpublish</button>`}
+            <button class="tile-delete" onclick="deleteMedia('${m.id}',this)">Delete</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = `<div class="media-empty">Failed to load: ${e.message}</div>`;
+  }
+}
+
+async function setStatus(id, status, btn) {
+  btn.textContent = '…';
+  const r = await fetch(`/api/media?id=${id}`, {
+    method: 'PATCH', headers: hdrs(), body: JSON.stringify({ status })
+  });
+  if (r.ok) loadLibrary();
+}
+
+async function deleteMedia(id, btn) {
+  if (!confirm('Delete this media item permanently?')) return;
+  btn.textContent = '…'; btn.disabled = true;
+  const r = await fetch(`/api/media?id=${id}`, { method: 'DELETE', headers: hdrs() });
+  if (r.ok) { btn.closest('.media-tile').remove(); }
+}
+
+function esc(v) {
+  return String(v||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ── Init ─────────────────────────────────────────────────── */
+async function init() {
+  const dlg = document.getElementById('admin-login');
+  const tok = getToken();
+  if (!tok) { dlg.showModal(); return; }
+  const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
+  if (!r.ok) { dlg.showModal(); return; }
+  loadLibrary();
+}
+init();
+</script>
+</body>
+</html>

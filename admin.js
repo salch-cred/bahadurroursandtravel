@@ -19,6 +19,12 @@ function renderBookings(rows){
     :'<tr><td colspan="7" class="empty-cell">No bookings recorded yet.</td></tr>';
 }
 
+function renderInvoices(rows){
+  $('#invoice-rows').innerHTML=rows.length
+    ?rows.map(x=>`<tr><td><strong>${x.invoice_number||'—'}</strong></td><td>${x.customer_name||'—'}</td><td>${x.booking_ref||'—'}</td><td>${x.invoice_date||'—'}</td><td><span class="${statusClass(x.status)}">${x.status||'Draft'}</span></td><td>${money(x.total)}</td></tr>`).join('')
+    :'<tr><td colspan="6" class="empty-cell">No invoices saved yet.</td></tr>';
+}
+
 function renderActivity(rows){
   $('#activity-list').innerHTML=rows.length
     ?rows.map(x=>`<li><span></span><div><strong>${x.title}</strong><small>${x.detail||''} · ${new Date(x.created_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</small></div></li>`).join('')
@@ -61,6 +67,7 @@ async function load(){
     bars('#traffic-chart',d.traffic||[],'visitors',x=>new Date(x.d).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
     bars('#revenue-chart',d.monthlyRevenue||[],'revenue',x=>new Date(x.m).toLocaleDateString('en-IN',{month:'short'}),money);
     renderBookings(bookings);
+    renderInvoices(d.invoices||[]);
     renderActivity(d.activity||[]);
     $('#admin-state').textContent=`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
   }catch(e){

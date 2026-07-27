@@ -1,0 +1,109 @@
+import { db } from './_db';
+
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST to run migrations' });
+  try {
+    const sql = db();
+
+    // Create packages table
+    await sql`
+      CREATE TABLE IF NOT EXISTS packages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        region TEXT DEFAULT '',
+        category TEXT DEFAULT 'domestic',
+        duration TEXT DEFAULT '',
+        price TEXT DEFAULT 'Custom quote',
+        summary TEXT DEFAULT '',
+        description TEXT DEFAULT '',
+        image_url TEXT DEFAULT '',
+        latitude FLOAT,
+        longitude FLOAT,
+        highlights JSONB DEFAULT '[]',
+        itinerary JSONB DEFAULT '[]',
+        included JSONB DEFAULT '[]',
+        excluded JSONB DEFAULT '[]',
+        gallery JSONB DEFAULT '[]',
+        terms TEXT DEFAULT '',
+        package_type TEXT DEFAULT 'domestic',
+        flight_details JSONB DEFAULT '{}',
+        room_details JSONB DEFAULT '{}',
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
+    // Create bookings table
+    await sql`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        booking_ref TEXT UNIQUE NOT NULL DEFAULT 'BT' || to_char(now(),'YYMMDDHH24MISS') || floor(random()*900+100)::text,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT DEFAULT '',
+        trip TEXT DEFAULT 'Custom journey',
+        travel_date TEXT DEFAULT '',
+        guests TEXT DEFAULT '2 guests',
+        city TEXT DEFAULT '',
+        note TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending',
+        source TEXT DEFAULT 'website',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
+    // Create reviews table
+    await sql`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        location TEXT DEFAULT '',
+        trip TEXT DEFAULT '',
+        rating INTEGER DEFAULT 5,
+        body TEXT NOT NULL,
+        photo TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
+    // Create invoices table
+    await sql`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        invoice_number TEXT UNIQUE NOT NULL,
+        invoice_date TEXT,
+        due_date TEXT,
+        booking_ref TEXT,
+        customer_name TEXT NOT NULL,
+        customer_address TEXT,
+        phone TEXT,
+        email TEXT,
+        items JSONB DEFAULT '[]',
+        tax_label TEXT DEFAULT 'GST',
+        tax_rate NUMERIC DEFAULT 0,
+        discount NUMERIC DEFAULT 0,
+        subtotal NUMERIC DEFAULT 0,
+        tax NUMERIC DEFAULT 0,
+        total NUMERIC DEFAULT 0,
+        status TEXT DEFAULT 'Draft',
+        notes TEXT,
+        payment_details TEXT,
+        travel_details JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
+    return res.status(200).json({
+      ok: true,
+      message: 'All tables created successfully: packages, bookings, reviews, invoices'
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    return res.status(500).json({ error: error instanceof Error ? error.message : 'Migration failed' });
+  }
+}

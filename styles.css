@@ -27,6 +27,12 @@
 .mini-action-btn.paid:hover{background:#22753a;color:#fff;border-color:#22753a}
 .btn-outline{background:transparent;border:1px solid var(--line);color:var(--ink)}
 .btn-outline:hover{background:#f0f4f2}
+
+/* ── Booking admin table: actions, status select, note row ── */
+.booking-actions{white-space:nowrap;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.mini-select{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:700;background:#fff;color:var(--ink);cursor:pointer;height:30px}
+.mini-select:focus{outline:none;border-color:var(--green)}
+.booking-note-row td{background:#f9fdf9;font-size:12px;color:#526058;padding:6px 14px 10px 14px;border-bottom:1px solid var(--line)}
 @media print{@page{size:A4;margin:0}.pro-invoice{width:210mm!important;min-height:297mm!important;padding:12mm 14mm!important;box-shadow:none!important}.pro-invoice-footer{position:static}.invoice-travel-details article{break-inside:avoid}.pro-invoice-table{break-inside:auto}.pro-invoice-table tr{break-inside:avoid}.invoice-terms{break-inside:avoid}}
 @media(max-width:1100px){.turnover-grid{grid-template-columns:1fr 1fr}.operations-grid{grid-template-columns:repeat(3,1fr)}.analytics-grid{grid-template-columns:1fr}}
 @media(max-width:680px){.turnover-grid,.operations-grid{grid-template-columns:1fr 1fr}.dashboard-section-title{align-items:flex-start;flex-direction:column}.pro-invoice{zoom:.47}.invoice-route-band{grid-template-columns:1fr 1fr}}

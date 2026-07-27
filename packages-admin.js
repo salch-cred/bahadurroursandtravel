@@ -63,6 +63,7 @@ function render(){
         <p style="font-size:12px;color:#64716d;margin-top:4px">${(p.summary||'').slice(0,100)}${p.summary&&p.summary.length>100?'…':''}</p>
       </div>
       <div class="admin-pkg-actions">
+        <a href="itinerary-print.html?pkg=${p.id}" target="_blank" class="btn btn-small" style="background:var(--ink);color:#fff;text-decoration:none;">📄 PDF</a>
         <button data-edit="${p.id}" class="btn btn-small btn-outline">✏ Edit</button>
         <button class="btn btn-small danger-button" data-delete="${p.id}">🗑 Delete</button>
       </div>

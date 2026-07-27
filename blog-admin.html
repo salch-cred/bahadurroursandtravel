@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Blog CMS — Bahadur OS</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .cms-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
+    .post-list { display: flex; flex-direction: column; gap: 10px; }
+    .post-item { background: #fff; padding: 16px; border-radius: 12px; border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .post-item:hover { border-color: var(--green); }
+    .post-item strong { display: block; font-size: 16px; margin-bottom: 4px; }
+    .post-item small { color: #666; font-size: 13px; }
+    .post-actions button { background: none; border: none; color: var(--green); font-weight: 600; cursor: pointer; padding: 4px 8px; }
+    .post-actions button.del { color: var(--danger); }
+    .editor-form { display: flex; flex-direction: column; gap: 16px; }
+    .editor-form label { font-size: 13px; font-weight: 600; color: #444; }
+    .editor-form input, .editor-form textarea, .editor-form select { padding: 12px; border: 1px solid var(--line); border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; }
+    .editor-form textarea { min-height: 300px; resize: vertical; }
+  </style>
+</head>
+<body class="admin-page">
+  <header class="nav-wrap">
+    <nav class="nav glass">
+      <a class="brand" href="index.html">
+        <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+        <span>Bahadur OS</span>
+      </a>
+    </nav>
+  </header>
+
+  <main class="admin-shell">
+    <div class="admin-grid">
+      <aside class="admin-side glass">
+        <img src="assets/bahadur-logo.png" alt="Bahadur">
+        <nav>
+          <a href="admin.html">◫ Business overview</a>
+          <a href="admin.html#bookings">▤ Bookings</a>
+          <a href="admin.html#invoices">₹ Invoices</a>
+          <a href="billing.html">₹ Billing</a>
+          <a href="packages-admin.html">◇ Package manager</a>
+          <a class="active" href="blog-admin.html">📝 Travel Guides</a>
+          <a href="media-manager.html">▧ Guest media</a>
+          <a href="community.html">☆ Public stories</a>
+        </nav>
+      </aside>
+
+      <section class="admin-main glass">
+        <div class="admin-top">
+          <div>
+            <span class="kicker">Content Management</span>
+            <h1>Travel Guides CMS</h1>
+          </div>
+          <button class="btn btn-dark" onclick="newPost()">＋ New Post</button>
+        </div>
+
+        <div class="cms-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head">
+                <div><h3>All Guides</h3></div>
+              </div>
+              <div class="post-list" id="post-list">
+                <p style="padding:20px;text-align:center;color:#666;">Loading posts...</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel" id="editor-panel" style="display:none;">
+              <div class="panel-head">
+                <div><h3 id="editor-title">Create Post</h3></div>
+                <button class="btn btn-small" onclick="closeEditor()">Cancel</button>
+              </div>
+              <form class="editor-form" id="post-form" style="padding: 20px;">
+                <input type="hidden" id="p-id">
+                <label>Title
+                  <input type="text" id="p-title" required placeholder="e.g. 5 Best Places in Kashmir">
+                </label>
+                <label>Slug (URL)
+                  <input type="text" id="p-slug" placeholder="e.g. best-places-in-kashmir">
+                </label>
+                <label>Category
+                  <input type="text" id="p-category" value="Travel Guide">
+                </label>
+                <label>Cover Image URL
+                  <input type="url" id="p-image" placeholder="https://unsplash.com/...">
+                </label>
+                <label>Excerpt (Short description)
+                  <textarea id="p-excerpt" style="min-height:80px;" placeholder="Brief summary for the blog listing page..."></textarea>
+                </label>
+                <label>Full Content (HTML allowed)
+                  <textarea id="p-content" required placeholder="Write your full guide here..."></textarea>
+                </label>
+                <label>Status
+                  <select id="p-status">
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                  </select>
+                </label>
+                <button type="submit" class="btn btn-dark full" id="save-btn">Save Post</button>
+                <p id="save-msg" style="color:var(--green);font-size:13px;text-align:center;"></p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <dialog class="admin-login" id="admin-login">
+    <form method="dialog" id="admin-login-form">
+      <h2>Unlock dashboard</h2>
+      <label>Admin token<input type="password" id="admin-token" required></label>
+      <button class="btn btn-dark full">Open dashboard</button>
+    </form>
+  </dialog>
+
+  <script>
+    const token = () => sessionStorage.getItem('bahadur-admin-token') || '';
+    const auth = () => ({ 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' });
+    let posts = [];
+
+    function login() {
+      const d = document.getElementById('admin-login');
+      if (!d.open) d.showModal();
+    }
+
+    document.getElementById('admin-login-form').onsubmit = (e) => {
+      e.preventDefault();
+      sessionStorage.setItem('bahadur-admin-token', document.getElementById('admin-token').value.trim());
+      document.getElementById('admin-login').close();
+      load();
+    };
+
+    async function load() {
+      if (!token()) { login(); return; }
+      try {
+        const res = await fetch('/api/blog?admin=1', { headers: auth() });
+        if (res.status === 401) { sessionStorage.removeItem('bahadur-admin-token'); login(); return; }
+        const data = await res.json();
+        posts = data.posts || [];
+        renderPosts();
+      } catch (e) {
+        document.getElementById('post-list').innerHTML = `<p style="padding:20px;text-align:center;color:red;">Error: ${e.message}</p>`;
+      }
+    }
+
+    function renderPosts() {
+      const list = document.getElementById('post-list');
+      if (!posts.length) {
+        list.innerHTML = '<p style="padding:20px;text-align:center;color:#666;">No posts found.</p>';
+        return;
+      }
+      list.innerHTML = posts.map(p => `
+        <div class="post-item" onclick="editPost('${p.id}')">
+          <div>
+            <strong>${p.title}</strong>
+            <small>${p.status.toUpperCase()} · /${p.slug}</small>
+          </div>
+          <div class="post-actions">
+            <button onclick="event.stopPropagation(); deletePost('${p.id}')" class="del">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function newPost() {
+      document.getElementById('post-form').reset();
+      document.getElementById('p-id').value = '';
+      document.getElementById('editor-title').textContent = 'Create Post';
+      document.getElementById('editor-panel').style.display = 'block';
+      document.getElementById('save-msg').textContent = '';
+    }
+
+    function editPost(id) {
+      const p = posts.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('p-id').value = p.id;
+      document.getElementById('p-title').value = p.title;
+      document.getElementById('p-slug').value = p.slug;
+      document.getElementById('p-category').value = p.category || '';
+      document.getElementById('p-image').value = p.image_url || '';
+      document.getElementById('p-excerpt').value = p.excerpt || '';
+      document.getElementById('p-content').value = p.content || '';
+      document.getElementById('p-status').value = p.status || 'published';
+      
+      document.getElementById('editor-title').textContent = 'Edit Post';
+      document.getElementById('editor-panel').style.display = 'block';
+      document.getElementById('save-msg').textContent = '';
+    }
+
+    function closeEditor() {
+      document.getElementById('editor-panel').style.display = 'none';
+    }
+
+    document.getElementById('post-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('p-id').value;
+      const payload = {
+        title: document.getElementById('p-title').value,
+        slug: document.getElementById('p-slug').value,
+        category: document.getElementById('p-category').value,
+        image_url: document.getElementById('p-image').value,
+        excerpt: document.getElementById('p-excerpt').value,
+        content: document.getElementById('p-content').value,
+        status: document.getElementById('p-status').value
+      };
+
+      try {
+        document.getElementById('save-btn').textContent = 'Saving...';
+        const url = id ? `/api/blog?id=${id}` : '/api/blog';
+        const method = id ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, { method, headers: auth(), body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await res.text());
+        
+        document.getElementById('save-msg').textContent = 'Saved successfully!';
+        setTimeout(() => document.getElementById('save-msg').textContent = '', 3000);
+        await load();
+        if (!id) closeEditor(); // Close on create
+      } catch (err) {
+        alert('Failed to save: ' + err.message);
+      } finally {
+        document.getElementById('save-btn').textContent = 'Save Post';
+      }
+    };
+
+    async function deletePost(id) {
+      if (!confirm('Are you sure you want to delete this post?')) return;
+      try {
+        const res = await fetch(`/api/blog?id=${id}`, { method: 'DELETE', headers: auth() });
+        if (!res.ok) throw new Error('Failed to delete');
+        if (document.getElementById('p-id').value === id) closeEditor();
+        await load();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Itinerary PDF — Bahadur Tours</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #e0e0e0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    
+    /* A4 Paper configuration for printing */
+    @page { size: A4; margin: 0; }
+    .page { 
+      width: 210mm; 
+      min-height: 297mm; 
+      background: white; 
+      margin: 10mm auto; 
+      padding: 20mm; 
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    @media print {
+      body { background: white; }
+      .page { margin: 0; padding: 15mm; box-shadow: none; min-height: 100vh; }
+      .no-print { display: none !important; }
+    }
+
+    .print-controls { position: fixed; top: 20px; right: 20px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100; display: flex; gap: 10px; }
+    .btn { background: #0a5b4c; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; font-family: inherit; }
+    .btn:hover { background: #084d40; }
+
+    header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0a5b4c; padding-bottom: 20px; margin-bottom: 30px; }
+    .logo { height: 60px; filter: invert(0); background: #0a5b4c; padding: 10px; border-radius: 8px; }
+    .brand-details { text-align: right; color: #444; font-size: 12px; line-height: 1.5; }
+    .brand-details strong { font-size: 16px; color: #0a5b4c; display: block; margin-bottom: 4px; }
+    
+    .hero-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 30px; background: #eee; }
+    
+    .title-area { margin-bottom: 40px; }
+    h1 { font-size: 32px; color: #111; margin-bottom: 10px; letter-spacing: -0.02em; }
+    .price-badge { display: inline-block; background: #0a5b4c; color: white; padding: 6px 15px; border-radius: 20px; font-weight: 700; font-size: 18px; margin-bottom: 15px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #444; }
+    
+    h2 { font-size: 20px; color: #0a5b4c; margin: 30px 0 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    
+    .itinerary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    
+    .day-box { margin-bottom: 20px; page-break-inside: avoid; }
+    .day-num { font-size: 12px; font-weight: 700; color: white; background: #0a5b4c; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
+    .day-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: #111; }
+    .day-desc { font-size: 13px; color: #555; line-height: 1.6; }
+
+    .includes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 13px; line-height: 1.6; }
+    .inc-col strong { display: block; margin-bottom: 8px; color: #111; }
+    ul { padding-left: 18px; color: #555; }
+    li { margin-bottom: 6px; }
+
+    footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #777; text-align: center; }
+  </style>
+</head>
+<body>
+  
+  <div class="print-controls no-print">
+    <button class="btn" onclick="window.print()">Save as PDF / Print</button>
+    <button class="btn" onclick="window.close()" style="background:#555">Close</button>
+  </div>
+
+  <div class="page">
+    <header>
+      <img src="assets/bahadur-logo.png" class="logo" alt="Bahadur Tours">
+      <div class="brand-details">
+        <strong>Bahadur Tours and Travels</strong>
+        Calicut, Kerala, India<br>
+        info@bahadurtours.com<br>
+        +91 99999 99999
+      </div>
+    </header>
+
+    <img id="pdf-image" class="hero-image" src="" alt="Destination">
+
+    <div class="title-area">
+      <div class="price-badge" id="pdf-price">Starting from ₹0</div>
+      <h1 id="pdf-title">Loading Itinerary...</h1>
+      <p style="font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.5;" id="pdf-desc"></p>
+      
+      <div class="meta-grid">
+        <div>📍 <span id="pdf-dest">Destination</span></div>
+        <div>⏱ <span id="pdf-dur">Duration</span></div>
+        <div>🏨 <span id="pdf-hotels">Hotels</span></div>
+        <div>✈️ <span id="pdf-flights">Flights</span></div>
+      </div>
+    </div>
+
+    <div class="itinerary-grid">
+      <div>
+        <h2>Daily Itinerary</h2>
+        <div id="pdf-days">
+          <p style="font-size:13px; color:#777;">Loading itinerary days...</p>
+        </div>
+      </div>
+      
+      <div>
+        <h2>Trip Inclusions</h2>
+        <div class="includes-grid">
+          <div class="inc-col">
+            <strong>✅ What's Included</strong>
+            <ul id="pdf-inc">
+              <li>Loading inclusions...</li>
+            </ul>
+          </div>
+          <div class="inc-col">
+            <strong>❌ What's Not Included</strong>
+            <ul id="pdf-exc">
+              <li>Loading exclusions...</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2 style="margin-top:40px;">Important Notes</h2>
+        <ul id="pdf-notes" style="font-size:12px;">
+          <li>All prices are subject to availability.</li>
+          <li>Standard check-in time is 14:00 and check-out is 12:00.</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      This itinerary is a proposal and subject to change based on real-time availability. Prepared automatically by Bahadur OS.
+    </footer>
+  </div>
+
+  <script>
+    // Load package data from URL params or localStorage
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('pkg');
+    
+    if(pid) {
+      // In a real scenario we might fetch this via API, but since we are launching from packages-admin,
+      // we can fetch the packages API directly to get the specific package.
+      fetch('/api/packages')
+        .then(res => res.json())
+        .then(data => {
+          const pkg = (data.packages || []).find(p => p.id === pid || p.title === pid);
+          if(pkg) renderPDF(pkg);
+          else alert('Package not found.');
+        });
+    }
+
+    function renderPDF(pkg) {
+      document.getElementById('pdf-title').textContent = pkg.title;
+      document.getElementById('pdf-desc').textContent = pkg.description || '';
+      document.getElementById('pdf-price').textContent = 'Starting from ₹' + Number(pkg.price).toLocaleString('en-IN');
+      document.getElementById('pdf-dest').textContent = pkg.destination || 'Multiple';
+      document.getElementById('pdf-dur').textContent = pkg.duration_days ? `${pkg.duration_days} Days` : 'Variable';
+      document.getElementById('pdf-hotels').textContent = pkg.hotel_star ? `${pkg.hotel_star} Star Hotels` : 'Included';
+      document.getElementById('pdf-flights').textContent = pkg.flights_included ? 'Flights Included' : 'No Flights';
+      
+      if(pkg.image_url) {
+        document.getElementById('pdf-image').src = pkg.image_url;
+      } else {
+        document.getElementById('pdf-image').style.display = 'none';
+      }
+
+      // Render days (mock format if real itinerary field doesn't exist, we just split the description as an example)
+      // Ideally you'd have a JSON array of days. We will provide a fallback.
+      let daysHtml = '';
+      if(pkg.itinerary && Array.isArray(pkg.itinerary)) {
+         daysHtml = pkg.itinerary.map((d, i) => `
+          <div class="day-box">
+            <div class="day-num">Day ${i+1}</div>
+            <div class="day-title">${d.title || 'Sightseeing'}</div>
+            <div class="day-desc">${d.desc || 'Explore the local attractions and relax.'}</div>
+          </div>
+         `).join('');
+      } else {
+         daysHtml = `
+          <div class="day-box">
+            <div class="day-num">Day 1</div>
+            <div class="day-title">Arrival & Check-in</div>
+            <div class="day-desc">Welcome to your destination. Transfer to the hotel and rest.</div>
+          </div>
+          <div class="day-box">
+            <div class="day-num">Day 2</div>
+            <div class="day-title">Full Day Sightseeing</div>
+            <div class="day-desc">Experience the best of the city with our expert local guide.</div>
+          </div>
+          <div class="day-box">
+            <div class="day-num">Day 3</div>
+            <div class="day-title">Departure</div>
+            <div class="day-desc">Check out and transfer to the airport.</div>
+          </div>
+         `;
+      }
+      document.getElementById('pdf-days').innerHTML = daysHtml;
+
+      // Inclusions
+      const inc = Array.isArray(pkg.inclusions) ? pkg.inclusions : ['Premium Accommodation', 'Daily Breakfast', 'Airport Transfers', 'Guided Tours'];
+      document.getElementById('pdf-inc').innerHTML = inc.map(x => `<li>${x}</li>`).join('');
+      
+      const exc = ['International Airfare', 'Visa Fees', 'Personal Expenses', 'Travel Insurance'];
+      document.getElementById('pdf-exc').innerHTML = exc.map(x => `<li>${x}</li>`).join('');
+      
+      document.title = `${pkg.title} - Itinerary.pdf`;
+    }
+  </script>
+</body>
+</html>

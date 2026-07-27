@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Travel Guides — Bahadur Tours</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
+  <style>
+    .blog-header { background: var(--deep); color: #fff; padding: 120px 24px 80px; text-align: center; }
+    .blog-header h1 { margin-bottom: 20px; font-size: clamp(42px, 6vw, 72px); }
+    .blog-header p { font-size: 19px; max-width: 600px; margin: 0 auto; color: #a4cebe; }
+    .blog-grid { max-width: 1180px; margin: 0 auto; padding: 60px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px; }
+    .post-card { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); display: flex; flex-direction: column; transition: 0.3s; }
+    .post-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.06); }
+    .post-image { height: 220px; object-fit: cover; width: 100%; background: #eee; }
+    .post-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+    .post-meta { font-size: 12px; color: #74807c; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 8px; display: block; }
+    .post-title { font-size: 24px; font-weight: 800; line-height: 1.2; margin: 0 0 12px; color: var(--ink); }
+    .post-excerpt { color: #64716d; font-size: 15px; margin-bottom: 20px; line-height: 1.6; }
+    .post-author { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--line); }
+    .post-author img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .post-author div { display: flex; flex-direction: column; font-size: 13px; font-weight: 600; }
+    .post-author span { color: #74807c; font-weight: 400; font-size: 11px; }
+
+    /* Single Post View */
+    .single-post { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; display: none; }
+    .single-post.active { display: block; }
+    .sp-meta { font-size: 13px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.1em; }
+    .sp-title { font-size: clamp(42px, 5vw, 64px); margin: 15px 0 30px; line-height: 1.1; letter-spacing: -0.03em; }
+    .sp-author { display: flex; align-items: center; gap: 14px; margin-bottom: 40px; }
+    .sp-author img { width: 44px; height: 44px; border-radius: 50%; }
+    .sp-image { width: 100%; height: auto; max-height: 500px; object-fit: cover; border-radius: 20px; margin-bottom: 50px; }
+    .sp-content { font-size: 18px; line-height: 1.8; color: #3b4642; }
+    .sp-content h2 { font-size: 32px; margin: 40px 0 20px; color: var(--ink); }
+    .sp-content h3 { font-size: 24px; margin: 30px 0 15px; color: var(--ink); }
+    .sp-content p { margin-bottom: 24px; }
+    .sp-content img { width: 100%; border-radius: 12px; margin: 20px 0; }
+    .sp-content ul, .sp-content ol { padding-left: 20px; margin-bottom: 24px; }
+    .sp-content li { margin-bottom: 10px; }
+    .back-btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); text-decoration: none; margin-bottom: 40px; font-size: 14px; }
+    .back-btn:hover { color: var(--green); }
+  </style>
+</head>
+<body>
+  <header class="nav-wrap">
+    <nav class="nav glass">
+      <a class="brand" href="index.html">
+        <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+        <span>Bahadur Tours</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html#packages">Packages</a>
+        <a href="umrah.html">Umrah</a>
+        <a href="community.html">Community</a>
+        <a href="blog.html">Travel Guides</a>
+      </div>
+      <div class="nav-actions">
+        <a class="btn btn-small" href="index.html#contact">Book a trip</a>
+      </div>
+    </nav>
+  </header>
+
+  <div id="blog-listing">
+    <section class="blog-header">
+      <h1>Travel Guides</h1>
+      <p>Expert tips, destination insights, and travel inspiration from the Bahadur Tours team.</p>
+    </section>
+    
+    <main class="blog-grid" id="posts-container">
+      <p style="grid-column: 1/-1; text-align: center; color: #666; padding: 60px;">Loading guides...</p>
+    </main>
+  </div>
+
+  <article id="single-post-view" class="single-post">
+    <a href="#" class="back-btn" onclick="showListing(event)">
+      <i class="hgi-stroke hgi-arrow-left-01"></i> Back to guides
+    </a>
+    <span class="sp-meta" id="sp-category">Travel Guide</span>
+    <h1 class="sp-title" id="sp-title">Loading...</h1>
+    <div class="sp-author">
+      <img src="assets/bahadur-logo.png" alt="Author" style="background:#0a5b4ce8; padding:5px; object-fit:contain;">
+      <div>
+        <strong id="sp-author">Bahadur Tours</strong>
+        <span id="sp-date">Date</span>
+      </div>
+    </div>
+    <img id="sp-image" class="sp-image" src="" alt="Hero Image" style="display:none;">
+    <div class="sp-content" id="sp-content"></div>
+  </article>
+
+  <footer style="background:var(--ink); color:#fff; padding:60px 24px; text-align:center;">
+    <img src="assets/bahadur-logo.png" style="width:140px; filter:brightness(0) invert(1); opacity:0.8; margin-bottom:20px;">
+    <p style="color:#ffffff9e; font-size:14px;">© Bahadur Tours and Travels. All rights reserved.</p>
+  </footer>
+
+  <script>
+    let allPosts = [];
+
+    async function loadPosts() {
+      try {
+        const res = await fetch('/api/blog');
+        const data = await res.json();
+        allPosts = data.posts || [];
+        renderPosts();
+        checkHash();
+      } catch (err) {
+        document.getElementById('posts-container').innerHTML = '<p style="grid-column:1/-1;text-align:center;">Could not load posts at this time.</p>';
+      }
+    }
+
+    function renderPosts() {
+      const container = document.getElementById('posts-container');
+      if (!allPosts.length) {
+        container.innerHTML = '<p style="grid-column:1/-1;text-align:center;">No guides published yet.</p>';
+        return;
+      }
+      container.innerHTML = allPosts.map(p => `
+        <a href="#${p.slug}" class="post-card" onclick="openPost('${p.slug}')">
+          ${p.image_url ? `<img src="${p.image_url}" class="post-image" alt="${p.title}">` : `<div class="post-image" style="background:var(--green)"></div>`}
+          <div class="post-body">
+            <span class="post-meta">${p.category || 'Guide'}</span>
+            <h2 class="post-title">${p.title}</h2>
+            <p class="post-excerpt">${p.excerpt || ''}</p>
+            <div class="post-author">
+              <img src="assets/bahadur-logo.png" alt="Bahadur" style="background:var(--ink); padding:4px;">
+              <div>
+                <strong>${p.author || 'Bahadur Tours'}</strong>
+                <span>${new Date(p.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    function openPost(slug) {
+      const post = allPosts.find(p => p.slug === slug);
+      if (!post) return;
+      document.getElementById('blog-listing').style.display = 'none';
+      const sp = document.getElementById('single-post-view');
+      sp.classList.add('active');
+      
+      document.getElementById('sp-category').textContent = post.category || 'Guide';
+      document.getElementById('sp-title').textContent = post.title;
+      document.getElementById('sp-author').textContent = post.author || 'Bahadur Tours';
+      document.getElementById('sp-date').textContent = new Date(post.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'});
+      
+      const img = document.getElementById('sp-image');
+      if (post.image_url) {
+        img.src = post.image_url;
+        img.style.display = 'block';
+      } else {
+        img.style.display = 'none';
+      }
+      
+      document.getElementById('sp-content').innerHTML = post.content;
+      window.scrollTo(0, 0);
+      document.title = `${post.title} — Bahadur Tours Guides`;
+    }
+
+    function showListing(e) {
+      if (e) e.preventDefault();
+      history.pushState('', document.title, window.location.pathname);
+      document.getElementById('single-post-view').classList.remove('active');
+      document.getElementById('blog-listing').style.display = 'block';
+      document.title = 'Travel Guides — Bahadur Tours';
+      window.scrollTo(0, 0);
+    }
+
+    function checkHash() {
+      const slug = window.location.hash.slice(1);
+      if (slug) {
+        openPost(slug);
+      } else {
+        showListing();
+      }
+    }
+
+    window.addEventListener('hashchange', checkHash);
+    loadPosts();
+  </script>
+</body>
+</html>

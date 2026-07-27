@@ -98,9 +98,28 @@ export default async function handler(req: any, res: any) {
       )
     `;
 
+    // Create blog posts table
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_posts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        excerpt TEXT DEFAULT '',
+        content TEXT NOT NULL,
+        image_url TEXT DEFAULT '',
+        author TEXT DEFAULT 'Bahadur Tours',
+        category TEXT DEFAULT 'Travel Guide',
+        status TEXT DEFAULT 'published',
+        seo_title TEXT DEFAULT '',
+        seo_desc TEXT DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
     return res.status(200).json({
       ok: true,
-      message: 'All tables created successfully: packages, bookings, reviews, invoices'
+      message: 'All tables created successfully: packages, bookings, reviews, invoices, blog_posts'
     });
   } catch (error) {
     console.error('Migration error:', error);

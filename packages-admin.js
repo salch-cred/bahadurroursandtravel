@@ -197,7 +197,7 @@ function render(){
       <div class="admin-pkg-info">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
           <span class="${p.active?'status':'status pending'}">${p.active?'Live':'Hidden'}</span>
-          <small class="kicker">${p.package_type==='international'?'✈ International':'🏔 Domestic'}</small>
+          <small class="kicker">${p.package_type==='international'?'<i class="hgi-stroke hgi-airplane-01"></i> International':'<i class="hgi-stroke hgi-mountain"></i> Domestic'}</small>
           ${Array.isArray(p.gallery)&&p.gallery.length?`<small class="kicker" style="color:var(--green)"><i class="hgi-stroke hgi-image-01"></i> ${p.gallery.length} photos</small>`:''}
         </div>
         <h3>${p.name}</h3>

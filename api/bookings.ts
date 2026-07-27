@@ -59,10 +59,37 @@ export default async function handler(req: any, res: any) {
         RETURNING *
       `;
 
+      const booking = rows[0];
+
+      // ── Auto-create a matching draft invoice ──────────────────────────────
+      try {
+        const invoiceNumber = 'INV-' + ref;
+        await sql`
+          INSERT INTO invoices (
+            invoice_number, invoice_date, booking_ref,
+            customer_name, phone, email,
+            items, subtotal, tax_rate, tax, total,
+            status, notes
+          ) VALUES (
+            ${invoiceNumber},
+            ${new Date().toISOString().slice(0, 10)},
+            ${ref},
+            ${name},
+            ${clean(b.phone, 30)},
+            ${clean(b.email, 200)},
+            ${JSON.stringify([{ description: clean(b.trip || 'Custom journey', 300), qty: Number(String(b.guests || '2').replace(/\D.*/,'')), unit_price: 0, total: 0 }])}::jsonb,
+            0, 0, 0, 0,
+            'Draft',
+            ${clean(b.note, 2000)}
+          )
+          ON CONFLICT (invoice_number) DO NOTHING
+        `;
+      } catch (_) { /* invoice auto-save is best-effort */ }
+
       return res.status(201).json({
         ok: true,
         bookingId: ref,
-        booking: rows[0],
+        booking,
         message: `Booking ${ref} saved. Our team will contact you within 2 hours.`
       });
     }

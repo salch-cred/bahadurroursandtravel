@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT } from './chat';
+import { SYSTEM_PROMPT } from './chat.js';
 
 // Helper to send WhatsApp messages using Meta Cloud API
 async function sendWhatsAppMessage(to: string, text: string) {

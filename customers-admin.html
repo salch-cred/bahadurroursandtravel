@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Customer Manager — Bahadur Tours</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<style>
+/* ── Customers page specific ──────────────────────────────── */
+.cust-shell{display:grid;grid-template-columns:380px 1fr;gap:18px;height:100%}
+.cust-form-col{display:flex;flex-direction:column;gap:14px}
+.cust-form-panel{border-radius:18px;padding:22px;background:#ffffffd4;border:1px solid var(--line)}
+.cust-form-panel h2{font-size:26px;margin:0 0 18px}
+.cust-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.cust-field label{font-size:12px;font-weight:800;color:#65736e;text-transform:uppercase;letter-spacing:.06em}
+.cust-field input,.cust-field textarea,.cust-field select{border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;background:#fff;transition:.15s}
+.cust-field input:focus,.cust-field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px #0b665518}
+.cust-field textarea{resize:vertical;min-height:70px}
+.cust-tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tag-chip{display:inline-flex;align-items:center;gap:4px;background:#e8f4f0;color:var(--green);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.tag-chip button{border:0;background:none;color:inherit;padding:0;line-height:1;font-size:14px;cursor:pointer}
+.tag-add{display:flex;gap:6px;margin-top:6px}
+.tag-add input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
+.tag-add button{border:0;background:var(--green);color:#fff;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer}
+.cust-form-btns{display:flex;gap:8px;margin-top:4px}
+.cust-form-btns button{flex:1;padding:12px;border-radius:11px;font-weight:800;font-size:14px;border:0;cursor:pointer;transition:.15s}
+.btn-save{background:var(--green);color:#fff}
+.btn-save:hover{background:#084f40}
+.btn-clear{background:#f0f4f2;color:var(--ink)}
+.btn-clear:hover{background:#e0e8e3}
+.btn-delete-cust{background:#fff0ef;color:#b94040;border:1px solid #f5c5c5!important}
+.btn-delete-cust:hover{background:#b94040;color:#fff}
+.cust-state{font-size:13px;color:#64716d;min-height:20px;text-align:center}
+
+/* ── Right panel: search + table ──────────────────────────── */
+.cust-list-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cust-list-panel{border-radius:18px;padding:22px;background:#ffffffd4;border:1px solid var(--line);flex:1;overflow:hidden;display:flex;flex-direction:column}
+.cust-list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.cust-list-head h2{font-size:22px;margin:0}
+.cust-search-wrap{position:relative;flex:1;min-width:180px;max-width:320px}
+.cust-search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#8fa099;pointer-events:none}
+.cust-search-wrap input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px 9px 34px;font-size:14px;box-sizing:border-box}
+.cust-search-wrap input:focus{outline:none;border-color:var(--green)}
+.cust-table-wrap{overflow:auto;flex:1}
+.cust-table{width:100%;border-collapse:collapse;font-size:13px}
+.cust-table th{text-align:left;padding:10px 10px;border-bottom:2px solid var(--line);white-space:nowrap;color:#65736e;font-size:11px;text-transform:uppercase;letter-spacing:.07em}
+.cust-table td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.cust-table tr:last-child td{border-bottom:0}
+.cust-table tr:hover td{background:#f6faf8;cursor:pointer}
+.cust-table tr.selected td{background:#eaf4f0}
+.cust-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),#1a9f82);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;flex-shrink:0}
+.cust-name-cell{display:flex;align-items:center;gap:10px}
+.cust-name-cell div{display:flex;flex-direction:column}
+.cust-name-cell strong{font-size:14px;line-height:1.2}
+.cust-name-cell small{color:#78847f;font-size:11px}
+.cust-badge{padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;background:#e8f4f0;color:var(--green)}
+.cust-empty{text-align:center;padding:60px 20px;color:#94a49e}
+.cust-empty i{font-size:40px;display:block;margin-bottom:12px;opacity:.4}
+.stat-bar{display:flex;gap:14px;flex-wrap:wrap}
+.stat-pill{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;min-width:100px}
+.stat-pill strong{font:800 22px Manrope;color:var(--ink)}
+.stat-pill small{font-size:11px;color:#8fa099;margin-top:2px}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media(max-width:900px){.cust-shell{grid-template-columns:1fr;height:auto}}
+@media(max-width:620px){
+  .cust-form-panel h2{font-size:22px}
+  .cust-list-panel{padding:14px}
+  .stat-bar{gap:8px}
+  .stat-pill{min-width:80px}
+}
+</style>
+</head>
+<body>
+<main class="admin-shell">
+<div class="admin-grid">
+
+<!-- ── Sidebar nav ────────────────────────────────────────── -->
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Package manager</a>
+    <a href="customers-admin.html" class="active"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
+    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
+  </nav>
+</aside>
+
+<!-- ── Main content ───────────────────────────────────────── -->
+<section class="admin-main glass">
+  <div class="admin-top" style="margin-bottom:18px">
+    <div>
+      <span class="kicker">Customer management</span>
+      <h1>Customers</h1>
+    </div>
+    <div class="admin-actions">
+      <button class="btn btn-light" onclick="clearForm()"><i class="hgi-stroke hgi-add-01"></i> New customer</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stat-bar" id="cust-stats" style="margin-bottom:18px">
+    <div class="stat-pill"><strong id="stat-total">—</strong><small>Total customers</small></div>
+    <div class="stat-pill"><strong id="stat-cities">—</strong><small>Cities</small></div>
+    <div class="stat-pill"><strong id="stat-bookings">—</strong><small>Total bookings</small></div>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="cust-shell">
+
+    <!-- ── Left: Add / Edit form ─────────────────────────── -->
+    <div class="cust-form-col">
+      <div class="cust-form-panel">
+        <h2 id="form-title">Add customer</h2>
+        <input type="hidden" id="edit-id">
+
+        <div class="cust-field">
+          <label>Full name *</label>
+          <input id="f-name" placeholder="e.g. Mohammed Salman" required>
+        </div>
+        <div class="cust-field">
+          <label>WhatsApp / Phone *</label>
+          <input id="f-phone" placeholder="+91 90000 00000" required>
+        </div>
+        <div class="cust-field">
+          <label>Email</label>
+          <input id="f-email" placeholder="customer@email.com" type="email">
+        </div>
+        <div class="cust-field">
+          <label>City / Location</label>
+          <input id="f-city" placeholder="e.g. Kozhikode, Kerala">
+        </div>
+        <div class="cust-field">
+          <label>Address</label>
+          <textarea id="f-address" placeholder="Full postal address (optional)"></textarea>
+        </div>
+        <div class="cust-field">
+          <label>Preferred language</label>
+          <select id="f-language">
+            <option>English</option>
+            <option>Malayalam</option>
+            <option>Hindi</option>
+            <option>Arabic</option>
+            <option>Tamil</option>
+          </select>
+        </div>
+        <div class="cust-field">
+          <label>Notes</label>
+          <textarea id="f-note" placeholder="Dietary needs, accessibility, VIP, preferences…"></textarea>
+        </div>
+        <div class="cust-field">
+          <label>Tags</label>
+          <div class="cust-tags-row" id="tags-row"></div>
+          <div class="tag-add">
+            <input id="tag-input" placeholder="Type a tag, press Add" maxlength="40">
+            <button type="button" onclick="addTag()">Add</button>
+          </div>
+        </div>
+
+        <div class="cust-form-btns">
+          <button class="btn-save" onclick="saveCustomer()"><i class="hgi-stroke hgi-checkmark-circle-02"></i> Save</button>
+          <button class="btn-clear" onclick="clearForm()">Clear</button>
+          <button class="btn-delete-cust" id="btn-delete" style="display:none" onclick="deleteCustomer()"><i class="hgi-stroke hgi-delete-02"></i></button>
+        </div>
+        <p class="cust-state" id="form-state"></p>
+      </div>
+    </div>
+
+    <!-- ── Right: Search + Table ─────────────────────────── -->
+    <div class="cust-list-col">
+      <div class="cust-list-panel">
+        <div class="cust-list-head">
+          <h2>All customers</h2>
+          <div class="cust-search-wrap">
+            <i class="hgi-stroke hgi-search-01"></i>
+            <input id="cust-search" placeholder="Search name, phone, city…" oninput="onSearch(this.value)">
+          </div>
+        </div>
+
+        <div class="cust-table-wrap">
+          <table class="cust-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Tags</th>
+                <th>Added</th>
+              </tr>
+            </thead>
+            <tbody id="cust-tbody">
+              <tr><td colspan="5" class="cust-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading customers…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /cust-shell -->
+</section>
+</div>
+</main>
+
+<!-- Login dialog (reuses admin auth pattern) -->
+<dialog class="admin-login" id="admin-login">
+  <form method="dialog" id="admin-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span>
+    <h2>Unlock dashboard</h2>
+    <p>Enter the private admin token configured in Vercel.</p>
+    <label>Admin token<input type="password" id="admin-token" required></label>
+    <button class="btn btn-dark full">Open dashboard</button>
+    <small id="login-error"></small>
+  </form>
+</dialog>
+
+<script>
+/* ── Auth helper ────────────────────────────────────────── */
+const TOKEN_KEY = 'bahadur-admin-token';
+function getToken() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+function headers()  { return { 'Content-Type':'application/json', 'x-admin-token': getToken() }; }
+
+async function checkAuth() {
+  const dlg = document.getElementById('admin-login');
+  const saved = getToken();
+  if (!saved) { dlg.showModal(); return false; }
+  const r = await fetch('/api/admin', { headers: headers() });
+  if (!r.ok) { dlg.showModal(); return false; }
+  return true;
+}
+document.getElementById('admin-login-form').onsubmit = async () => {
+  const tok = document.getElementById('admin-token').value;
+  sessionStorage.setItem(TOKEN_KEY, tok);
+  const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
+  if (r.ok) { document.getElementById('admin-login').close(); init(); }
+  else { document.getElementById('login-error').textContent = 'Invalid token.'; }
+};
+
+/* ── State ──────────────────────────────────────────────── */
+let allCustomers = [];
+let currentTags  = [];
+let editingId    = null;
+let searchTimer  = null;
+
+/* ── Render table ───────────────────────────────────────── */
+function renderTable(list) {
+  const tbody = document.getElementById('cust-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:50px 20px;color:#94a49e"><i class="hgi-stroke hgi-user-search" style="font-size:32px;display:block;margin-bottom:10px;opacity:.35"></i>No customers found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => {
+    const initials = c.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const tags = Array.isArray(c.tags) ? c.tags : (typeof c.tags === 'string' ? JSON.parse(c.tags || '[]') : []);
+    const tagHtml = tags.map(t => `<span class="cust-badge">${esc(t)}</span>`).join(' ');
+    const date = new Date(c.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'2-digit'});
+    return `<tr data-id="${c.id}" onclick="selectCustomer('${c.id}')" class="${editingId===c.id?'selected':''}">
+      <td><div class="cust-name-cell">
+        <div class="cust-avatar">${initials}</div>
+        <div><strong>${esc(c.name)}</strong><small>${esc(c.email||'')}</small></div>
+      </div></td>
+      <td>${esc(c.phone)}</td>
+      <td>${esc(c.city||'—')}</td>
+      <td>${tagHtml||'—'}</td>
+      <td>${date}</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(v) {
+  return String(v||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ── Load all / search ──────────────────────────────────── */
+async function loadAll() {
+  const r = await fetch('/api/customers', { headers: headers() });
+  const d = await r.json();
+  allCustomers = d.customers || [];
+  renderTable(allCustomers);
+  updateStats(allCustomers);
+}
+
+function updateStats(list) {
+  document.getElementById('stat-total').textContent    = list.length;
+  const cities = new Set(list.map(c => c.city).filter(Boolean)).size;
+  document.getElementById('stat-cities').textContent   = cities || '—';
+  const total = list.reduce((s, c) => s + (c.total_bookings || 0), 0);
+  document.getElementById('stat-bookings').textContent = total;
+}
+
+function onSearch(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    if (!val.trim()) { renderTable(allCustomers); return; }
+    const r = await fetch(`/api/customers?q=${encodeURIComponent(val)}`, { headers: headers() });
+    const d = await r.json();
+    renderTable(d.customers || []);
+  }, 280);
+}
+
+/* ── Form: select customer from table ──────────────────── */
+function selectCustomer(id) {
+  const c = allCustomers.find(x => x.id === id);
+  if (!c) return;
+  editingId = id;
+  document.getElementById('edit-id').value    = id;
+  document.getElementById('f-name').value     = c.name || '';
+  document.getElementById('f-phone').value    = c.phone || '';
+  document.getElementById('f-email').value    = c.email || '';
+  document.getElementById('f-city').value     = c.city || '';
+  document.getElementById('f-address').value  = c.address || '';
+  document.getElementById('f-language').value = c.preferred_language || 'English';
+  document.getElementById('f-note').value     = c.note || '';
+  currentTags = Array.isArray(c.tags) ? [...c.tags] : (typeof c.tags === 'string' ? JSON.parse(c.tags || '[]') : []);
+  renderTags();
+  document.getElementById('form-title').textContent = 'Edit customer';
+  document.getElementById('btn-delete').style.display = 'block';
+  document.getElementById('form-state').textContent = '';
+  // highlight row
+  document.querySelectorAll('.cust-table tr').forEach(tr => tr.classList.toggle('selected', tr.dataset.id === id));
+  // scroll form into view on mobile
+  document.querySelector('.cust-form-col').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Tags ────────────────────────────────────────────────── */
+function renderTags() {
+  document.getElementById('tags-row').innerHTML = currentTags.map((t, i) =>
+    `<span class="tag-chip">${esc(t)}<button onclick="removeTag(${i})">×</button></span>`
+  ).join('');
+}
+function addTag() {
+  const inp = document.getElementById('tag-input');
+  const val = inp.value.trim();
+  if (val && !currentTags.includes(val)) { currentTags.push(val); renderTags(); }
+  inp.value = '';
+}
+function removeTag(i) { currentTags.splice(i, 1); renderTags(); }
+document.getElementById('tag-input').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } };
+
+/* ── Save ────────────────────────────────────────────────── */
+async function saveCustomer() {
+  const state = document.getElementById('form-state');
+  const id    = document.getElementById('edit-id').value;
+  const body  = {
+    name:               document.getElementById('f-name').value.trim(),
+    phone:              document.getElementById('f-phone').value.trim(),
+    email:              document.getElementById('f-email').value.trim(),
+    city:               document.getElementById('f-city').value.trim(),
+    address:            document.getElementById('f-address').value.trim(),
+    preferred_language: document.getElementById('f-language').value,
+    note:               document.getElementById('f-note').value.trim(),
+    tags:               currentTags,
+  };
+  if (!body.name || !body.phone) { state.textContent = 'Name and phone are required.'; return; }
+  state.textContent = 'Saving…';
+  const url    = id ? `/api/customers?id=${id}` : '/api/customers';
+  const method = id ? 'PUT' : 'POST';
+  const r  = await fetch(url, { method, headers: headers(), body: JSON.stringify(body) });
+  const d  = await r.json();
+  if (!r.ok) { state.textContent = d.error || 'Save failed.'; return; }
+  state.textContent = id ? 'Customer updated.' : 'Customer added.';
+  await loadAll();
+  if (!id) clearForm();
+  else selectCustomer(d.customer.id);
+}
+
+/* ── Delete ──────────────────────────────────────────────── */
+async function deleteCustomer() {
+  const id = document.getElementById('edit-id').value;
+  if (!id) return;
+  if (!confirm('Delete this customer? This cannot be undone.')) return;
+  await fetch(`/api/customers?id=${id}`, { method: 'DELETE', headers: headers() });
+  clearForm();
+  loadAll();
+}
+
+/* ── Clear form ──────────────────────────────────────────── */
+function clearForm() {
+  editingId = null;
+  document.getElementById('edit-id').value   = '';
+  document.getElementById('f-name').value    = '';
+  document.getElementById('f-phone').value   = '';
+  document.getElementById('f-email').value   = '';
+  document.getElementById('f-city').value    = '';
+  document.getElementById('f-address').value = '';
+  document.getElementById('f-language').value = 'English';
+  document.getElementById('f-note').value    = '';
+  currentTags = [];
+  renderTags();
+  document.getElementById('form-title').textContent = 'Add customer';
+  document.getElementById('btn-delete').style.display = 'none';
+  document.getElementById('form-state').textContent = '';
+  document.querySelectorAll('.cust-table tr').forEach(tr => tr.classList.remove('selected'));
+}
+
+/* ── Init ────────────────────────────────────────────────── */
+async function init() {
+  const ok = await checkAuth();
+  if (!ok) return;
+  loadAll();
+}
+init();
+</script>
+</body>
+</html>

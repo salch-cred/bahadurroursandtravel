@@ -145,6 +145,25 @@ export default async function handler(req: any, res: any) {
       )
     `;
 
+    // Create customers table
+    await sql`
+      CREATE TABLE IF NOT EXISTS customers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT DEFAULT '',
+        city TEXT DEFAULT '',
+        address TEXT DEFAULT '',
+        note TEXT DEFAULT '',
+        tags JSONB DEFAULT '[]',
+        preferred_language TEXT DEFAULT 'English',
+        total_bookings INTEGER DEFAULT 0,
+        total_spent NUMERIC DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
     return res.status(200).json({
       ok: true,
       message: 'All tables created successfully: packages, bookings, reviews, invoices, blog_posts'

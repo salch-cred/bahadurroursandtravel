@@ -52,26 +52,52 @@ $('#booking-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
   const submit = form.querySelector('button[type="submit"], button:not([type])');
-  const originalText = submit?.textContent || 'Send booking request';
-  if (submit) { submit.disabled = true; submit.textContent = 'Sending securely…'; }
+  const originalHTML = submit?.innerHTML || 'Send booking request';
+  if (submit) { submit.disabled = true; submit.textContent = 'Sending...'; }
   const payload = Object.fromEntries(new FormData(form));
-  localStorage.setItem('bahadur-last-booking', JSON.stringify(payload));
-  try {
-    const response = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Booking could not be sent');
-    alert(`Booking request ${result.bookingId} received. Email and WhatsApp notifications are being sent.`);
-    form.reset();
-    closeModal(bookingModal);
-  } catch (error) {
-    const fallbackId = `BT${Date.now().toString().slice(-8)}`;
-    const message = `Hello Bahadur Tours, I want to book ${payload.trip || 'a trip'}. Reference: ${fallbackId}. Name: ${payload.name || ''}, date: ${payload.date || ''}, guests: ${payload.guests || ''}.`;
-    alert('The automatic notification service is not connected in this preview. WhatsApp will open so the request is not lost.');
-    window.open('https:' + '//wa.me/919187440916?text=' + encodeURIComponent(message), '_blank');
-  } finally {
-    if (submit) { submit.disabled = false; submit.textContent = originalText; }
+
+  // Build fully formatted WhatsApp message with all details in correct order
+  function buildWAMessage(ref) {
+    const parts = [
+      '*New Booking - Bahadur Tours & Travels*',
+      '',
+      '*Booking Ref:* ' + ref,
+      '*Name:* ' + (payload.name || '-'),
+      '*Phone:* ' + (payload.phone || '-'),
+      '*Email:* ' + (payload.email || '-'),
+      '*Trip / Experience:* ' + (payload.trip || 'Custom journey'),
+      '*Travel Date:* ' + (payload.date || 'Flexible'),
+      '*Number of Guests:* ' + (payload.guests || '-'),
+      '*Starting City:* ' + (payload.city || '-'),
+    ];
+    if (payload.note && payload.note.trim()) {
+      parts.push('*Special Requirements:* ' + payload.note.trim());
+    }
+    parts.push('', '_Booked via bahadurtours.com_');
+    return parts.join('\n');
   }
-});
+
+  let bookingRef = 'BT' + Date.now().toString().slice(-8);
+  try {
+    const response = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Booking could not be saved');
+    bookingRef = result.bookingId || result.booking?.booking_ref || bookingRef;
+  } catch (error) {
+    // DB save failed — still open WhatsApp so lead is not lost
+    console.warn('Booking DB save failed (will still open WhatsApp):', error.message);
+  }
+
+  form.reset();
+  closeModal(bookingModal);
+  if (submit) { submit.disabled = false; submit.innerHTML = originalHTML; }
+  // Always open WhatsApp with full structured details
+  window.open('https://wa.me/919187440916?text=' + encodeURIComponent(buildWAMessage(bookingRef)), '_blank');
+});;
 
 $('#review-form')?.addEventListener('submit', (event) => {
   event.preventDefault();

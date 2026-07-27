@@ -108,12 +108,56 @@ function addChatMessage(role, content) {
   chat.scrollTop = chat.scrollHeight;
 }
 function localTravelReply(message) {
-  const text = message.toLowerCase();
-  if (text.includes('scuba')) return 'For scuba, allow 3–4 nights so weather does not rush the dive. Share your dates, group size and whether everyone is a beginner.';
-  if (text.includes('family') || text.includes('child')) return 'For a family trip, I recommend shorter transfers, a relaxed island day and age-appropriate activities. What are the children’s ages and your travel dates?';
-  if (text.includes('urbania') || text.includes('car')) return 'The Force Urbania works well for group transfers and longer journeys. Share pickup city, date and passenger count.';
-  if (/book|reserve|confirm/.test(text)) return 'I’ve opened the secure booking form. Submit it and the team will automatically receive email and WhatsApp notifications.';
-  return 'Share your destination, dates, departure city, guest count and approximate budget. I’ll suggest a practical starting itinerary.';
+  const t = message.toLowerCase();
+  if (t.includes('lakshadweep') || t.includes('agatti') || t.includes('bangaram') || t.includes('kadmat')) {
+    return 'Lakshadweep is our speciality! 🏝 We offer Standard (3N/4D - Agatti island, snorkeling, glass-bottom boat) and Premium (4N/5D - Bangaram/Kadmat, scuba diving, beach bonfire). Permit is required — we handle it. Flights only from Kochi (Oct–May best season). How many guests and which month?';
+  }
+  if (t.includes('umrah') || t.includes('makkah') || t.includes('madinah') || t.includes('mecca') || t.includes('saudi')) {
+    return 'We offer 3 Umrah packages 🕌\n• Economy (10-12 days) – shared transport, 500m hotel\n• Standard (12-14 days) – closer hotel, ziyarat guide\n• Premium (14-15 days) – 5-star, private transport, from ₹1.2L\nAll include visa + flights + accommodation. Need valid passport (6+ months). How many persons travelling?';
+  }
+  if (t.includes('kashmir') || t.includes('gulmarg') || t.includes('dal lake') || t.includes('pahalgam')) {
+    return 'Kashmir is magical! 🏔 Two options:\n• Summer (Apr–Oct): Dal Lake houseboat, Gulmarg, Pahalgam, Srinagar sightseeing — 5 days from ₹28,000/person\n• Snow (Dec–Mar): Gulmarg skiing, Sonamarg, snowmobile rides\nShare travel month and group size for a precise quote!';
+  }
+  if (t.includes('maldives') || t.includes('honeymoon') || t.includes('couple')) {
+    return 'Maldives Honeymoon 💑 — 4 days from ₹80,000/couple. Overwater villa, couples spa, snorkeling, sunset cruise. Best months: Nov–April. Want to add any special arrangements like cake or flowers? Share your travel date!';
+  }
+  if (t.includes('dubai')) {
+    return 'Dubai 5 days from ₹55,000/person 🌆 — Burj Khalifa, desert safari, Dubai Mall, Gold Souk, Dhow cruise. Visa arranged by us. Best months: Nov–March. How many guests and preferred month?';
+  }
+  if (t.includes('thailand')) {
+    return 'Thailand 6 days from ₹65,000/person 🌴 — Phuket beaches, Phi Phi Islands, night markets, Thai massage. Visa-on-arrival for Indians. Best: Nov–April. Share guest count and month!';
+  }
+  if (t.includes('goa')) {
+    return 'Goa Beach 4 days 🌊 — North+South Goa, water sports (parasailing, jet ski), Fort Aguada, spice plantation. Flights from all major cities. When are you planning to visit and how many guests?';
+  }
+  if (t.includes('kerala') || t.includes('backwater') || t.includes('allepey') || t.includes('alleppey')) {
+    return 'Kerala Backwaters 4 days 🌿 — overnight houseboat on Alleppey/Kumarakom backwaters, Kathakali show, Periyar wildlife. Perfect for families and couples. Which month and how many guests?';
+  }
+  if (t.includes('andaman')) {
+    return 'Andaman 5 days 🐠 — Havelock Island (Radhanagar beach), Neil Island, scuba diving, glass-bottom boat, cellular jail. Best: Nov–May. Share travel dates and group size!';
+  }
+  if (t.includes('ajmer') || t.includes('dargah')) {
+    return 'Ajmer Sharif Dargah 3 days 🌹 — Direct package from Kerala including train/flight, hotel, ziyarat, Pushkar visit. We arrange everything. What month and how many pilgrims?';
+  }
+  if (t.includes('tirupati') || t.includes('balaji')) {
+    return 'Tirupati Balaji 3 days 🙏 — VIP darshan (skip the queue), accommodation near temple, prasadam. We handle all bookings. Share travel date and guest count!';
+  }
+  if (t.includes('urbania') || t.includes('van') || t.includes('vehicle') || t.includes('car hire') || t.includes('transfer')) {
+    return 'Force Urbania 12-seater van 🚌 — Premium van with experienced driver. Airport transfers, pilgrimages, family trips, corporate travel across Kerala, Tamil Nadu, Karnataka. Share pickup city, destination, date and number of passengers for a quote!';
+  }
+  if (t.includes('scuba') || t.includes('dive') || t.includes('diving')) {
+    return 'Scuba diving 🤿 — available in Lakshadweep (Bangaram/Kadmat) with PADI certified instructors. Beginner-friendly! Also available in Andaman. 3–4 nights minimum recommended. What\'s your diving experience level?';
+  }
+  if (t.includes('budget') || t.includes('cheap') || t.includes('affordable')) {
+    return 'Great budget options from Bahadur Tours:\n• Kashmir: from ₹28,000/person\n• Goa: from ₹18,000/person\n• Kerala: from ₹20,000/person\n• Umrah Economy: contact for current rates\nShare your max budget, travel month and number of guests — I\'ll find the best fit!';
+  }
+  if (/book|reserve|confirm|how to book/.test(t)) {
+    return 'Ready to book? 🎉 Click the "Plan my trip" button at the top, fill in your details, and our team will contact you within 2 hours via WhatsApp (+91 91874 40916) and email. You can also WhatsApp us directly!';
+  }
+  if (t.includes('price') || t.includes('cost') || t.includes('rate') || t.includes('how much')) {
+    return 'Here are our starting prices:\n• Lakshadweep: custom quote (permit + flights)\n• Umrah Premium: from ₹1.2L/person\n• Kashmir: from ₹28,000/person\n• Dubai: from ₹55,000/person\n• Maldives: from ₹80,000/couple\n• Thailand: from ₹65,000/person\nPrices vary by season and group size. Which destination interests you?';
+  }
+  return 'Welcome to Bahadur Tours! 🌍 We specialise in Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives, Thailand, and more. Share your destination, travel month, number of guests and approximate budget — I\'ll suggest the perfect package!';
 }
 $('#chat-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();

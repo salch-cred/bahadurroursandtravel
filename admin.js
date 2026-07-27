@@ -31,7 +31,7 @@ function renderBookings(rows){
         <a href="billing.html?booking_ref=${x.booking_ref||x.booking_id||''}" class="mini-action-btn" title="Create/view invoice"><i class="hgi-stroke hgi-receipt-02"></i></a>
       </td>
     </tr>
-    ${x.note?`<tr class="booking-note-row"><td colspan="8"><small>📝 Note: ${x.note}</small></td></tr>`:''}`).join('')
+    ${x.note?`<tr class="booking-note-row"><td colspan="8"><small><i class="hgi-stroke hgi-note-01"></i> ${x.note}</small></td></tr>`:''}`).join('')
     :'<tr><td colspan="8" class="empty-cell">No bookings recorded yet.</td></tr>';
 
   // Bind status selects

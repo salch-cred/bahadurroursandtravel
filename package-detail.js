@@ -22,7 +22,103 @@ ${p.terms?`<section class="section package-terms"><span class="kicker">Package t
   <span style="position:absolute; top:20px; right:30px; color:#fff; font-size:40px; cursor:pointer; font-weight:bold;">&times;</span>
   <img id="lightbox-img" style="max-width:90%; max-height:80vh; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5);" src="">
 </div>
-`;window.currentPackage=p;document.querySelectorAll('[data-detail-book]').forEach(b=>b.onclick=()=>location.href='booking.html?trip='+encodeURIComponent(p.name))}
+`;window.currentPackage=p;
+
+// --- Inject booking request modal ---
+if(!document.getElementById('trip-request-modal')){
+  const dlg=document.createElement('div');
+  dlg.id='trip-request-modal';
+  dlg.style.cssText='position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(4,20,16,.72);backdrop-filter:blur(6px);padding:16px;overflow-y:auto';
+  dlg.innerHTML=`
+<div style="background:#fff;border-radius:22px;padding:28px 24px 32px;width:min(500px,100%);position:relative;max-height:90vh;overflow-y:auto">
+  <button onclick="document.getElementById('trip-request-modal').style.display='none';document.body.style.overflow=''" style="position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:#6e7b76;line-height:1">×</button>
+  <span style="font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--green,#0b6655);text-transform:uppercase">Your trip, your way</span>
+  <h2 id="trip-modal-title" style="margin:4px 0 20px;font-size:22px;font-family:Manrope,sans-serif;font-weight:800;color:#10231f"></h2>
+  <form id="trip-request-form" autocomplete="on">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Full name<input name="name" placeholder="Your name" required style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none"></label>
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">WhatsApp number<input name="phone" placeholder="+91" required style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none"></label>
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Email<input name="email" type="email" placeholder="you@example.com" style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none"></label>
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Travel date<input name="date" type="date" style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none"></label>
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Guests<select name="guests" style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none;background:#fff"><option>1 guest</option><option selected>2 guests</option><option>3 guests</option><option>4 guests</option><option>5+ guests</option></select></label>
+      <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Starting city<input name="city" placeholder="Kochi" style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none"></label>
+    </div>
+    <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;margin-top:12px">Anything we should know?<textarea name="note" rows="3" placeholder="Special requests, dietary needs, budget range…" style="border:1px solid #cfdad6;border-radius:9px;padding:11px 12px;font-size:14px;outline:none;resize:vertical"></textarea></label>
+    <button type="submit" id="trip-submit-btn" style="margin-top:16px;width:100%;background:#10231f;color:#fff;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:8px">
+      Send on WhatsApp <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.77.46 3.43 1.27 4.87L2 22l5.3-1.25A9.95 9.95 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.93 14.01c-.2.57-1.18 1.1-1.63 1.17-.41.06-.93.08-1.5-.09-.35-.11-.79-.25-1.36-.5-2.38-1.03-3.94-3.44-4.06-3.6-.12-.16-.98-1.3-.98-2.48 0-1.18.62-1.76.84-2 .22-.24.48-.3.64-.3h.46c.15 0 .35-.01.54.41.2.44.68 1.66.74 1.78.06.12.1.26.02.42l-.27.5-.13.15c.12.2.63.98 1.35 1.58.92.78 1.7 1.02 1.94 1.14.24.12.38.1.52-.06.14-.16.6-.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.57-.14 1.14z"/></svg>
+    </button>
+    <p id="trip-submit-note" style="margin:8px 0 0;font-size:12px;color:#8a9a94;text-align:center">Your details are saved securely. We'll confirm via WhatsApp within 2 hours.</p>
+  </form>
+</div>`;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click',e=>{ if(e.target===dlg){dlg.style.display='none';document.body.style.overflow='';}});
+}
+
+function openTripModal(name,dur,region){
+  const dlg=document.getElementById('trip-request-modal');
+  const title=document.getElementById('trip-modal-title');
+  if(title) title.textContent='Request: '+name;
+  const form=document.getElementById('trip-request-form');
+  if(form){
+    form.dataset.tripName=name;
+    form.dataset.tripDur=dur||'';
+    form.dataset.tripRegion=region||'';
+  }
+  dlg.style.display='flex';
+  document.body.style.overflow='hidden';
+  setTimeout(()=>form?.querySelector('input[name="name"]')?.focus(),120);
+}
+
+const tripForm=document.getElementById('trip-request-form');
+if(tripForm&&!tripForm.dataset.bound){
+  tripForm.dataset.bound='1';
+  tripForm.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    const btn=document.getElementById('trip-submit-btn');
+    const note=document.getElementById('trip-submit-note');
+    const fd=new FormData(tripForm);
+    const d=Object.fromEntries(fd);
+    const trip=tripForm.dataset.tripName||d.trip||'';
+    const dur=tripForm.dataset.tripDur||'';
+    const region=tripForm.dataset.tripRegion||'';
+    const ref='BT'+Date.now().toString().slice(-8);
+    const waMsg=`Hello Bahadur Tours! 🙏
+
+I'd like to request a trip.
+
+📦 Package: ${trip}${dur?'\n⏱ Duration: '+dur:''}${region?'\n📍 Region: '+region:''}
+👤 Name: ${d.name||''}
+📱 WhatsApp: ${d.phone||''}${d.email?'\n📧 Email: '+d.email:''}
+📅 Travel date: ${d.date||'Flexible'}
+👥 Guests: ${d.guests||'2 guests'}${d.city?'\n🏙 From: '+d.city:''}${d.note?'\n📝 Notes: '+d.note:''}
+
+🔖 Ref: ${ref}
+— Request via bahadurtours.com`;
+
+    if(btn){btn.disabled=true;btn.style.opacity='.6';btn.textContent='Saving request…';}
+    // Save to DB (admin panel)
+    try{
+      const res=await fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:d.name,phone:d.phone,email:d.email||'',trip,date:d.date||'',guests:d.guests||'2 guests',city:d.city||'',note:d.note||''})});
+      const j=await res.json();
+      if(j.bookingId) note&&(note.textContent='Saved! Ref: '+j.bookingId+'. Opening WhatsApp…');
+    }catch(err){ /* non-blocking — still open WhatsApp */ }
+    // Open WhatsApp immediately
+    const waUrl='https://wa.me/919187440916?text='+encodeURIComponent(waMsg);
+    setTimeout(()=>{ window.open(waUrl,'_blank'); },300);
+    // Reset and close after brief delay
+    setTimeout(()=>{
+      tripForm.reset();
+      const dlg=document.getElementById('trip-request-modal');
+      if(dlg){dlg.style.display='none';document.body.style.overflow='';}
+      if(btn){btn.disabled=false;btn.style.opacity='1';btn.textContent='Send on WhatsApp';}
+    },800);
+  });
+}
+
+document.querySelectorAll('[data-detail-book]').forEach(b=>{
+  b.onclick=()=>openTripModal(p.name,p.duration,p.region);
+});
+}
 window.openLightbox = function(src) {
   document.getElementById('lightbox-img').src = src;
   document.getElementById('lightbox').style.display = 'flex';

@@ -3,8 +3,16 @@ import {db,clean,requireAdmin} from './_db.js';
 
 export const config={api:{bodyParser:{sizeLimit:'50mb'}}};
 
+function safeFileName(raw: string): string {
+  // Keep only safe characters for Vercel Blob path
+  return String(raw||'upload')
+    .replace(/[^a-zA-Z0-9._\-]/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 80) || 'upload';
+}
+
 async function uploadFile(data:string,mimeType:string,fileName:string){
-  if(!process.env.BLOB_READ_WRITE_TOKEN)throw new Error('Visitor media storage is not configured');
+  if(!process.env.BLOB_READ_WRITE_TOKEN)throw new Error('Media storage is not configured. Please contact us on WhatsApp.');
   const buffer=Buffer.from(String(data),'base64');
   const MAX=50*1024*1024; // 50 MB
   if(buffer.length>MAX)throw new Error('File too large. Maximum size is 50 MB per file.');
@@ -12,14 +20,15 @@ async function uploadFile(data:string,mimeType:string,fileName:string){
   const mime=String(mimeType).toLowerCase();
   if(!allowed.includes(mime))throw new Error('Unsupported file type. Upload images (JPEG, PNG, WebP) or videos (MP4, WebM, MOV).');
   const ext=mime.includes('video/')?'video':'image';
-  const blob=await put(`reviews/${ext}/${Date.now()}-${clean(fileName,120)}`,buffer,{access:'public',contentType:mime});
+  const safe=safeFileName(fileName);
+  const blob=await put(`reviews/${ext}/${Date.now()}-${safe}`,buffer,{access:'public',contentType:mime});
   return {url:blob.url,type:ext};
 }
 
 export default async function handler(req:any,res:any){
   const sql=db();
   try{
-    // ── GET ─────────────────────────────────────────────────────────
+    // ── GET ──────────────────────────────────────────────────────────
     if(req.method==='GET'){
       const slug=clean(req.query?.package,160);
       const limit=Math.min(200,Math.max(1,Number(req.query?.limit)||8));
@@ -35,18 +44,22 @@ export default async function handler(req:any,res:any){
       return res.status(200).json({reviews:rows});
     }
 
-    // ── POST (submit new review) ────────────────────────────────────
+    // ── POST (submit new review) ──────────────────────────────────────
     if(req.method==='POST'){
       const b=req.body||{};
-      if(!b.consent)return res.status(400).json({error:'Publication consent is required'});
+      if(!b.consent)return res.status(400).json({error:'Please agree to the content permission before submitting.'});
 
       const text=clean(b.text||b.review||b.comment||'',5000);
-      if(text.length<10)return res.status(400).json({error:'Review must be at least 10 characters'});
+      if(text.length<10)return res.status(400).json({error:'Review must be at least 10 characters.'});
 
-      // Handle media uploads — supports both single file (b.data) and multi-file array (b.files)
+      const name=clean(b.name,120);
+      const trip=clean(b.trip,160);
+      if(!name)return res.status(400).json({error:'Please enter your name.'});
+      if(!trip)return res.status(400).json({error:'Please enter your trip name.'});
+
+      // Handle media uploads — supports single file (b.data) and array (b.files)
       let media_url:string|null=null;
       let media_type:string|null=null;
-
       const filesToUpload:Array<{data:string,mimeType:string,fileName:string}>=[];
       if(b.files&&Array.isArray(b.files)&&b.files.length){
         filesToUpload.push(...b.files);
@@ -56,36 +69,32 @@ export default async function handler(req:any,res:any){
 
       if(filesToUpload.length){
         try{
-          // Upload first file (primary media)
           const result=await uploadFile(filesToUpload[0].data,filesToUpload[0].mimeType,filesToUpload[0].fileName||'upload');
           media_url=result.url;
           media_type=result.type;
         }catch(err:any){
-          return res.status(400).json({error:err.message||'File upload failed'});
+          return res.status(400).json({error:err.message||'File upload failed. Please try a smaller file.'});
         }
       }
 
-      const bookingRef=clean(b.bookingRef||b.booking_ref||'',80).replace(/^#/,'').toUpperCase();
-      const row={
-        name:clean(b.name,120),
-        trip:clean(b.trip,160),
-        rating:Math.max(1,Math.min(5,Number(b.rating)||5)),
-        booking_ref:bookingRef,
-        package_slug:clean(b.packageSlug||b.package_slug,160)||null,
-        text,media_url,media_type,consent:true
-      };
-      if(!row.name||!row.trip||!row.booking_ref||!row.text)
-        return res.status(400).json({error:'Name, trip, booking reference and review text are all required'});
+      // bookingRef is OPTIONAL — if provided, check against DB for auto-approval
+      const bookingRef=clean(b.bookingRef||b.booking_ref||'',80).replace(/^#/,'').toUpperCase().trim();
+      let status='pending';
+      if(bookingRef){
+        const booking=await sql`select id from bookings where upper(booking_ref)=${bookingRef} limit 1`;
+        if(booking.length) status='approved';
+      }
 
-      // Check if booking exists (match booking_ref column)
-      const booking=await sql`select id from bookings where upper(booking_ref)=${row.booking_ref} limit 1`;
-      const status=booking.length?'approved':'pending';
+      await sql`insert into reviews(name,trip,rating,booking_ref,package_slug,text,media_url,media_type,consent,status)
+        values(${name},${trip},${Math.max(1,Math.min(5,Number(b.rating)||5))},${bookingRef||null},${clean(b.packageSlug||b.package_slug,160)||null},${text},${media_url},${media_type},true,${status})`;
 
-      await sql`insert into reviews(name,trip,rating,booking_ref,package_slug,text,media_url,media_type,consent,status) values(${row.name},${row.trip},${row.rating},${row.booking_ref},${row.package_slug},${row.text},${row.media_url},${row.media_type},true,${status})`;
-      return res.status(201).json({ok:true,status,message:status==='approved'?'Review published!':'Submitted for approval.'});
+      return res.status(201).json({
+        ok:true,status,
+        message:status==='approved'?'Review published! Thank you.':'Review submitted for approval. We will review it shortly.'
+      });
     }
 
-    // ── PATCH (update status) ───────────────────────────────────────
+    // ── PATCH (update status) ─────────────────────────────────────────
     if(req.method==='PATCH'){
       if(!requireAdmin(req,res))return;
       const id=clean(req.query?.id||'',40);
@@ -95,7 +104,7 @@ export default async function handler(req:any,res:any){
       return res.status(200).json({ok:true});
     }
 
-    // ── DELETE ──────────────────────────────────────────────────────
+    // ── DELETE ────────────────────────────────────────────────────────
     if(req.method==='DELETE'){
       if(!requireAdmin(req,res))return;
       const id=clean(req.query?.id||'',40);
@@ -106,6 +115,7 @@ export default async function handler(req:any,res:any){
 
     return res.status(405).json({error:'Method not allowed'});
   }catch(error){
+    console.error('Review error:',error);
     return res.status(500).json({error:error instanceof Error?error.message:'Review request failed'});
   }
 }

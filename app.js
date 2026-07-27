@@ -89,6 +89,16 @@ const chat = $('#chat');
 const chatHistory = [];
 $('#ai-open')?.addEventListener('click', () => aiPanel?.classList.toggle('show'));
 $('#ai-close')?.addEventListener('click', () => aiPanel?.classList.remove('show'));
+document.querySelectorAll('.ai-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const input = $('#chat-input');
+    if (input) {
+      input.value = chip.dataset.q || chip.textContent.replace(/^[^\w]+/, '').trim();
+      aiPanel?.classList.add('show');
+      document.getElementById('chat-form')?.dispatchEvent(new Event('submit', { bubbles: true }));
+    }
+  });
+});
 function addChatMessage(role, content) {
   if (!chat) return;
   const paragraph = document.createElement('p');

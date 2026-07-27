@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Reviews Manager — Bahadur Tours</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<style>
+.reviews-admin-grid{display:grid;gap:16px}
+.review-admin-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;transition:.2s}
+.review-admin-card:hover{box-shadow:0 8px 24px #062f2a12}
+.review-admin-card .rac-meta{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.review-admin-card blockquote{font:16px/1.5 Georgia;margin:8px 0 12px;color:#3d4f4a}
+.review-admin-card .rac-footer{font-size:12px;color:#74807c}
+.rac-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.badge-pending{background:#fff3d9;color:#8b6214;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700}
+.badge-approved{background:#e4f5ed;color:#167050;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700}
+.badge-rejected{background:#fde8e8;color:#c0392b;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700}
+.filter-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.filter-bar button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:.18s}
+.filter-bar button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.filter-bar button:hover:not(.active){background:#f0f7f5}
+.review-media-thumb{width:80px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.empty-reviews{text-align:center;padding:60px 20px;color:#8a9490}
+.empty-reviews i{font-size:48px;display:block;margin-bottom:16px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.stat-chip{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+.stat-chip strong{display:block;font:800 24px Manrope;color:var(--ink)}
+.stat-chip small{color:#74807c;font-size:12px}
+.approve-btn{background:#e4f5ed;color:#167050;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
+.approve-btn:hover{background:#c5ecda}
+.danger-button{background:#fde8e8;color:#c0392b;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
+.danger-button:hover{background:#f5c6c6}
+</style>
+</head>
+<body class="admin-page">
+<main class="admin-shell">
+<div class="admin-grid">
+
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Package manager</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html" class="active"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
+    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
+  </nav>
+</aside>
+
+<div class="admin-main glass">
+  <div class="admin-top">
+    <div>
+      <span class="kicker">Guest feedback</span>
+      <h1>Reviews manager</h1>
+      <p id="reviews-state" style="color:#74807c;margin-top:6px">Loading reviews…</p>
+    </div>
+    <div class="admin-actions">
+      <button class="btn btn-outline btn-small" id="reviews-refresh"><i class="hgi-stroke hgi-refresh"></i> Refresh</button>
+      <a class="btn btn-small" href="community.html" target="_blank"><i class="hgi-stroke hgi-eye"></i> Public page</a>
+    </div>
+  </div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-chip"><strong id="s-total">—</strong><small>Total reviews</small></div>
+    <div class="stat-chip"><strong id="s-approved">—</strong><small>Approved</small></div>
+    <div class="stat-chip"><strong id="s-pending">—</strong><small>Pending</small></div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="active" data-filter="all">All</button>
+    <button data-filter="pending">Pending</button>
+    <button data-filter="approved">Approved</button>
+    <button data-filter="rejected">Rejected</button>
+  </div>
+
+  <div class="reviews-admin-grid" id="reviews-list">
+    <div class="empty-reviews"><i class="hgi-stroke hgi-star-01"></i>Loading…</div>
+  </div>
+</div>
+</div>
+</main>
+
+<dialog class="admin-login" id="reviews-login">
+  <form method="dialog" id="reviews-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span>
+    <h2>Unlock reviews manager</h2>
+    <label>Admin token<input type="password" id="reviews-token" required></label>
+    <button class="btn btn-dark full">Continue</button>
+  </form>
+</dialog>
+
+<script type="module" src="reviews-admin.js"></script>
+</body>
+</html>

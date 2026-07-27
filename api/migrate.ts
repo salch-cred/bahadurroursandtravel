@@ -1,7 +1,8 @@
-import { db } from './_db.js';
+import { db, requireAdmin } from './_db.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: 'Use GET or POST to run migrations' });
+  if (!requireAdmin(req, res)) return;
   try {
     const sql = db();
 

@@ -1,10 +1,10 @@
 import { put } from '@vercel/blob';
-import {db,clean} from './_db.js';
+import {db,clean,requireAdmin} from './_db.js';
 
 export default async function handler(req:any,res:any){
   const sql=db();
   try{
-    // ─── GET ───────────────────────────────────────────────────────
+    // ── GET ─────────────────────────────────────────────────
     if(req.method==='GET'){
       const slug=clean(req.query?.package,160);
       const limit=Math.min(200,Math.max(1,Number(req.query?.limit)||8));
@@ -12,8 +12,7 @@ export default async function handler(req:any,res:any){
 
       // Admin: return all reviews with full details including id and status
       if(isAdmin){
-        const tok=String(req.headers?.authorization||'').replace('Bearer ','').trim();
-        if(!tok||tok!==process.env.ADMIN_TOKEN)return res.status(401).json({error:'Unauthorised'});
+        if(!requireAdmin(req,res))return;
         const rows=await sql`select id,name,trip,rating,text,booking_ref,package_slug,media_url,media_type,status,created_at from reviews order by created_at desc limit ${limit}`;
         return res.status(200).json({reviews:rows});
       }
@@ -25,7 +24,7 @@ export default async function handler(req:any,res:any){
       return res.status(200).json({reviews:rows});
     }
 
-    // ─── POST (submit new review) ──────────────────────────────────
+    // ── POST (submit new review) ─────────────────────────────
     if(req.method==='POST'){
       const b=req.body||{};
       if(!b.consent)return res.status(400).json({error:'Publication consent is required'});
@@ -54,10 +53,9 @@ export default async function handler(req:any,res:any){
       return res.status(201).json({ok:true,status});
     }
 
-    // ─── PATCH (update status) ─────────────────────────────────────
+    // ── PATCH (update status) ─────────────────────────────────
     if(req.method==='PATCH'){
-      const tok=String(req.headers?.authorization||'').replace('Bearer ','').trim();
-      if(!tok||tok!==process.env.ADMIN_TOKEN)return res.status(401).json({error:'Unauthorised'});
+      if(!requireAdmin(req,res))return;
       const id=Number(req.query?.id);
       const {status}=req.body||{};
       if(!id||!['approved','pending','rejected'].includes(status))return res.status(400).json({error:'Invalid request'});
@@ -65,10 +63,9 @@ export default async function handler(req:any,res:any){
       return res.status(200).json({ok:true});
     }
 
-    // ─── DELETE ────────────────────────────────────────────────────
+    // ── DELETE ───────────────────────────────────────────────
     if(req.method==='DELETE'){
-      const tok=String(req.headers?.authorization||'').replace('Bearer ','').trim();
-      if(!tok||tok!==process.env.ADMIN_TOKEN)return res.status(401).json({error:'Unauthorised'});
+      if(!requireAdmin(req,res))return;
       const id=Number(req.query?.id);
       if(!id)return res.status(400).json({error:'Review ID required'});
       await sql`delete from reviews where id=${id}`;

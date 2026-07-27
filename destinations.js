@@ -2,9 +2,8 @@ export const destinations = [{"name":"Wayanad","region":"Kerala, India","categor
 
 
 function card(d,index){
- const mapUrl='https:'+'//www.openstreetmap.org/?mlat='+d.lat+'&mlon='+d.lng+'#map=13/'+d.lat+'/'+d.lng;
  const label=d.category==='pilgrimage'?'Pilgrimage':d.category==='international'?'International':d.category==='family'?'Family':'Explore';
- return `<article class="package-card place-card" data-category="${d.category}" data-tags="${d.tags}" data-name="${d.name.toLowerCase()} ${d.region.toLowerCase()}"><div class="package-image"><img src="${d.fallback}" alt="${d.name}" data-commons-query="${d.photoQuery}" data-index="${index}"><span>${label}</span><a class="photo-credit" data-photo-credit="${index}" target="_blank" rel="noreferrer">Wikimedia Commons</a></div><div class="package-body"><small>${d.region.toUpperCase()} · ${d.days.toUpperCase()}</small><h3>${d.name}</h3><p>${d.blurb}</p><div class="place-coordinates">⌖ ${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</div><div class="package-footer"><a class="map-link" href="${mapUrl}" target="_blank" rel="noreferrer">View exact map <i class="hgi-stroke hgi-arrow-up-right-01"></i></a><button data-book data-trip="${d.name}">Plan trip <i class="hgi-stroke hgi-arrow-right-01"></i></button></div></div></article>`;
+ return `<article class="package-card place-card" data-category="${d.category}" data-tags="${d.tags}" data-name="${d.name.toLowerCase()} ${d.region.toLowerCase()}"><div class="package-image"><img src="${d.fallback}" alt="${d.name}" data-commons-query="${d.photoQuery}" data-index="${index}"><span>${label}</span></div><div class="package-body"><small>${d.region.toUpperCase()} · ${d.days.toUpperCase()}</small><h3>${d.name}</h3><p>${d.blurb}</p><div class="package-footer"><button class="pkg-book-btn" data-book data-trip="${d.name}">Plan trip <i class="hgi-stroke hgi-arrow-right-01"></i></button></div></div></article>`;
 }
 async function loadCommonsPhoto(image){
  const query=image.dataset.commonsQuery,index=image.dataset.index;

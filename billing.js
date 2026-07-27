@@ -218,9 +218,16 @@ $('#load-invoice-btn').onclick=async()=>{
   }catch(e){$('#invoice-state').textContent=`Load failed: ${e.message}`}
 };
 
-// Auto-load invoice from URL ?id=
+// Auto-load invoice from URL ?id= or pre-fill from ?booking_ref=
 async function autoLoadFromUrl(){
   const params=new URLSearchParams(location.search);
+  // Pre-fill booking_ref from URL (coming from admin booking table)
+  const bref=params.get('booking_ref');
+  if(bref){
+    const el=$('#invoice-booking');
+    if(el)el.value=bref;
+    update();
+  }
   const id=params.get('id');
   if(!id)return;
   const t=await getToken();if(!t)return;

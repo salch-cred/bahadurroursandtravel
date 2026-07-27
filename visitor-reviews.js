@@ -133,6 +133,11 @@ async function load() {
 host.querySelector('form').onsubmit = async e => {
   e.preventDefault();
   const form  = e.target;
+  const reviewText = (form.querySelector('textarea[name="text"]') || form.querySelector('#review-text'))?.value?.trim() || '';
+  if(reviewText.length < 30){
+    alert('Please write at least 30 characters in your review.');
+    return;
+  }
   const state = form.querySelector('[data-review-state]');
   const fd    = new FormData(form);
   state.textContent = userFiles.length ? `Uploading ${userFiles.length} file(s)…` : 'Sending securely…';

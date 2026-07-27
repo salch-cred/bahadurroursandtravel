@@ -1,4 +1,4 @@
-import { db } from './_db';
+import { db } from './_db.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST to run migrations' });

@@ -1,4 +1,4 @@
-import { db, requireAdmin, clean } from './_db';
+import { db, requireAdmin, clean } from './_db.js';
 
 async function ensureTable(sql: any) {
   await sql`

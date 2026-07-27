@@ -15,7 +15,7 @@ host.innerHTML = `
 
 <dialog class="visitor-review-dialog">
   <form>
-    <button type="button" class="modal-close" data-close-review>×</button>
+    <button type="button" class="modal-close" data-close-review><i class="hgi-stroke hgi-cancel-01"></i></button>
     <span class="kicker">Submit for verification</span>
     <h2>Share your journey.</h2>
     <div class="review-upload-grid">
@@ -86,7 +86,7 @@ function renderUserQueue() {
       <span class="uq-icon">${isVid?'🎬':'📸'}</span>
       <span class="uq-name" title="${esc(f.name)}">${esc(f.name.length>22?f.name.slice(0,19)+'…':f.name)}</span>
       <span class="uq-sz">${sz}</span>
-      <button type="button" class="uq-rm" onclick="window.__rmUserFile(${i})">×</button>
+      <button type="button" class="uq-rm" onclick="window.__rmUserFile(${i})"><i class="hgi-stroke hgi-cancel-01"></i></button>
     </div>`;
   }).join('');
 }

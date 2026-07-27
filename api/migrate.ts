@@ -1,7 +1,7 @@
 import { db } from './_db.js';
 
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST to run migrations' });
+  if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: 'Use GET or POST to run migrations' });
   try {
     const sql = db();
 
@@ -114,6 +114,34 @@ export default async function handler(req: any, res: any) {
         seo_desc TEXT DEFAULT '',
         created_at TIMESTAMPTZ DEFAULT now(),
         updated_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
+    // Create page_views table
+    await sql`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        visitor_hash TEXT NOT NULL,
+        path TEXT DEFAULT '/',
+        referrer TEXT,
+        user_agent TEXT,
+        created_at TIMESTAMPTZ DEFAULT now()
+      )
+    `;
+
+    // Create media table
+    await sql`
+      CREATE TABLE IF NOT EXISTS media (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        type TEXT DEFAULT 'photo',
+        guest_name TEXT DEFAULT '',
+        trip TEXT DEFAULT '',
+        caption TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending',
+        consent BOOLEAN DEFAULT false,
+        url TEXT NOT NULL,
+        mime_type TEXT DEFAULT 'image/jpeg',
+        created_at TIMESTAMPTZ DEFAULT now()
       )
     `;
 

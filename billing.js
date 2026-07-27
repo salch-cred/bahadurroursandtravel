@@ -14,7 +14,7 @@ function readLines(){lines=[...document.querySelectorAll('.line-input-row')].map
 
 function renderLineInputs(){
   const h=$('#line-inputs');
-  h.innerHTML=lines.map((x,i)=>`<div class="line-input-row"><input data-description value="${x.description}" placeholder="Package, flight, hotel or service"><input data-qty type="number" min="0" value="${x.qty}"><input data-rate type="number" min="0" step="0.01" value="${x.rate}"><button type="button" data-remove="${i}">×</button></div>`).join('');
+  h.innerHTML=lines.map((x,i)=>`<div class="line-input-row"><input data-description value="${x.description}" placeholder="Package, flight, hotel or service"><input data-qty type="number" min="0" value="${x.qty}"><input data-rate type="number" min="0" step="0.01" value="${x.rate}"><button type="button" data-remove="${i}"><i class="hgi-stroke hgi-cancel-01"></i></button></div>`).join('');
   h.querySelectorAll('input').forEach(x=>x.oninput=()=>{readLines();update()});
   h.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{readLines();lines.splice(Number(b.dataset.remove),1);if(!lines.length)lines=[{description:'Travel service',qty:1,rate:0}];renderLineInputs();update()});
 }

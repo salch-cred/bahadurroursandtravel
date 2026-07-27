@@ -5,6 +5,16 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Book a Journey — Bahadur Tours & Travels</title>
 <meta name="description" content="Book Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives and more with Bahadur Tours & Travels. Instant WhatsApp confirmation."/>
+<link rel="canonical" href="https://bahadurtours.com/booking">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bahadurtours.com/booking">
+<meta property="og:title" content="Book a Journey — Bahadur Tours & Travels">
+<meta property="og:description" content="Browse all packages — Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives and more. Instant WhatsApp confirmation.">
+<meta property="og:image" content="https://bahadurtours.com/assets/bahadur-logo.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Book a Journey — Bahadur Tours">
+<meta name="twitter:description" content="Browse all packages and send a booking request. Instant WhatsApp confirmation.">
+<meta name="twitter:image" content="https://bahadurtours.com/assets/bahadur-logo.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"/>
 <link href="styles.css" rel="stylesheet"/>
 <link href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" rel="stylesheet"/>
@@ -90,7 +100,7 @@
     <form id="booking-form">
       <div class="form-grid">
         <label>Full name<input name="name" placeholder="Your name" required=""/></label>
-        <label>WhatsApp<input name="phone" placeholder="+91" required=""/></label>
+        <label>WhatsApp<input name="phone" placeholder="+91" required="" pattern="[+0-9\s\-]{7,15}" title="Enter a valid phone number"/></label>
         <label>Email<input name="email" placeholder="you@example.com" required="" type="email"/></label>
         <label>Selected journey
           <select id="trip-select" name="trip">

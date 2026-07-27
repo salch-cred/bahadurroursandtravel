@@ -12,20 +12,20 @@ function getTypeLabel(p) {
 
 function getIncChips(p) {
   const isVehicle = p.slug?.startsWith('force-urbania') || String(p.category||'').toLowerCase().includes('vehicle');
-  if(isVehicle) return ['🚐 AC Vehicle','👨‍✈️ Driver','🛣 All routes'];
+  if(isVehicle) return ['<i class="hgi-stroke hgi-car-01"></i> AC Vehicle','👨‍✈️ Driver','🛣 All routes'];
   const isPilgrimage = p.package_type==='pilgrimage';
-  if(isPilgrimage) return ['✈ Flights','🏨 Hotel','🗺 Guided'];
+  if(isPilgrimage) return ['<i class="hgi-stroke hgi-airplane-01"></i> Flights','<i class="hgi-stroke hgi-building-05"></i> Hotel','<i class="hgi-stroke hgi-maps"></i> Guided'];
   const isIsland = String(p.category||'').toLowerCase().includes('lakshadweep') || String(p.category||'').toLowerCase().includes('island');
-  if(isIsland) return ['📋 Permit','🏨 Stay','🍽 Meals'];
+  if(isIsland) return ['<i class="hgi-stroke hgi-document-attachment"></i> Permit','<i class="hgi-stroke hgi-building-05"></i> Stay','<i class="hgi-stroke hgi-restaurant-02"></i> Meals'];
   const inc = Array.isArray(p.included) ? p.included.join(' ').toLowerCase() : (p.summary||'').toLowerCase();
   const chips = [];
-  if(/hotel|resort|stay|houseboat|villa|accommodation/.test(inc)) chips.push('🏨 Hotel');
-  if(/flight|flights/.test(inc)) chips.push('✈ Flights');
-  if(/transfer|airport|pickup|vehicle|transport/.test(inc)) chips.push('🚗 Transfers');
-  if(/meal|breakfast|dinner|lunch|food|board/.test(inc)) chips.push('🍽 Meals');
-  if(/guide|coordinator|mutawwif|support/.test(inc)) chips.push('🗺 Guide');
-  if(/permit/.test(inc)) chips.push('📋 Permit');
-  if(!chips.length) { chips.push('🏨 Hotel'); chips.push('🚗 Transfers'); }
+  if(/hotel|resort|stay|houseboat|villa|accommodation/.test(inc)) chips.push('<i class="hgi-stroke hgi-building-05"></i> Hotel');
+  if(/flight|flights/.test(inc)) chips.push('<i class="hgi-stroke hgi-airplane-01"></i> Flights');
+  if(/transfer|airport|pickup|vehicle|transport/.test(inc)) chips.push('<i class="hgi-stroke hgi-car-01"></i> Transfers');
+  if(/meal|breakfast|dinner|lunch|food|board/.test(inc)) chips.push('<i class="hgi-stroke hgi-restaurant-02"></i> Meals');
+  if(/guide|coordinator|mutawwif|support/.test(inc)) chips.push('<i class="hgi-stroke hgi-maps"></i> Guide');
+  if(/permit/.test(inc)) chips.push('<i class="hgi-stroke hgi-document-attachment"></i> Permit');
+  if(!chips.length) { chips.push('<i class="hgi-stroke hgi-building-05"></i> Hotel'); chips.push('<i class="hgi-stroke hgi-car-01"></i> Transfers'); }
   return chips.slice(0,3);
 }
 
@@ -42,7 +42,7 @@ function cardHTML(p) {
     <div class="package-image">
       <img src="${img}" alt="${p.name}" loading="lazy">
       <span class="pkg-cat-badge">${typeLabel}</span>
-      <span class="pkg-rating-badge">⭐ 4.9</span>
+      <span class="pkg-rating-badge"><i class="hgi-stroke hgi-star-01"></i> 4.9</span>
     </div>
     <div class="package-body">
       <div class="pkg-meta">${meta}</div>

@@ -59,6 +59,13 @@ function showSkeletons(){
   });
 }
 
+function clearSkeletons(){
+  ['#turnover-24h','#turnover-14d','#turnover-30d','#turnover-year','#metric-bookings','#metric-pending','#metric-rating','#visitors-daily','#visitors-monthly'].forEach(sel=>{
+    const el=$(sel);
+    if(el&&!el.dataset.loaded)el.textContent='—';
+  });
+}
+
 function markLoaded(sel,html){
   const el=$(sel);
   if(!el)return;
@@ -100,6 +107,7 @@ async function load(){
     setSyncState('is-live',`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`);
   }catch(e){
     setSyncState('is-error','Error: '+e.message);
+    clearSkeletons();
     $('#booking-rows').innerHTML='<tr><td colspan="7" class="empty-cell">'+e.message+'<br><small>Check that DATABASE_URL is set in Vercel environment variables.</small></td></tr>';
   }finally{
     refreshBtn?.classList.remove('is-loading');

@@ -200,12 +200,12 @@
 <script>
 /* ── Auth ─────────────────────────────────────────────────── */
 const TOKEN_KEY = 'bahadur-admin-token';
-const getToken  = () => sessionStorage.getItem(TOKEN_KEY) || '';
+const getToken  = () => localStorage.getItem(TOKEN_KEY) || '';
 const hdrs      = () => ({ 'Content-Type': 'application/json', 'x-admin-token': getToken() });
 
 document.getElementById('admin-login-form').onsubmit = async () => {
   const tok = document.getElementById('admin-token').value;
-  sessionStorage.setItem(TOKEN_KEY, tok);
+  localStorage.setItem(TOKEN_KEY, tok);
   const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
   if (r.ok) { document.getElementById('admin-login').close(); init(); }
   else { document.getElementById('login-error').textContent = 'Invalid token.'; }

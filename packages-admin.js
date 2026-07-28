@@ -3,7 +3,7 @@ let items=[];
 let galleryImages=[]; // array of base64 data URLs for gallery
 let primaryImageBase64=''; // base64 for primary image
 
-const token=()=>sessionStorage.getItem('bahadur-admin-token')||'';
+const token=()=>localStorage.getItem('bahadur-admin-token')||'';
 const auth=()=>({Authorization:`Bearer ${token()}`});
 const lines=v=>String(v||'').split('\n').map(x=>x.trim()).filter(Boolean);
 
@@ -142,7 +142,7 @@ function login(){if(!token())$('#package-login').showModal();}
 
 $('#package-login-form').onsubmit=e=>{
   e.preventDefault();
-  sessionStorage.setItem('bahadur-admin-token',$('#package-token').value.trim());
+  localStorage.setItem('bahadur-admin-token',$('#package-token').value.trim());
   $('#package-login').close();
   load();
 };
@@ -232,7 +232,7 @@ async function load(){
   try{
     const r=await fetch('/api/packages?admin=1',{headers:auth()});
     const d=await safeJson(r);
-    if(r.status===401){sessionStorage.removeItem('bahadur-admin-token');login('Token expired.');return;}
+    if(r.status===401){localStorage.removeItem('bahadur-admin-token');login('Token expired.');return;}
     if(!r.ok)throw new Error(d.error);
     items=d.packages||[];
     render();

@@ -1,6 +1,6 @@
 const $=s=>document.querySelector(s);let bookings=[];
 const money=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(v||0));
-const token=()=>sessionStorage.getItem('bahadur-admin-token')||'';
+const token=()=>localStorage.getItem('bahadur-admin-token')||'';
 const auth=()=>({Authorization:`Bearer ${token()}`});
 const statusClass=v=>String(v||'').toLowerCase().includes('confirm')||v==='paid'?'status':String(v||'').toLowerCase().includes('cancel')?'status danger':'status pending';
 
@@ -48,7 +48,7 @@ async function load(){
   try{
     const res=await fetch('/api/admin',{headers:auth()});
     const d=await safeJson(res);
-    if(res.status===401){sessionStorage.removeItem('bahadur-admin-token');login('Incorrect or expired token.');return;}
+    if(res.status===401){localStorage.removeItem('bahadur-admin-token');login('Incorrect or expired token.');return;}
     if(!res.ok)throw new Error(d.error||'Unknown error');
     bookings=d.bookings||[];
     const m=d.metrics;
@@ -78,7 +78,7 @@ async function load(){
 
 $('#admin-login-form').onsubmit=e=>{
   e.preventDefault();
-  sessionStorage.setItem('bahadur-admin-token',$('#admin-token').value.trim());
+  localStorage.setItem('bahadur-admin-token',$('#admin-token').value.trim());
   $('#admin-login').close();
   load();
 };

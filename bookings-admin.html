@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Booking Records — Bahadur Tours</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<style>
+.bk-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.bk-stat{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:18px 20px}
+.bk-stat small{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#64716d}
+.bk-stat strong{display:block;font-size:32px;font-weight:800;color:var(--ink);margin:4px 0 2px;font-family:Manrope,sans-serif}
+.bk-stat span{font-size:12px;color:#8fa099}
+.bk-stat.pending strong{color:#c97c1a}
+.bk-stat.confirmed strong{color:var(--green)}
+.bk-stat.cancelled strong{color:#c0392b}
+
+.filter-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filter-tab{padding:8px 18px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;color:var(--ink)}
+.filter-tab:hover{border-color:var(--green);color:var(--green)}
+.filter-tab.active{background:var(--green);color:#fff;border-color:var(--green)}
+
+.bk-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.bk-head h2{font-size:24px;margin:0}
+.bk-search{position:relative;min-width:220px}
+.bk-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#8fa099;pointer-events:none;font-size:16px}
+.bk-search input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px 10px 36px;font:inherit;font-size:14px;box-sizing:border-box;background:#fff}
+.bk-search input:focus{outline:none;border-color:var(--green)}
+
+.bk-table{width:100%;border-collapse:collapse;font-size:13px}
+.bk-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--line);white-space:nowrap;color:#65736e;font-size:11px;text-transform:uppercase;letter-spacing:.07em;background:#fafcfb}
+.bk-table td{padding:12px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.bk-table tr:last-child td{border-bottom:0}
+.bk-table tr:hover td{background:#f7faf9}
+.bk-ref{font-weight:800;font-size:12px;color:var(--green);letter-spacing:.04em}
+.bk-name{font-weight:700;font-size:14px}
+.bk-name small{display:block;font-weight:400;color:#64716d;font-size:12px;margin-top:1px}
+.bk-date{white-space:nowrap;font-size:13px}
+.bk-note-cell{font-size:12px;color:#64716d;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-status-select{border:1.5px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;background:#fff;transition:.15s}
+.bk-status-select:focus{outline:none;border-color:var(--green)}
+.bk-status-select.pending{background:#fff8ec;color:#c97c1a;border-color:#f5d9a0}
+.bk-status-select.confirmed{background:#edf7f2;color:var(--green);border-color:#a8d9c2}
+.bk-status-select.cancelled{background:#fff0ef;color:#c0392b;border-color:#f5c5c5}
+.bk-status-select.completed{background:#e8f0fe;color:#1a56c4;border-color:#a8c0f5}
+.bk-actions{display:flex;gap:6px;align-items:center}
+.bk-btn{border:0;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:13px;transition:.15s;display:inline-flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
+.bk-btn-wa{background:#e8f8ef;color:#128c7e}
+.bk-btn-wa:hover{background:#25D366;color:#fff}
+.bk-btn-del{background:#fff0ef;color:#c0392b}
+.bk-btn-del:hover{background:#c0392b;color:#fff}
+
+.bk-empty{text-align:center;padding:60px 20px;color:#8fa099}
+.bk-empty i{font-size:48px;display:block;margin-bottom:12px;opacity:.4}
+.bk-state{font-size:13px;color:#64716d;padding:6px 0}
+
+.panel-wrap{background:#fff;border:1.5px solid var(--line);border-radius:18px;padding:24px;overflow:hidden}
+.table-scroll{overflow-x:auto}
+
+@media(max-width:900px){
+  .bk-stats{grid-template-columns:1fr 1fr}
+  .bk-head{flex-direction:column;align-items:flex-start}
+  .bk-search{width:100%}
+}
+@media(max-width:600px){
+  .bk-stats{grid-template-columns:1fr 1fr}
+}
+/* admin shell responsive — same as other admin pages */
+@media(max-width:768px){
+  .admin-grid{grid-template-columns:1fr!important;gap:0}
+  .admin-side{display:flex!important;flex-direction:row;align-items:center;gap:10px;padding:12px 16px;border-radius:0;margin-bottom:0;overflow-x:auto}
+  .admin-side img{width:60px!important;height:36px!important;flex-shrink:0}
+  .admin-side nav{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:4px;scrollbar-width:none}
+  .admin-side nav::-webkit-scrollbar{display:none}
+  .admin-side nav a{padding:7px 12px;font-size:12px;white-space:nowrap;border-radius:99px}
+  .admin-side .admin-user{display:none}
+  .admin-main{border-radius:0;padding:16px}
+  .admin-top{flex-direction:column;align-items:flex-start;gap:12px}
+}
+</style>
+</head>
+<body class="admin-page">
+<main class="admin-shell">
+<div class="admin-grid">
+
+<!-- SIDEBAR -->
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Overview</a>
+    <a href="bookings-admin.html" class="active"><i class="hgi-stroke hgi-calendar-03"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-invoice-03"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Packages</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
+  </nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<section class="admin-main glass">
+  <div class="admin-top">
+    <div>
+      <span class="kicker">Booking Records</span>
+      <h1>All Bookings</h1>
+      <p class="bk-state" id="bk-state">Loading bookings…</p>
+    </div>
+    <div class="admin-actions">
+      <button class="btn btn-light" id="bk-refresh"><i class="hgi-stroke hgi-refresh"></i> Refresh</button>
+      <a class="btn btn-dark" href="billing.html">＋ New Invoice</a>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="bk-stats">
+    <div class="bk-stat">
+      <small>Total Bookings</small>
+      <strong id="s-total">—</strong>
+      <span>All time</span>
+    </div>
+    <div class="bk-stat pending">
+      <small>Pending</small>
+      <strong id="s-pending">—</strong>
+      <span>Needs follow-up</span>
+    </div>
+    <div class="bk-stat confirmed">
+      <small>Confirmed</small>
+      <strong id="s-confirmed">—</strong>
+      <span>Ready to travel</span>
+    </div>
+    <div class="bk-stat cancelled">
+      <small>Cancelled</small>
+      <strong id="s-cancelled">—</strong>
+      <span>Closed requests</span>
+    </div>
+  </div>
+
+  <!-- FILTER + SEARCH -->
+  <div class="bk-head">
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="pending">Pending</button>
+      <button class="filter-tab" data-filter="confirmed">Confirmed</button>
+      <button class="filter-tab" data-filter="completed">Completed</button>
+      <button class="filter-tab" data-filter="cancelled">Cancelled</button>
+    </div>
+    <div class="bk-search">
+      <i class="hgi-stroke hgi-search-01"></i>
+      <input type="search" id="bk-search" placeholder="Search name, phone, trip…">
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="panel-wrap">
+    <div class="table-scroll">
+      <table class="bk-table">
+        <thead>
+          <tr>
+            <th>Ref</th>
+            <th>Guest</th>
+            <th>Journey</th>
+            <th>Travel Date</th>
+            <th>Guests</th>
+            <th>City</th>
+            <th>Booked On</th>
+            <th>Note</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="bk-body">
+          <tr><td colspan="10" class="empty-cell">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</div>
+</main>
+
+<!-- LOGIN DIALOG -->
+<dialog class="admin-login" id="admin-login">
+  <form method="dialog" id="admin-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span>
+    <h2>Unlock Bookings</h2>
+    <p>Enter the private admin token configured in Vercel.</p>
+    <label>Admin token<input type="password" id="admin-token" required></label>
+    <button class="btn btn-dark full">Open manager</button>
+    <small id="login-error"></small>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const money = v => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(v||0));
+const token = () => localStorage.getItem('bahadur-admin-token') || '';
+const auth  = () => ({ Authorization: `Bearer ${token()}` });
+const esc   = v => String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let allBookings = [];
+let activeFilter = 'all';
+let searchQ = '';
+
+function login(msg='') {
+  $('#login-error').textContent = msg;
+  const d = $('#admin-login');
+  if (!d.open) d.showModal();
+}
+
+function statusClass(s) {
+  s = (s||'pending').toLowerCase();
+  if (s === 'confirmed') return 'confirmed';
+  if (s === 'cancelled') return 'cancelled';
+  if (s === 'completed') return 'completed';
+  return 'pending';
+}
+
+function renderTable() {
+  let rows = allBookings;
+  if (activeFilter !== 'all') rows = rows.filter(x => (x.status||'pending').toLowerCase() === activeFilter);
+  if (searchQ) rows = rows.filter(x =>
+    `${x.booking_ref} ${x.name} ${x.phone} ${x.email||''} ${x.trip} ${x.city||''}`.toLowerCase().includes(searchQ)
+  );
+
+  if (!rows.length) {
+    $('#bk-body').innerHTML = `<tr><td colspan="10" style="text-align:center;padding:50px;color:#8fa099">
+      <i class="hgi-stroke hgi-calendar-03" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4"></i>
+      No bookings found.</td></tr>`;
+    return;
+  }
+
+  $('#bk-body').innerHTML = rows.map(x => {
+    const sc = statusClass(x.status);
+    const waMsg = encodeURIComponent(`Hi ${x.name||''}, regarding your booking ${x.booking_ref||''} for ${x.trip||''} on ${x.travel_date||''}. `);
+    const waLink = `https://wa.me/${(x.phone||'').replace(/\D/g,'')}?text=${waMsg}`;
+    return `<tr>
+      <td><span class="bk-ref">${esc(x.booking_ref||x.id?.slice(0,8)||'—')}</span></td>
+      <td><div class="bk-name">${esc(x.name||'—')}<small>${esc(x.phone||'')}${x.email?'<br>'+esc(x.email):''}</small></div></td>
+      <td>${esc(x.trip||'—')}</td>
+      <td class="bk-date">${esc(x.travel_date||'—')}</td>
+      <td>${esc(x.guests||'—')}</td>
+      <td>${esc(x.city||'—')}</td>
+      <td class="bk-date">${x.created_at ? new Date(x.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
+      <td class="bk-note-cell" title="${esc(x.note||'')}">${esc(x.note||'—')}</td>
+      <td>
+        <select class="bk-status-select ${sc}" data-id="${esc(x.id||'')}">
+          <option value="pending"   ${(x.status||'pending')==='pending'   ?'selected':''}>Pending</option>
+          <option value="confirmed" ${(x.status||'')==='confirmed' ?'selected':''}>Confirmed</option>
+          <option value="completed" ${(x.status||'')==='completed' ?'selected':''}>Completed</option>
+          <option value="cancelled" ${(x.status||'')==='cancelled' ?'selected':''}>Cancelled</option>
+        </select>
+      </td>
+      <td>
+        <div class="bk-actions">
+          ${x.phone ? `<a class="bk-btn bk-btn-wa" href="${waLink}" target="_blank" title="WhatsApp ${x.name}"><i class="hgi-stroke hgi-whatsapp"></i></a>` : ''}
+          <button class="bk-btn bk-btn-del" data-del="${esc(x.id||'')}" title="Delete booking"><i class="hgi-stroke hgi-delete-02"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Wire up status selects
+  document.querySelectorAll('.bk-status-select').forEach(sel => {
+    sel.onchange = async () => {
+      const id = sel.dataset.id;
+      const newStatus = sel.value;
+      sel.className = `bk-status-select ${statusClass(newStatus)}`;
+      try {
+        const r = await fetch(`/api/bookings?id=${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...auth() },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+        const bk = allBookings.find(x => x.id === id);
+        if (bk) bk.status = newStatus;
+        updateStats();
+      } catch(e) { alert('Failed to update: ' + e.message); }
+    };
+  });
+
+  // Wire up delete buttons
+  document.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.del;
+      const bk = allBookings.find(x => x.id === id);
+      if (!confirm(`Delete booking ${bk?.booking_ref||id} by "${bk?.name||'this guest'}"?\nThis cannot be undone.`)) return;
+      try {
+        const r = await fetch(`/api/bookings?id=${id}`, { method: 'DELETE', headers: auth() });
+        if (!r.ok) throw new Error('Delete failed');
+        allBookings = allBookings.filter(x => x.id !== id);
+        updateStats();
+        renderTable();
+      } catch(e) { alert('Delete failed: ' + e.message); }
+    };
+  });
+}
+
+function updateStats() {
+  $('#s-total').textContent     = allBookings.length;
+  $('#s-pending').textContent   = allBookings.filter(x => (x.status||'pending') === 'pending').length;
+  $('#s-confirmed').textContent = allBookings.filter(x => x.status === 'confirmed').length;
+  $('#s-cancelled').textContent = allBookings.filter(x => x.status === 'cancelled').length;
+}
+
+async function load() {
+  if (!token()) { login(); return; }
+  $('#bk-state').textContent = 'Loading bookings…';
+  try {
+    const r = await fetch('/api/bookings', { headers: auth() });
+    if (r.status === 401) { localStorage.removeItem('bahadur-admin-token'); login('Incorrect or expired token.'); return; }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Failed to load');
+    allBookings = d.bookings || [];
+    updateStats();
+    renderTable();
+    $('#bk-state').textContent = `${allBookings.length} booking(s) · Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch(e) {
+    $('#bk-state').textContent = 'Error: ' + e.message;
+    $('#bk-body').innerHTML = `<tr><td colspan="10" class="empty-cell">${esc(e.message)}<br><small>Ensure DATABASE_URL is set in Vercel environment variables.</small></td></tr>`;
+  }
+}
+
+// Filter tabs
+document.querySelectorAll('.filter-tab').forEach(btn => {
+  btn.onclick = () => {
+    activeFilter = btn.dataset.filter;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  };
+});
+
+// Search
+$('#bk-search').oninput = e => {
+  searchQ = e.target.value.toLowerCase().trim();
+  renderTable();
+};
+
+// Refresh
+$('#bk-refresh').onclick = load;
+
+// Login form
+$('#admin-login-form').onsubmit = e => {
+  e.preventDefault();
+  localStorage.setItem('bahadur-admin-token', $('#admin-token').value.trim());
+  $('#admin-login').close();
+  load();
+};
+
+load();
+</script>
+</body>
+</html>

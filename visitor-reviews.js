@@ -220,7 +220,7 @@ dialog.querySelector('#vr-form').onsubmit=async e=>{
     files:[],
   };
 
-  // Encode files
+  // Upload files directly as multipart — no base64, no payload limit
   if(userFiles.length){
     const oversized = userFiles.find(f => f.size > 5*1024*1024);
     if(oversized) {
@@ -229,33 +229,20 @@ dialog.querySelector('#vr-form').onsubmit=async e=>{
       submitBtn.innerHTML='<i class="hgi-stroke hgi-send-02"></i> Send for approval';
       return;
     }
-    stateEl.textContent=`Preparing ${userFiles.length} file(s)…`;
-    let upload;
-    try {
-      const blobClient = await import('https://esm.sh/@vercel/blob/client@0.27.0');
-      upload = blobClient.upload;
-    } catch (e) {
-      console.error('Failed to load blob client', e);
-    }
-
     for(let i=0;i<userFiles.length;i++){
-      stateEl.textContent=`Uploading file ${i+1} of ${userFiles.length} (Max 5MB)…`;
+      stateEl.textContent=`Uploading file ${i+1} of ${userFiles.length}…`;
       try{
-        if (upload) {
-          // Direct Vercel Blob Upload
-          const newBlob = await upload(userFiles[i].name, userFiles[i], {
-            access: 'public',
-            handleUploadUrl: '/api/upload',
-          });
-          payload.files.push({url:newBlob.url, fileName:userFiles[i].name, mimeType:userFiles[i].type});
-        } else {
-          // Fallback to Base64 (Will fail for >3MB on Vercel)
-          const b64=await toBase64(userFiles[i]);
-          payload.files.push({data:b64,fileName:userFiles[i].name,mimeType:userFiles[i].type});
-        }
-      }catch (err) {
-        console.error('Upload error', err);
-        throw new Error('Failed to upload media. Please try again.');
+        const fd = new FormData();
+        fd.append('file', userFiles[i]);
+        const upRes = await fetch('/api/upload-media', { method:'POST', body:fd });
+        const upData = await upRes.json();
+        if(!upRes.ok) throw new Error(upData.error || 'Upload failed');
+        payload.files.push({url: upData.url, fileName: userFiles[i].name, mimeType: userFiles[i].type});
+      }catch(err){
+        stateEl.textContent='⚠️ ' + (err.message || 'Failed to upload media. Please try again.');
+        submitBtn.disabled=false;
+        submitBtn.innerHTML='<i class="hgi-stroke hgi-send-02"></i> Send for approval';
+        return;
       }
     }
     stateEl.textContent='Submitting review…';

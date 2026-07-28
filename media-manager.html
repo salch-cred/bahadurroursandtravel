@@ -78,6 +78,11 @@
 @media(max-width:900px){.media-shell{grid-template-columns:1fr;height:auto}}
 @media(max-width:540px){.upload-meta{grid-template-columns:1fr}.media-masonry-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
 </style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+  <link rel="manifest" href="/site.webmanifest"/>
 </head>
 <body>
 <main class="admin-shell">
@@ -88,15 +93,16 @@
   <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
   <nav>
     <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
-    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Package manager</a>
+    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
     <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
     <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
     <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
     <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
     <a href="media-manager.html" class="active"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
-    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
-    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
   </nav>
+  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
 </aside>
 
 <!-- ── Main ────────────────────────────────────────────────── -->
@@ -413,7 +419,7 @@ async function init() {
   const dlg = document.getElementById('admin-login');
   const tok = getToken();
   if (!tok) { dlg.showModal(); return; }
-  const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
+  const r = await fetch('/api/admin', { headers: { 'Authorization': `Bearer ${tok}` } });
   if (!r.ok) { dlg.showModal(); return; }
   loadLibrary();
 }

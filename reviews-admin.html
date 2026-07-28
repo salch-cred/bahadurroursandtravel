@@ -35,6 +35,11 @@
 .danger-button{background:#fde8e8;color:#c0392b;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
 .danger-button:hover{background:#f5c6c6}
 </style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+  <link rel="manifest" href="/site.webmanifest"/>
 </head>
 <body class="admin-page">
 <main class="admin-shell">
@@ -44,15 +49,16 @@
   <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
   <nav>
     <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
-    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Package manager</a>
-    <a href="customers-admin.html" ><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
     <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
     <a href="reviews-admin.html" class="active"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
     <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
     <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
-    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
-    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
   </nav>
+  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
 </aside>
 
 <div class="admin-main glass">
@@ -64,7 +70,6 @@
     </div>
     <div class="admin-actions">
       <button class="btn btn-outline btn-small" id="reviews-refresh"><i class="hgi-stroke hgi-refresh"></i> Refresh</button>
-      <a class="btn btn-small" href="community.html" target="_blank"><i class="hgi-stroke hgi-eye"></i> Public page</a>
     </div>
   </div>
 

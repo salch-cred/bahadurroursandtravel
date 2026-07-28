@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Payment Receipt — Bahadur Tours</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<style>
+.paid-bill-page{background:#e9efec;min-height:100vh}
+.paid-bill-wrap{max-width:820px;margin:0 auto;padding:90px 24px 80px}
+.paid-bill-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}
+.paid-bill-toolbar h1{font-size:22px;margin:0;color:#17251f}
+.paid-bill-toolbar .btn-row{display:flex;gap:10px}
+.receipt-card{background:#fff;border-radius:22px;box-shadow:0 18px 60px #16322d1a;overflow:hidden;color:#17251f}
+/* Header band */
+.receipt-head{background:#0b4a3f;color:#fff;padding:32px 40px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.receipt-head-left{display:flex;flex-direction:column;gap:6px}
+.receipt-head-left img{width:110px;filter:brightness(0) invert(1)}
+.receipt-head-left span{font-size:11px;letter-spacing:.14em;font-weight:800;color:#a8d5c7;text-transform:uppercase;margin-top:4px}
+.receipt-head-right{text-align:right;display:flex;flex-direction:column;gap:5px}
+.receipt-head-right small{font-size:11px;color:#a8d5c7;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+.receipt-head-right strong{font-size:26px;font-weight:900;letter-spacing:-.5px}
+.paid-stamp{display:inline-flex;align-items:center;gap:6px;background:#22c55e;color:#fff;border-radius:99px;padding:5px 14px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-top:4px;align-self:flex-end}
+.receipt-body{padding:36px 40px}
+/* Customer detail band */
+.receipt-customer{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding-bottom:28px;border-bottom:1px solid #e8efec;margin-bottom:28px}
+.receipt-customer-col{display:flex;flex-direction:column;gap:4px}
+.receipt-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a8b84;margin-bottom:3px}
+.receipt-customer-col strong{font-size:17px;font-weight:800;margin-bottom:2px}
+.receipt-customer-col span,.receipt-customer-col a{font-size:13px;color:#526058;line-height:1.6}
+.receipt-customer-col a{color:#0b4a3f;text-decoration:none}
+.receipt-meta-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-bottom:26px;border-bottom:1px solid #e8efec;margin-bottom:28px}
+.receipt-meta-box{background:#f5faf8;border-radius:12px;padding:13px 15px}
+.receipt-meta-box small{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7a8b84;display:block;margin-bottom:4px}
+.receipt-meta-box strong{font-size:14px;font-weight:800;color:#17251f}
+/* Journey band */
+.receipt-journey{background:#f5faf8;border-radius:14px;padding:20px 22px;margin-bottom:24px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;align-items:center}
+.receipt-journey-col small{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7a8b84;display:block;margin-bottom:3px}
+.receipt-journey-col strong{font-size:14px;font-weight:800;color:#17251f}
+.receipt-journey-col span{font-size:12px;color:#526058}
+/* Travel details */
+.receipt-travel-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.receipt-travel-card{border:1px solid #dde9e4;border-radius:13px;padding:16px 20px}
+.receipt-travel-card small{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#0b4a3f;display:block;margin-bottom:10px}
+.receipt-travel-card strong{font-size:14px;font-weight:800;display:block;margin-bottom:8px}
+.receipt-travel-card dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:12px;margin:0}
+.receipt-travel-card dt{color:#7a8b84;font-weight:600;white-space:nowrap}
+.receipt-travel-card dd{margin:0;color:#17251f;font-weight:700}
+/* Items table */
+.receipt-table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:14px}
+.receipt-table thead th{background:#0b4a3f;color:#fff;padding:11px 14px;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+.receipt-table thead th:nth-child(n+2){text-align:right}
+.receipt-table tbody td{padding:13px 14px;border-bottom:1px solid #eef3f1;vertical-align:middle}
+.receipt-table tbody td:nth-child(n+2){text-align:right;font-variant-numeric:tabular-nums}
+.receipt-table tbody tr:last-child td{border-bottom:none}
+/* Totals */
+.receipt-totals{display:flex;justify-content:flex-end;margin-bottom:24px}
+.receipt-totals-inner{width:280px}
+.receipt-totals-inner dl{display:grid;grid-template-columns:1fr auto;gap:0}
+.receipt-totals-inner dt,.receipt-totals-inner dd{padding:8px 0;border-bottom:1px solid #eef3f1;font-size:13px;margin:0}
+.receipt-totals-inner dd{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.receipt-totals-inner .grand-total{font-size:20px;font-weight:900;border:none;padding-top:13px;color:#0b4a3f}
+/* Payment note */
+.receipt-payment-note{background:#f0faf5;border-left:4px solid #22c55e;border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:24px}
+.receipt-payment-note small{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#22753a;display:block;margin-bottom:6px}
+.receipt-payment-note p{margin:0;font-size:13px;color:#17251f;white-space:pre-line}
+/* Terms */
+.receipt-terms{border-top:1px solid #eef3f1;padding-top:20px;margin-bottom:8px}
+.receipt-terms strong{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#7a8b84;display:block;margin-bottom:8px}
+.receipt-terms span{display:block;font-size:12px;color:#526058;margin-bottom:4px}
+/* Footer */
+.receipt-footer{background:#f5faf8;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#7a8b84;flex-wrap:wrap;gap:8px}
+.receipt-footer strong{color:#17251f}
+/* Loading / error */
+.receipt-loading{text-align:center;padding:80px 24px;color:#526058}
+.receipt-loading i{font-size:48px;display:block;margin-bottom:12px;color:#0b4a3f}
+@media print{
+  .paid-bill-toolbar{display:none!important}
+  .paid-bill-page{background:white}
+  .paid-bill-wrap{padding:0;max-width:none}
+  .receipt-card{box-shadow:none;border-radius:0}
+}
+@media(max-width:640px){
+  .receipt-customer{grid-template-columns:1fr}
+  .receipt-meta-row{grid-template-columns:1fr 1fr}
+  .receipt-journey{grid-template-columns:1fr 1fr}
+  .receipt-travel-cards{grid-template-columns:1fr}
+  .receipt-head{padding:24px 22px}
+  .receipt-body{padding:24px 22px}
+  .receipt-footer{padding:16px 22px}
+}
+</style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+  <link rel="manifest" href="/site.webmanifest"/>
+</head>
+<body class="paid-bill-page">
+<div class="paid-bill-wrap">
+  <div class="paid-bill-toolbar no-print">
+    <div>
+      <a href="admin.html" style="color:#0b4a3f;font-size:13px;font-weight:700;text-decoration:none">← Back to dashboard</a>
+      <h1 style="margin-top:6px">Payment Receipt</h1>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-light btn-small" id="btn-edit-invoice">Edit Invoice</button>
+      <button class="btn btn-small" id="btn-print">Print / Save PDF</button>
+    </div>
+  </div>
+
+  <div class="receipt-card" id="receipt-card">
+    <div class="receipt-loading" id="receipt-loading">
+      <i class="hgi-stroke hgi-loading-03"></i>
+      <p>Loading receipt…</p>
+    </div>
+    <!-- Content injected by JS -->
+  </div>
+</div>
+<script type="module" src="paid-bill.js"></script>
+</body>
+</html>

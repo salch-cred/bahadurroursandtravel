@@ -1,172 +1,264 @@
-/* ── Visitor Review Widget (public) ───────────────────────────────────── */
-const host = document.createElement('section');
-host.className = 'visitor-review-widget section';
-host.innerHTML = `
+/* ── Visitor Review + Media Upload Widget ────────────────────── */
+(function(){
+'use strict';
+
+const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const star=n=>'★'.repeat(Math.max(1,Math.min(5,Number(n||5))));
+
+/* ── Build widget HTML ─────────────────────────────────────── */
+const host=document.createElement('section');
+host.className='visitor-review-widget section';
+host.innerHTML=`
 <div class="section-head">
   <div>
     <span class="kicker">Visitor voices</span>
     <h2>Real moments,<br><em>shared honestly.</em></h2>
   </div>
-  <button class="btn btn-outline" data-open-review>Share your journey</button>
+  <button class="btn btn-outline" id="vr-open-btn">Share your journey</button>
 </div>
-<div class="visitor-review-grid" data-review-list>
+<div class="visitor-review-grid" id="vr-review-list">
   <div class="community-empty">Loading approved guest reviews…</div>
-</div>
+</div>`;
 
-<dialog class="visitor-review-dialog">
-  <form>
-    <button type="button" class="modal-close" data-close-review>×</button>
-    <span class="kicker">Submit for verification</span>
-    <h2>Share your journey.</h2>
-    <div class="review-upload-grid">
-      <label>Name<input name="name" required placeholder="Your name"></label>
-      <label>Trip<input name="trip" required placeholder="e.g. Lakshadweep, Wayanad…"></label>
-      <label>Rating<select name="rating">
+const main=document.querySelector('main');
+(main||document.body).append(host);
+
+/* ── Dialog / modal ────────────────────────────────────────── */
+const dialog=document.createElement('dialog');
+dialog.className='visitor-review-dialog';
+dialog.innerHTML=`
+<form id="vr-form" novalidate>
+  <button type="button" class="modal-close" id="vr-close-btn" aria-label="Close">
+    <i class="hgi-stroke hgi-cancel-01"></i>
+  </button>
+  <span class="kicker">Submit for verification</span>
+  <h2>Share your journey.</h2>
+
+  <div class="review-upload-grid">
+
+    <label>Name
+      <input name="name" required placeholder="Your name" autocomplete="name">
+    </label>
+
+    <label>Trip
+      <input name="trip" required placeholder="e.g. Lakshadweep, Kashmir…">
+    </label>
+
+    <label>Rating
+      <select name="rating">
         <option value="5">5 — Excellent</option>
         <option value="4">4 — Very good</option>
         <option value="3">3 — Good</option>
-      </select></label>
-      <label>Booking reference<input name="bookingRef" required placeholder="Kept private"></label>
-      <label class="span-2">Your review<textarea name="text" rows="4" required></textarea></label>
+        <option value="2">2 — Fair</option>
+        <option value="1">1 — Poor</option>
+      </select>
+    </label>
 
-      <!-- ── Photo / video upload ─────────────────────────── -->
-      <div class="span-2" style="margin:4px 0">
-        <div class="user-drop-zone" id="user-drop-zone">
-          <input type="file" id="user-file-input" multiple accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/webm,video/quicktime">
-          <i class="hgi-stroke hgi-image-upload" style="font-size:30px;color:#b0c4bc;display:block;margin-bottom:8px"></i>
-          <strong style="font-size:14px">Add photos or videos</strong>
-          <p style="color:#8fa099;font-size:12px;margin:4px 0 0">Tap to browse or drag files here · Any size accepted</p>
+    <label>Booking reference <span class="vr-optional">(optional)</span>
+      <input name="bookingRef" placeholder="e.g. BT12345678 · Helps verify your review">
+    </label>
+
+    <label class="span-2">Your review
+      <textarea name="text" rows="4" required placeholder="Tell us about your experience (min 30 characters)…"></textarea>
+    </label>
+
+    <!-- ── Photo / Video Upload ─────────────────────────── -->
+    <div class="span-2 vr-upload-section">
+      <p class="vr-upload-label"><i class="hgi-stroke hgi-image-upload"></i> Add photos or videos <span class="vr-optional">(optional)</span></p>
+      <label class="vr-drop-zone" id="vr-drop-zone">
+        <input type="file" id="vr-file-input" multiple
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/webm,video/quicktime,video/mov">
+        <div class="vr-drop-inner" id="vr-drop-inner">
+          <i class="hgi-stroke hgi-image-upload" style="font-size:36px;color:#9ab5ac;display:block;margin-bottom:10px"></i>
+          <strong>Tap to choose photos or videos</strong>
+          <span>Or drag &amp; drop here · Any size accepted</span>
         </div>
-        <div class="user-file-queue" id="user-file-queue" style="display:none"></div>
-      </div>
-
-      <label class="consent span-2">
-        <input type="checkbox" name="consent" required>
-        I own this content and permit Bahadur Tours to display it after approval.
       </label>
-      <button class="btn span-2">Send for approval</button>
-      <small class="span-2" data-review-state></small>
+
+      <!-- File thumbnails queue -->
+      <div class="vr-file-queue" id="vr-file-queue"></div>
     </div>
-  </form>
-</dialog>`;
 
-const mainEl = document.querySelector('main');
-mainEl ? mainEl.append(host) : document.body.append(host);
+    <!-- ── Consent + Submit ─────────────────────────────── -->
+    <label class="consent span-2">
+      <input type="checkbox" name="consent" required>
+      I own this content and permit Bahadur Tours to display it after approval.
+    </label>
 
-const dlg      = host.querySelector('dialog');
-const fileInp  = host.querySelector('#user-file-input');
-const dropZone = host.querySelector('#user-drop-zone');
-const queueEl  = host.querySelector('#user-file-queue');
+    <button class="btn span-2" type="submit" id="vr-submit-btn">
+      <i class="hgi-stroke hgi-send-02"></i> Send for approval
+    </button>
 
-host.querySelector('[data-open-review]').onclick  = () => dlg.showModal();
-host.querySelector('[data-close-review]').onclick = () => dlg.close();
+    <small class="span-2" id="vr-state"></small>
 
-/* ── File queue ────────────────────────────────────────────── */
-let userFiles = [];
+  </div>
+</form>`;
+document.body.appendChild(dialog);
 
-const addUserFiles = files => {
-  [...files].forEach(f => {
-    if (!userFiles.find(x => x.name === f.name && x.size === f.size)) userFiles.push(f);
-  });
-  renderUserQueue();
-};
+/* ── Open / close ──────────────────────────────────────────── */
+host.querySelector('#vr-open-btn').onclick=()=>dialog.showModal();
+dialog.querySelector('#vr-close-btn').onclick=()=>dialog.close();
+dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
 
-dropZone.ondragover  = e => { e.preventDefault(); dropZone.classList.add('dz-over'); };
-dropZone.ondragleave = () => dropZone.classList.remove('dz-over');
-dropZone.ondrop      = e => { e.preventDefault(); dropZone.classList.remove('dz-over'); addUserFiles(e.dataTransfer.files); };
-fileInp.onchange     = () => { addUserFiles(fileInp.files); fileInp.value = ''; };
+/* ── File management ───────────────────────────────────────── */
+let userFiles=[];
+const fileInput  = dialog.querySelector('#vr-file-input');
+const dropZone   = dialog.querySelector('#vr-drop-zone');
+const fileQueue  = dialog.querySelector('#vr-file-queue');
+const stateEl    = dialog.querySelector('#vr-state');
 
-function renderUserQueue() {
-  if (!userFiles.length) { queueEl.style.display = 'none'; return; }
-  queueEl.style.display = 'flex';
-  queueEl.innerHTML = userFiles.map((f, i) => {
-    const isVid = f.type.startsWith('video/');
-    const sz    = f.size > 1e6 ? (f.size/1e6).toFixed(1)+'MB' : (f.size/1024).toFixed(0)+'KB';
-    return `<div class="uq-item" data-idx="${i}">
-      <span class="uq-icon">${isVid?'🎬':'📸'}</span>
-      <span class="uq-name" title="${esc(f.name)}">${esc(f.name.length>22?f.name.slice(0,19)+'…':f.name)}</span>
-      <span class="uq-sz">${sz}</span>
-      <button type="button" class="uq-rm" onclick="window.__rmUserFile(${i})">×</button>
+function formatSize(bytes){
+  if(bytes>1e6)return (bytes/1e6).toFixed(1)+' MB';
+  return (bytes/1024).toFixed(0)+' KB';
+}
+
+function renderQueue(){
+  if(!userFiles.length){fileQueue.innerHTML='';fileQueue.style.display='none';return;}
+  fileQueue.style.display='flex';
+  fileQueue.innerHTML=userFiles.map((f,i)=>{
+    const isVid=f.type.startsWith('video/');
+    const isLarge=f.size>20*1024*1024;
+    return `<div class="vr-queue-item" data-idx="${i}">
+      <span class="vr-queue-icon">
+        <i class="hgi-stroke ${isVid?'hgi-video-replay':'hgi-image-01'}"></i>
+      </span>
+      <div class="vr-queue-info">
+        <span class="vr-queue-name" title="${esc(f.name)}">${esc(f.name.length>28?f.name.slice(0,25)+'…':f.name)}</span>
+        <span class="vr-queue-size ${isLarge?'vr-queue-large':''}">${formatSize(f.size)}${isLarge?' · large file':''}</span>
+      </div>
+      <button type="button" class="vr-queue-remove" data-rm="${i}" aria-label="Remove file">
+        <i class="hgi-stroke hgi-cancel-01"></i>
+      </button>
     </div>`;
   }).join('');
+  fileQueue.querySelectorAll('[data-rm]').forEach(btn=>btn.onclick=()=>{
+    userFiles.splice(Number(btn.dataset.rm),1);
+    renderQueue();
+  });
 }
-window.__rmUserFile = i => { userFiles.splice(i, 1); renderUserQueue(); };
 
-/* ── Helpers ───────────────────────────────────────────────── */
-const esc = v => String(v||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function addFiles(files){
+  [...files].forEach(f=>{
+    if(!userFiles.find(x=>x.name===f.name&&x.size===f.size))userFiles.push(f);
+  });
+  renderQueue();
+}
 
-function toBase64(file) {
-  return new Promise((ok, fail) => {
-    const r = new FileReader();
-    r.onload  = () => ok(String(r.result).split(',')[1]);
-    r.onerror = fail;
+fileInput.onchange=()=>{addFiles(fileInput.files);fileInput.value='';};
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('vr-dz-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('vr-dz-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('vr-dz-over');addFiles(e.dataTransfer.files);});
+
+/* ── toBase64 helper ───────────────────────────────────────── */
+function toBase64(file){
+  return new Promise((ok,fail)=>{
+    const r=new FileReader();
+    r.onload=()=>ok(String(r.result).split(',')[1]);
+    r.onerror=fail;
     r.readAsDataURL(file);
   });
 }
 
-/* ── Load reviews ──────────────────────────────────────────── */
-async function load() {
-  try {
-    const res = await fetch('/api/reviews?limit=6');
-    const d   = await res.json();
-    host.querySelector('[data-review-list]').innerHTML = d.reviews?.length
-      ? d.reviews.map(x => `<article class="visitor-review-card">
+/* ── Load approved reviews ─────────────────────────────────── */
+async function loadReviews(){
+  try{
+    const res=await fetch('/api/reviews?limit=8');
+    const d=await res.json();
+    const list=dialog.parentElement?.querySelector('#vr-review-list')||host.querySelector('#vr-review-list');
+    list.innerHTML=(d.reviews||[]).length
+      ?d.reviews.map(x=>`<article class="visitor-review-card">
           ${x.media_url
-            ? (x.media_type==='video'
-              ? `<video src="${x.media_url}" controls preload="metadata"></video>`
-              : `<img src="${x.media_url}" alt="Guest media" loading="lazy">`)
-            : ''}
-          <div>
-            <span class="stars">${'★'.repeat(Number(x.rating||5))}</span>
+            ?(x.media_type==='video'
+              ?`<video src="${esc(x.media_url)}" controls preload="metadata" playsinline loading="lazy"></video>`
+              :`<img src="${esc(x.media_url)}" alt="Guest photo" loading="lazy">`)
+            :''}
+          <div class="vr-card-body">
+            <span class="vr-stars">${star(x.rating)}</span>
             <blockquote>"${esc(x.text)}"</blockquote>
             <strong>${esc(x.name)}</strong>
             <small>${esc(x.trip)}</small>
           </div>
         </article>`).join('')
-      : '<div class="community-empty">Approved visitor stories will appear here.</div>';
-  } catch {
-    host.querySelector('[data-review-list]').innerHTML = '<div class="community-empty">Visitor stories load once connected.</div>';
+      :'<div class="community-empty"><i class="hgi-stroke hgi-star-01" style="font-size:36px;opacity:.3;display:block;margin-bottom:12px"></i>Approved guest stories will appear here.</div>';
+  }catch{
+    const list=host.querySelector('#vr-review-list');
+    if(list)list.innerHTML='<div class="community-empty">Guest stories load once the database is connected.</div>';
   }
 }
 
-/* ── Submit ────────────────────────────────────────────────── */
-host.querySelector('form').onsubmit = async e => {
+/* ── Form submit ───────────────────────────────────────────── */
+dialog.querySelector('#vr-form').onsubmit=async e=>{
   e.preventDefault();
-  const form  = e.target;
-  const state = form.querySelector('[data-review-state]');
-  const fd    = new FormData(form);
-  state.textContent = userFiles.length ? `Uploading ${userFiles.length} file(s)…` : 'Sending securely…';
+  const form=e.target;
+  const submitBtn=dialog.querySelector('#vr-submit-btn');
 
-  // Build media list
-  const files = [];
-  for (const f of userFiles) {
-    try {
-      const base64 = await toBase64(f);
-      files.push({ data: base64, fileName: f.name, mimeType: f.type });
-    } catch { /* skip broken file */ }
+  // Validate review length
+  const reviewText=(form.text?.value||'').trim();
+  if(reviewText.length<30){
+    stateEl.textContent='⚠️ Please write at least 30 characters in your review.';
+    form.text?.focus();
+    return;
+  }
+  if(!form.consent?.checked){
+    stateEl.textContent='⚠️ Please agree to the content permission.';
+    return;
   }
 
-  const payload = Object.fromEntries(fd);
-  delete payload.media;
-  payload.consent      = Boolean(payload.consent);
-  payload.packageSlug  = window.currentPackage?.slug || '';
-  if (files.length) payload.files = files;
+  submitBtn.disabled=true;
+  submitBtn.innerHTML='<i class="hgi-stroke hgi-loading-03"></i> Sending…';
+  stateEl.textContent='';
 
-  try {
-    const res = await fetch('/api/reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+  const fd=new FormData(form);
+  const payload={
+    name:(fd.get('name')||'').trim(),
+    trip:(fd.get('trip')||'').trim(),
+    rating:fd.get('rating')||'5',
+    bookingRef:(fd.get('bookingRef')||'').trim(),
+    text:reviewText,
+    consent:true,
+    packageSlug:window.currentPackage?.slug||'',
+    files:[],
+  };
+
+  // Encode files
+  if(userFiles.length){
+    stateEl.textContent=`Preparing ${userFiles.length} file(s)…`;
+    for(let i=0;i<userFiles.length;i++){
+      stateEl.textContent=`Uploading file ${i+1} of ${userFiles.length}…`;
+      try{
+        const b64=await toBase64(userFiles[i]);
+        payload.files.push({data:b64,fileName:userFiles[i].name,mimeType:userFiles[i].type});
+      }catch{}
+    }
+    stateEl.textContent='Submitting…';
+  }else{
+    stateEl.textContent='Submitting…';
+  }
+
+  try{
+    const res=await fetch('/api/reviews',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
     });
-    const out = await res.json();
-    if (!res.ok) throw new Error(out.error);
-    state.textContent = 'Submitted! It will appear after booking verification and approval.';
+    const out=await res.json();
+    if(!res.ok)throw new Error(out.error||'Submission failed');
+
+    const msg=out.status==='approved'
+      ?'✅ Review published! Thank you for sharing.'
+      :'✅ Submitted! It will appear after approval.';
+    stateEl.textContent=msg;
     form.reset();
-    userFiles = [];
-    renderUserQueue();
-  } catch (err) {
-    state.textContent = err.message || 'Submission unavailable';
+    userFiles=[];
+    renderQueue();
+    setTimeout(()=>dialog.close(),3500);
+    loadReviews();
+  }catch(err){
+    stateEl.textContent='⚠️ '+( err.message||'Submission unavailable. Please try again.');
+    submitBtn.disabled=false;
+    submitBtn.innerHTML='<i class="hgi-stroke hgi-send-02"></i> Send for approval';
   }
 };
 
-load();
+loadReviews();
+})();

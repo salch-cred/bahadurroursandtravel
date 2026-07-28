@@ -92,6 +92,19 @@
   .admin-login h2{font-size:28px}
 }
 </style>
+
+<style>
+.tier-card.is-open .tier-body { max-height: 2000px !important; opacity: 1 !important; }
+.tier-head::after { content: ''; display: inline-block; width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-top: 7px solid currentColor; margin-left: 10px; transition: transform .3s; vertical-align: middle; }
+.tier-card.is-open .tier-head::after { transform: rotate(180deg); }
+</style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+  <link rel="manifest" href="/site.webmanifest"/>
 </head>
 <body>
 <header class="nav-wrap">
@@ -122,7 +135,7 @@
     <h1>Umrah — The Sacred Journey</h1>
     <p>Complete Umrah packages from Kerala — Makkah, Madinah, visa, flights and accommodation all arranged for you.</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
-      <a class="btn btn-dark" href="#umrah-packages">View packages</a>
+      <a class="btn btn-dark" href="#umrah-packages" data-book data-trip="Umrah package">View packages</a>
       <a class="btn" style="background:#25D366" href="https://wa.me/919187440916?text=Umrah%20package%20enquiry" target="_blank">📱 WhatsApp us</a>
     </div>
   </div>
@@ -169,7 +182,7 @@
             <li>Zam Zam water on return</li>
             <li>WhatsApp group support</li>
           </ul>
-          <button onclick="window.open('https://wa.me/919187440916?text=Economy%20Umrah%20enquiry','_blank')">Enquire on WhatsApp</button>
+          <button type="button" class="tier-book-btn" data-book data-trip="Umrah – Economy package">Book Economy package</button>
         </div>
       </div>
       <!-- Standard -->
@@ -193,7 +206,7 @@
             <li>Zam Zam (5L) on return</li>
             <li>WhatsApp support 24/7</li>
           </ul>
-          <button onclick="window.open('https://wa.me/919187440916?text=Standard%20Umrah%20enquiry','_blank')">Book Standard Umrah</button>
+          <button type="button" class="tier-book-btn" data-book data-trip="Umrah – Standard package">Book Standard Umrah</button>
         </div>
       </div>
       <!-- Premium -->
@@ -217,7 +230,7 @@
             <li>Zam Zam (10L) + date box on return</li>
             <li>24/7 concierge support</li>
           </ul>
-          <button onclick="window.open('https://wa.me/919187440916?text=Premium%20Umrah%20enquiry','_blank')">Book Premium Umrah</button>
+          <button type="button" class="tier-book-btn" data-book data-trip="Umrah – Premium package">Book Premium Umrah</button>
         </div>
       </div>
     </div>
@@ -287,7 +300,67 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('s
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
 </script>
 <script src="performance.js" type="module"></script>
-<script src="site-ui.js"></script>
+<script src="app.js" type="module"></script><script src="site-ui.js"></script>
+
+
+<div aria-hidden="true" class="modal" id="booking-modal"><div class="modal-backdrop" data-close=""></div><div class="modal-panel glass"><button class="modal-close" data-close="">×</button><span class="kicker">Your trip, your way</span><h2>Plan an island escape</h2><form id="booking-form"><div class="form-grid"><label>Full name<input name="name" placeholder="Your name" required=""/></label><label>WhatsApp number<input name="phone" placeholder="+91" required=""/></label><label>Email<input name="email" placeholder="you@example.com" required="" type="email"/></label><label>Experience<select id="trip-select" name="trip"><optgroup label="🏝 Lakshadweep &amp; Island"><option>Island escape</option><option>Discover scuba</option><option>Sunset kayaking</option><option>Water sports day</option><option>Agatti Island stay</option><option>Bangaram private island</option><option>Minicoy island escape</option><option>Kadmat beach retreat</option></optgroup><optgroup label="🕌 Umrah Packages"><option>Umrah – Economy package</option><option>Umrah – Standard package</option><option>Umrah – Premium package</option><option>Umrah – Deluxe package</option><option>Umrah – Family package</option><option>Umrah – Ramadan package</option><option>Umrah – VIP package</option></optgroup><optgroup label="🏔 Domestic Tours"><option>Kashmir – Valley in bloom</option><option>Kashmir – Dal Lake houseboat</option><option>Himachal Pradesh tour</option><option>Rajasthan heritage tour</option><option>Goa beach holiday</option><option>Kerala backwaters tour</option><option>Andaman island escape</option><option>Coorg hill station retreat</option><option>Ooty &amp; Kodaikanal tour</option><option>Mysore &amp; Coorg circuit</option><option>Force Urbania rental</option></optgroup><optgroup label="✈ International Tours"><option>Maldives – Overwater quiet</option><option>Dubai city tour</option><option>Thailand beach escape</option><option>Singapore &amp; Malaysia tour</option><option>Bali cultural retreat</option><option>Europe group tour</option><option>Turkey heritage tour</option><option>Sri Lanka holiday</option></optgroup><optgroup label="🚌 Vehicle Hire"><option>Force Urbania – Airport transfer</option><option>Force Urbania – Long distance</option><option>Force Urbania – Pilgrimage trip</option><option>Force Urbania – Corporate travel</option></optgroup></select></label><label>Travel date<input name="date" required="" type="date"/></label><label>Guests<select name="guests"><option>1 guest</option><option>2 guests</option><option>3 guests</option><option>4 guests</option><option>5+ guests</option></select></label><label>Starting city<input name="city" placeholder="Kochi"/></label></div><label>Anything we should know?<textarea name="note" placeholder="Interests, children, accessibility, budget…"></textarea></label><label class="consent"><input required="" type="checkbox"/> I agree to the <a href="terms.html">Terms &amp; Conditions</a>.</label><button class="btn btn-dark full" type="submit">Send booking request <span><i class="hgi-stroke hgi-arrow-right-01"></i></span></button><p class="form-note">You’ll receive a WhatsApp confirmation after submitting.</p></form></div></div>
+<script>
+// ── Umrah package tier accordion ────────────────────────────
+(function(){
+  const tiers = document.querySelectorAll('.tier-card');
+
+  // Open first tier by default
+  if(tiers.length > 0){
+    tiers[0].classList.add('is-open');
+  }
+
+  tiers.forEach(function(card){
+    const head = card.querySelector('.tier-head');
+    if(!head) return;
+    head.style.cursor = 'pointer';
+    head.addEventListener('click', function(){
+      const isOpen = card.classList.contains('is-open');
+      // Close all
+      tiers.forEach(function(c){ c.classList.remove('is-open'); });
+      // Toggle clicked
+      if(!isOpen) card.classList.add('is-open');
+    });
+  });
+
+  // Also fix package tier CTA buttons — scroll to booking form  
+  document.querySelectorAll('.tier-cta, .tier-book-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      const tier = btn.closest('.tier-card');
+      const tierName = tier ? (tier.querySelector('.tier-name, h3')?.textContent||'Umrah package') : 'Umrah package';
+      // Open booking modal or scroll to book section
+      const bookingSelect = document.querySelector('#trip-select');
+      if(bookingSelect){
+        // Find matching option or add it
+        let found = false;
+        for(const opt of bookingSelect.options){
+          if(opt.text.toLowerCase().includes('umrah')){
+            bookingSelect.value = opt.value;
+            found = true;
+            break;
+          }
+        }
+        if(!found){
+          const opt = new Option(tierName, tierName);
+          bookingSelect.add(opt);
+          bookingSelect.value = tierName;
+        }
+      }
+      const modal = document.querySelector('#booking-modal');
+      if(modal && modal.classList !== undefined){
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden','false');
+        document.body.style.overflow='hidden';
+      }
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
 

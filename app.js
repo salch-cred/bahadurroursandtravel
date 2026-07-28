@@ -6,21 +6,27 @@ const openModal = (element) => { if (!element) return; element.classList.add('sh
 const closeModal = (element) => { if (!element) return; element.classList.remove('show'); element.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
 
 function bindBookingButtons() {
+  // Mark buttons so CSS/JS can detect readiness; clicks handled via delegation below
   $$('[data-book]:not([data-book-bound])').forEach((button) => {
     button.setAttribute('data-book-bound', 'true');
-    button.addEventListener('click', () => {
-      const trip = button.getAttribute('data-trip');
-      const select = $('#trip-select');
-      if (trip && select) {
-        if (!Array.from(select.options).some((option) => option.value === trip)) select.add(new Option(trip, trip));
-        select.value = trip;
-      }
-      openModal(bookingModal);
-    });
   });
 }
 bindBookingButtons();
 window.addEventListener('bahadur:destinations-ready', bindBookingButtons);
+
+// Event delegation so static + dynamic Book buttons always open the modal
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-book]');
+  if (!button) return;
+  event.preventDefault();
+  const trip = button.getAttribute('data-trip');
+  const select = $('#trip-select');
+  if (trip && select) {
+    if (!Array.from(select.options).some((option) => option.value === trip)) select.add(new Option(trip, trip));
+    select.value = trip;
+  }
+  openModal(bookingModal);
+});
 
 // Load all packages from API into booking form trip select
 async function loadPackageOptions() {
@@ -44,7 +50,7 @@ async function loadPackageOptions() {
 loadPackageOptions();
 
 $$('[data-close]').forEach((button) => button.addEventListener('click', () => closeModal(bookingModal)));
-$('#finder')?.addEventListener('submit', (event) => { event.preventDefault(); openModal(bookingModal); });
+// Finder is handled by AI panel block when present; booking fallback below if no AI
 $('#add-review')?.addEventListener('click', () => { window.location.href = 'community.html#share'; });
 $$('[data-review-close]').forEach((button) => button.addEventListener('click', () => closeModal(reviewModal)));
 
@@ -52,26 +58,52 @@ $('#booking-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
   const submit = form.querySelector('button[type="submit"], button:not([type])');
-  const originalText = submit?.textContent || 'Send booking request';
-  if (submit) { submit.disabled = true; submit.textContent = 'Sending securely…'; }
+  const originalHTML = submit?.innerHTML || 'Send booking request';
+  if (submit) { submit.disabled = true; submit.textContent = 'Sending...'; }
   const payload = Object.fromEntries(new FormData(form));
-  localStorage.setItem('bahadur-last-booking', JSON.stringify(payload));
-  try {
-    const response = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Booking could not be sent');
-    alert(`Booking request ${result.bookingId} received. Email and WhatsApp notifications are being sent.`);
-    form.reset();
-    closeModal(bookingModal);
-  } catch (error) {
-    const fallbackId = `BT${Date.now().toString().slice(-8)}`;
-    const message = `Hello Bahadur Tours, I want to book ${payload.trip || 'a trip'}. Reference: ${fallbackId}. Name: ${payload.name || ''}, date: ${payload.date || ''}, guests: ${payload.guests || ''}.`;
-    alert('The automatic notification service is not connected in this preview. WhatsApp will open so the request is not lost.');
-    window.open('https:' + '//wa.me/919187440916?text=' + encodeURIComponent(message), '_blank');
-  } finally {
-    if (submit) { submit.disabled = false; submit.textContent = originalText; }
+
+  // Build fully formatted WhatsApp message with all details in correct order
+  function buildWAMessage(ref) {
+    const parts = [
+      '*New Booking - Bahadur Tours & Travels*',
+      '',
+      '*Booking Ref:* ' + ref,
+      '*Name:* ' + (payload.name || '-'),
+      '*Phone:* ' + (payload.phone || '-'),
+      '*Email:* ' + (payload.email || '-'),
+      '*Trip / Experience:* ' + (payload.trip || 'Custom journey'),
+      '*Travel Date:* ' + (payload.date || 'Flexible'),
+      '*Number of Guests:* ' + (payload.guests || '-'),
+      '*Starting City:* ' + (payload.city || '-'),
+    ];
+    if (payload.note && payload.note.trim()) {
+      parts.push('*Special Requirements:* ' + payload.note.trim());
+    }
+    parts.push('', '_Booked via bahadurtours.com_');
+    return parts.join('\n');
   }
-});
+
+  let bookingRef = 'BT' + Date.now().toString().slice(-8);
+  try {
+    const response = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Booking could not be saved');
+    bookingRef = result.bookingId || result.booking?.booking_ref || bookingRef;
+  } catch (error) {
+    // DB save failed — still open WhatsApp so lead is not lost
+    console.warn('Booking DB save failed (will still open WhatsApp):', error.message);
+  }
+
+  form.reset();
+  closeModal(bookingModal);
+  if (submit) { submit.disabled = false; submit.innerHTML = originalHTML; }
+  // Always open WhatsApp with full structured details
+  window.open('https://wa.me/919187440916?text=' + encodeURIComponent(buildWAMessage(bookingRef)), '_blank');
+});;
 
 $('#review-form')?.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -84,102 +116,161 @@ $('#review-form')?.addEventListener('submit', (event) => {
   form.reset();
 });
 
-const aiPanel = $('#ai-panel');
-const chat = $('#chat');
-const chatHistory = [];
-$('#ai-open')?.addEventListener('click', () => aiPanel?.classList.toggle('show'));
-$('#ai-close')?.addEventListener('click', () => aiPanel?.classList.remove('show'));
-document.querySelectorAll('.ai-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    const input = $('#chat-input');
-    if (input) {
-      input.value = chip.dataset.q || chip.textContent.replace(/^[^\w]+/, '').trim();
-      aiPanel?.classList.add('show');
-      document.getElementById('chat-form')?.dispatchEvent(new Event('submit', { bubbles: true }));
+function cleanAiText(text) {
+  return String(text || '')
+    .replace(/\*\*(.*?)\*\*/gs, '$1')
+    .replace(/\*(.*?)\*/gs, '$1')
+    .replace(/__(.*?)__/gs, '$1')
+    .replace(/_(.*?)_/gs, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ── AI Quick Chat ─────────────────────────────────────────────
+(function () {
+  const aiPanel    = document.querySelector('#ai-panel');
+  const aiMessages = document.querySelector('#ai-messages');
+  const aiInput    = document.querySelector('#ai-input');
+  const aiSend     = document.querySelector('#ai-send');
+  const aiClose    = document.querySelector('#ai-close');
+  if (!aiPanel || !aiMessages) return;
+
+  // Persistent conversation history
+  let chatHistory = [];
+  let isThinking   = false;
+
+  function scrollBottom () {
+    if (aiMessages) aiMessages.scrollTop = aiMessages.scrollHeight;
+  }
+
+  function addMsg (role, text) {
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'ai-msg ai-msg-user' : 'ai-msg ai-msg-bot';
+    div.textContent = role === 'user' ? text : cleanAiText(text);
+    aiMessages.appendChild(div);
+    scrollBottom();
+  }
+
+  function addTyping () {
+    const div = document.createElement('div');
+    div.className = 'ai-msg ai-msg-bot ai-typing';
+    div.id = 'ai-typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    aiMessages.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function removeTyping () {
+    document.querySelector('#ai-typing-indicator')?.remove();
+  }
+
+  async function send (text) {
+    text = (text || '').trim();
+    if (!text || isThinking) return;
+    isThinking = true;
+    if (aiInput) { aiInput.value = ''; aiInput.disabled = true; }
+    if (aiSend) aiSend.disabled = true;
+
+    addMsg('user', text);
+    chatHistory.push({ role: 'user', content: text });
+
+    const typing = addTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: chatHistory.slice(-10) }),
+      });
+      const data = await res.json();
+      removeTyping();
+      const reply = cleanAiText(data.reply || 'Please WhatsApp us at +91 91874 40916 for help!');
+      addMsg('bot', reply);
+      chatHistory.push({ role: 'assistant', content: reply });
+    } catch {
+      removeTyping();
+      addMsg('bot', 'Our AI is briefly unavailable. WhatsApp us at +91 91874 40916 for instant help!');
+    } finally {
+      isThinking = false;
+      if (aiInput) { aiInput.disabled = false; aiInput.focus(); }
+      if (aiSend) aiSend.disabled = false;
     }
+  }
+
+  // Send button, form submit, and Enter key
+  const chatForm = document.querySelector('#chat-form');
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      send(aiInput?.value);
+    });
+  }
+  if (aiSend) aiSend.addEventListener('click', (e) => {
+    e.preventDefault();
+    send(aiInput?.value);
   });
-});
-function addChatMessage(role, content) {
-  if (!chat) return;
-  const paragraph = document.createElement('p');
-  paragraph.className = role === 'user' ? 'user' : 'bot';
-  paragraph.textContent = content;
-  chat.appendChild(paragraph);
-  chat.scrollTop = chat.scrollHeight;
+  if (aiInput) {
+    aiInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(aiInput.value); }
+    });
+  }
+
+  // Open AI panel — the FAB button
+  const aiOpen = document.querySelector('#ai-open');
+  if (aiOpen) {
+    aiOpen.addEventListener('click', () => {
+      const isOpen = aiPanel.classList.contains('show');
+      if (isOpen) {
+        aiPanel.classList.remove('show');
+        aiPanel.setAttribute('aria-hidden', 'true');
+      } else {
+        aiPanel.classList.add('show');
+        aiPanel.setAttribute('aria-hidden', 'false');
+        if (aiInput) aiInput.focus();
+      }
+    });
+  }
+
+  // Close AI panel
+  if (aiClose) aiClose.addEventListener('click', () => {
+    aiPanel.classList.remove('show');
+    aiPanel.setAttribute('aria-hidden', 'true');
+  });
+
+  // Quick-reply chips send the chip text to the AI
+  document.querySelectorAll('.ai-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.dataset.q || chip.textContent.trim();
+      if (!aiPanel.classList.contains('show')) {
+        aiPanel.classList.add('show');
+        aiPanel.setAttribute('aria-hidden', 'false');
+      }
+      send(q);
+    });
+  });
+
+  // Finder form opens AI panel
+  document.querySelector('#finder')?.addEventListener('submit', e => {
+    e.preventDefault();
+    aiPanel.classList.add('show');
+    aiPanel.setAttribute('aria-hidden', 'false');
+    const dest = document.querySelector('#finder-destination')?.value?.trim();
+    if (dest) send('I want to plan a trip to ' + dest);
+  });
+})();
+
+// If no AI panel on page, finder opens booking modal
+if (!document.querySelector('#ai-panel')) {
+  $('#finder')?.addEventListener('submit', (event) => { event.preventDefault(); openModal(bookingModal); });
 }
-function localTravelReply(message) {
-  const t = message.toLowerCase();
-  if (t.includes('lakshadweep') || t.includes('agatti') || t.includes('bangaram') || t.includes('kadmat')) {
-    return 'Lakshadweep is our speciality! 🏝 We offer Standard (3N/4D - Agatti island, snorkeling, glass-bottom boat) and Premium (4N/5D - Bangaram/Kadmat, scuba diving, beach bonfire). Permit is required — we handle it. Flights only from Kochi (Oct–May best season). How many guests and which month?';
-  }
-  if (t.includes('umrah') || t.includes('makkah') || t.includes('madinah') || t.includes('mecca') || t.includes('saudi')) {
-    return 'We offer 3 Umrah packages 🕌\n• Economy (10-12 days) – shared transport, 500m hotel\n• Standard (12-14 days) – closer hotel, ziyarat guide\n• Premium (14-15 days) – 5-star, private transport, from ₹1.2L\nAll include visa + flights + accommodation. Need valid passport (6+ months). How many persons travelling?';
-  }
-  if (t.includes('kashmir') || t.includes('gulmarg') || t.includes('dal lake') || t.includes('pahalgam')) {
-    return 'Kashmir is magical! 🏔 Two options:\n• Summer (Apr–Oct): Dal Lake houseboat, Gulmarg, Pahalgam, Srinagar sightseeing — 5 days from ₹28,000/person\n• Snow (Dec–Mar): Gulmarg skiing, Sonamarg, snowmobile rides\nShare travel month and group size for a precise quote!';
-  }
-  if (t.includes('maldives') || t.includes('honeymoon') || t.includes('couple')) {
-    return 'Maldives Honeymoon 💑 — 4 days from ₹80,000/couple. Overwater villa, couples spa, snorkeling, sunset cruise. Best months: Nov–April. Want to add any special arrangements like cake or flowers? Share your travel date!';
-  }
-  if (t.includes('dubai')) {
-    return 'Dubai 5 days from ₹55,000/person 🌆 — Burj Khalifa, desert safari, Dubai Mall, Gold Souk, Dhow cruise. Visa arranged by us. Best months: Nov–March. How many guests and preferred month?';
-  }
-  if (t.includes('thailand')) {
-    return 'Thailand 6 days from ₹65,000/person 🌴 — Phuket beaches, Phi Phi Islands, night markets, Thai massage. Visa-on-arrival for Indians. Best: Nov–April. Share guest count and month!';
-  }
-  if (t.includes('goa')) {
-    return 'Goa Beach 4 days 🌊 — North+South Goa, water sports (parasailing, jet ski), Fort Aguada, spice plantation. Flights from all major cities. When are you planning to visit and how many guests?';
-  }
-  if (t.includes('kerala') || t.includes('backwater') || t.includes('allepey') || t.includes('alleppey')) {
-    return 'Kerala Backwaters 4 days 🌿 — overnight houseboat on Alleppey/Kumarakom backwaters, Kathakali show, Periyar wildlife. Perfect for families and couples. Which month and how many guests?';
-  }
-  if (t.includes('andaman')) {
-    return 'Andaman 5 days 🐠 — Havelock Island (Radhanagar beach), Neil Island, scuba diving, glass-bottom boat, cellular jail. Best: Nov–May. Share travel dates and group size!';
-  }
-  if (t.includes('ajmer') || t.includes('dargah')) {
-    return 'Ajmer Sharif Dargah 3 days 🌹 — Direct package from Kerala including train/flight, hotel, ziyarat, Pushkar visit. We arrange everything. What month and how many pilgrims?';
-  }
-  if (t.includes('tirupati') || t.includes('balaji')) {
-    return 'Tirupati Balaji 3 days 🙏 — VIP darshan (skip the queue), accommodation near temple, prasadam. We handle all bookings. Share travel date and guest count!';
-  }
-  if (t.includes('urbania') || t.includes('van') || t.includes('vehicle') || t.includes('car hire') || t.includes('transfer')) {
-    return 'Force Urbania 12-seater van 🚌 — Premium van with experienced driver. Airport transfers, pilgrimages, family trips, corporate travel across Kerala, Tamil Nadu, Karnataka. Share pickup city, destination, date and number of passengers for a quote!';
-  }
-  if (t.includes('scuba') || t.includes('dive') || t.includes('diving')) {
-    return 'Scuba diving 🤿 — available in Lakshadweep (Bangaram/Kadmat) with PADI certified instructors. Beginner-friendly! Also available in Andaman. 3–4 nights minimum recommended. What\'s your diving experience level?';
-  }
-  if (t.includes('budget') || t.includes('cheap') || t.includes('affordable')) {
-    return 'Great budget options from Bahadur Tours:\n• Kashmir: from ₹28,000/person\n• Goa: from ₹18,000/person\n• Kerala: from ₹20,000/person\n• Umrah Economy: contact for current rates\nShare your max budget, travel month and number of guests — I\'ll find the best fit!';
-  }
-  if (/book|reserve|confirm|how to book/.test(t)) {
-    return 'Ready to book? 🎉 Click the "Plan my trip" button at the top, fill in your details, and our team will contact you within 2 hours via WhatsApp (+91 91874 40916) and email. You can also WhatsApp us directly!';
-  }
-  if (t.includes('price') || t.includes('cost') || t.includes('rate') || t.includes('how much')) {
-    return 'Here are our starting prices:\n• Lakshadweep: custom quote (permit + flights)\n• Umrah Premium: from ₹1.2L/person\n• Kashmir: from ₹28,000/person\n• Dubai: from ₹55,000/person\n• Maldives: from ₹80,000/couple\n• Thailand: from ₹65,000/person\nPrices vary by season and group size. Which destination interests you?';
-  }
-  return 'Welcome to Bahadur Tours! 🌍 We specialise in Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives, Thailand, and more. Share your destination, travel month, number of guests and approximate budget — I\'ll suggest the perfect package!';
-}
-$('#chat-form')?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const input = $('#chat-input');
-  const message = input?.value.trim();
-  if (!message) return;
-  addChatMessage('user', message);
-  chatHistory.push({ role: 'user', content: message });
-  input.value = '';
-  let reply;
-  try {
-    const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: chatHistory }) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Chat unavailable');
-    reply = result.reply;
-  } catch {
-    reply = localTravelReply(message);
-  }
-  chatHistory.push({ role: 'assistant', content: reply });
-  addChatMessage('assistant', reply);
-  if (/book|reserve|confirm/.test(message.toLowerCase())) setTimeout(() => openModal(bookingModal), 550);
-});
+
+
 
 $$('[data-filter]').forEach((tab) => tab.addEventListener('click', () => {
   const filter = tab.getAttribute('data-filter');

@@ -61,6 +61,11 @@
 
     footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 11px; color: #777; text-align: center; }
   </style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+  <link rel="manifest" href="/site.webmanifest"/>
 </head>
 <body>
   
@@ -90,8 +95,8 @@
       <div class="meta-grid">
         <div>📍 <span id="pdf-dest">Destination</span></div>
         <div>⏱ <span id="pdf-dur">Duration</span></div>
-        <div>🏨 <span id="pdf-hotels">Hotels</span></div>
-        <div>✈️ <span id="pdf-flights">Flights</span></div>
+        <div><i class="hgi-stroke hgi-building-05"></i> <span id="pdf-hotels">Hotels</span></div>
+        <div><i class="hgi-stroke hgi-airplane-01"></i> <span id="pdf-flights">Flights</span></div>
       </div>
     </div>
 
@@ -107,13 +112,13 @@
         <h2>Trip Inclusions</h2>
         <div class="includes-grid">
           <div class="inc-col">
-            <strong>✅ What's Included</strong>
+            <strong><i class="hgi-stroke hgi-checkmark-circle-02"></i> What's Included</strong>
             <ul id="pdf-inc">
               <li>Loading inclusions...</li>
             </ul>
           </div>
           <div class="inc-col">
-            <strong>❌ What's Not Included</strong>
+            <strong><i class="hgi-stroke hgi-cancel-01"></i> What's Not Included</strong>
             <ul id="pdf-exc">
               <li>Loading exclusions...</li>
             </ul>

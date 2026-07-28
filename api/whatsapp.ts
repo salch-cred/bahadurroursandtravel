@@ -2,11 +2,12 @@ import { SYSTEM_PROMPT } from './chat.js';
 
 // Helper to send WhatsApp messages using Meta Cloud API
 async function sendWhatsAppMessage(to: string, text: string) {
-  const token = process.env.WHATSAPP_TOKEN;
-  const phoneId = process.env.WHATSAPP_PHONE_ID;
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   if (!token || !phoneId) return;
 
-  await fetch(`https://graph.facebook.com/v17.0/${phoneId}/messages`, {
+  const apiVersion = process.env.WHATSAPP_API_VERSION || 'v21.0';
+  await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -22,14 +23,15 @@ async function sendWhatsAppMessage(to: string, text: string) {
 }
 
 export default async function handler(req: any, res: any) {
-  // ── GET: Webhook Verification for Meta ──────────────────────────────────
+  // ── GET: Webhook Verification for Meta ─────────────────────
   if (req.method === 'GET') {
     const mode = req.query?.['hub.mode'];
     const token = req.query?.['hub.verify_token'];
     const challenge = req.query?.['hub.challenge'];
     
     // You set WHATSAPP_VERIFY_TOKEN in Vercel to match what you put in Meta Dashboard
-    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'bahadur_tours_verify';
+    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+    if (!verifyToken) return res.status(503).json({ error: 'WHATSAPP_VERIFY_TOKEN is not configured' });
 
     if (mode === 'subscribe' && token === verifyToken) {
       return res.status(200).send(challenge);
@@ -37,7 +39,7 @@ export default async function handler(req: any, res: any) {
     return res.status(403).json({ error: 'Verification failed' });
   }
 
-  // ── POST: Receive message from WhatsApp ─────────────────────────────────
+  // ── POST: Receive message from WhatsApp ─────────────────────
   if (req.method === 'POST') {
     try {
       const body = req.body;

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Invoices — Bahadur Tours</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+<link rel="manifest" href="/site.webmanifest"/>
+<style>
+/* ── Sidebar nav icon fix ── */
+.admin-side nav a { display:flex !important; align-items:center !important; gap:9px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+.admin-side nav a i,.admin-side .admin-logout-btn i { font-size:1.05rem !important; flex-shrink:0 !important; width:20px !important; text-align:center !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; }
+
+/* ── Invoice stats cards ── */
+.inv-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem; }
+.inv-stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.2rem 1.4rem; display:flex; flex-direction:column; gap:.3rem; }
+.inv-stat-card.dark { background:linear-gradient(135deg,#0b4a3f,#0d5e51); color:#fff; border-color:transparent; }
+.inv-stat-card .stat-icon { font-size:1.5rem; opacity:.85; margin-bottom:.2rem; }
+.inv-stat-card.dark .stat-icon { color:#8ecfbe; }
+.inv-stat-card:not(.dark) .stat-icon { color:var(--accent,#1e7e5e); }
+.inv-stat-card .stat-label { font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.inv-stat-card.dark .stat-label { color:#a8d5c6; }
+.inv-stat-card:not(.dark) .stat-label { color:var(--muted); }
+.inv-stat-card .stat-value { font-size:1.85rem; font-weight:800; line-height:1.1; }
+.inv-stat-card.dark .stat-value { color:#fff; }
+.inv-stat-card:not(.dark) .stat-value { color:var(--text); }
+.inv-stat-card .stat-sub { font-size:.78rem; }
+.inv-stat-card.dark .stat-sub { color:#a8d5c6; }
+.inv-stat-card:not(.dark) .stat-sub { color:var(--muted); }
+
+/* ── Toolbar ── */
+.inv-toolbar { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
+.inv-search-wrap { position:relative; flex:1; min-width:220px; }
+.inv-search-wrap i { position:absolute; left:.75rem; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+.inv-search-wrap input { width:100%; padding:.55rem .75rem .55rem 2.2rem; border-radius:10px; border:1px solid var(--border); background:var(--surface); font-size:.88rem; box-sizing:border-box; }
+.inv-toolbar select { padding:.52rem .8rem; border-radius:10px; border:1px solid var(--border); background:var(--surface); font-size:.85rem; cursor:pointer; }
+.inv-export-btn { padding:.5rem 1rem; border-radius:10px; background:var(--surface); border:1px solid var(--border); font-size:.82rem; cursor:pointer; display:flex; align-items:center; gap:.4rem; white-space:nowrap; }
+.inv-export-btn:hover { background:var(--hover,#f3f4f6); }
+
+/* ── Table ── */
+.inv-table-wrap { overflow-x:auto; border-radius:14px; border:1px solid var(--border); }
+.inv-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+.inv-table thead th { padding:.85rem 1rem; text-align:left; font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); background:var(--surface); border-bottom:1px solid var(--border); white-space:nowrap; position:sticky; top:0; z-index:1; }
+.inv-table tbody tr { border-bottom:1px solid var(--border); transition:background .12s; }
+.inv-table tbody tr:last-child { border-bottom:none; }
+.inv-table tbody tr:hover { background:var(--hover,rgba(0,0,0,.03)); }
+.inv-table td { padding:.85rem 1rem; vertical-align:top; }
+.inv-table td .cell-main { font-weight:700; color:var(--text); font-size:.92rem; font-family:monospace; }
+.inv-table td .cell-sub  { font-size:.75rem; color:var(--muted); margin-top:.1rem; display:block; }
+.inv-table td .cell-amount { font-size:1rem; font-weight:800; color:#0b4a3f; }
+
+/* ── Status badges ── */
+.inv-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.28rem .75rem; border-radius:20px; font-size:.74rem; font-weight:700; letter-spacing:.02em; white-space:nowrap; }
+.inv-badge::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.7; }
+.inv-badge.paid     { background:#d1fae5; color:#065f46; }
+.inv-badge.partpaid { background:#dbeafe; color:#1e40af; }
+.inv-badge.draft    { background:#fef3c7; color:#92400e; }
+.inv-badge.overdue  { background:#fee2e2; color:#991b1b; }
+.inv-badge.sent     { background:#ede9fe; color:#5b21b6; }
+
+/* ── Actions ── */
+.inv-actions { display:flex; align-items:center; gap:.4rem; }
+.inv-action-btn { width:32px; height:32px; border-radius:8px; border:1px solid var(--border); background:var(--surface); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:.9rem; text-decoration:none; color:var(--text); transition:all .12s; flex-shrink:0; }
+.inv-action-btn:hover { background:var(--accent,#1e7e5e); color:#fff; border-color:var(--accent,#1e7e5e); }
+.inv-action-btn.danger:hover { background:#dc2626; border-color:#dc2626; color:#fff; }
+.inv-action-btn.paid-btn { color:#065f46; border-color:#a7f3d0; background:#ecfdf5; }
+.inv-action-btn.paid-btn:hover { background:#065f46; border-color:#065f46; color:#fff; }
+
+.inv-panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.2rem; flex-wrap:wrap; gap:.5rem; }
+.inv-count-pill { font-size:.8rem; color:var(--muted); background:var(--surface); border:1px solid var(--border); padding:.3rem .8rem; border-radius:20px; }
+.inv-empty { text-align:center; padding:4rem 2rem; color:var(--muted); }
+.inv-empty i { font-size:3rem; display:block; margin-bottom:.75rem; }
+
+@media (max-width:900px) { .inv-stats { grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body class="admin-page">
+<main class="admin-shell">
+<div class="admin-grid">
+
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html" class="active"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+  </nav>
+  <button class="admin-logout-btn" id="admin-logout"
+    onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'">
+    <i class="hgi-stroke hgi-logout-03"></i> Logout
+  </button>
+</aside>
+
+<section class="admin-main glass">
+
+  <div class="admin-top">
+    <div>
+      <span class="kicker" id="admin-date">Financial Records</span>
+      <h1>Latest Invoices</h1>
+      <p class="sync-pill" id="admin-state"><span class="sync-dot"></span><span class="sync-text">Connecting…</span></p>
+    </div>
+    <div class="admin-actions">
+      <button type="button" class="icon-btn" id="admin-refresh" title="Refresh" aria-label="Refresh data">
+        <i class="hgi-stroke hgi-refresh"></i>
+      </button>
+      <a class="btn btn-dark" href="billing.html"><i class="hgi-stroke hgi-add-01"></i> New Invoice</a>
+      <button type="button" class="btn btn-outline btn-small" id="admin-lock">Lock</button>
+    </div>
+  </div>
+
+  <div class="inv-stats">
+    <div class="inv-stat-card dark">
+      <i class="hgi-stroke hgi-receipt-02 stat-icon"></i>
+      <span class="stat-label">Total Invoiced</span>
+      <span class="stat-value" id="metric-total">—</span>
+      <span class="stat-sub">All invoices</span>
+    </div>
+    <div class="inv-stat-card">
+      <i class="hgi-stroke hgi-checkmark-circle-02 stat-icon"></i>
+      <span class="stat-label">Paid</span>
+      <span class="stat-value" id="metric-paid">—</span>
+      <span class="stat-sub">Fully paid</span>
+    </div>
+    <div class="inv-stat-card">
+      <i class="hgi-stroke hgi-loading-03 stat-icon"></i>
+      <span class="stat-label">Pending</span>
+      <span class="stat-value" id="metric-unpaid">—</span>
+      <span class="stat-sub">Draft / unpaid</span>
+    </div>
+    <div class="inv-stat-card">
+      <i class="hgi-stroke hgi-coins-01 stat-icon"></i>
+      <span class="stat-label">Part Paid</span>
+      <span class="stat-value" id="metric-partpaid">—</span>
+      <span class="stat-sub">Partially paid</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="inv-panel-head">
+      <div><span class="kicker">Financial Records</span><h3 style="margin:0">Latest Invoices</h3></div>
+      <span class="inv-count-pill" id="invoice-count">Loading…</span>
+    </div>
+
+    <div class="inv-toolbar">
+      <div class="inv-search-wrap">
+        <i class="hgi-stroke hgi-search-01"></i>
+        <input id="invoice-search" type="search" placeholder="Search customer, invoice no, booking ref…" autocomplete="off">
+      </div>
+      <select id="invoice-status-filter">
+        <option value="">All statuses</option>
+        <option value="paid">Paid</option>
+        <option value="part paid">Part paid</option>
+        <option value="sent">Sent</option>
+        <option value="draft">Draft</option>
+        <option value="overdue">Overdue</option>
+      </select>
+      <a href="billing.html" class="btn btn-dark btn-small"><i class="hgi-stroke hgi-add-01"></i> New Invoice</a>
+      <button class="inv-export-btn" id="export-inv-csv"><i class="hgi-stroke hgi-download-04"></i> Export CSV</button>
+    </div>
+
+    <div class="inv-table-wrap">
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th style="min-width:180px">Invoice No.</th>
+            <th style="min-width:180px">Customer</th>
+            <th style="min-width:150px">Booking Ref</th>
+            <th style="min-width:120px">Date</th>
+            <th style="min-width:120px">Due Date</th>
+            <th style="min-width:110px">Status</th>
+            <th style="min-width:120px">Total</th>
+            <th style="min-width:150px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="invoice-rows">
+          <tr><td colspan="8" style="padding:3rem;text-align:center;color:var(--muted)">Loading invoices…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</div>
+</main>
+
+<dialog class="admin-login" id="admin-login">
+  <form method="dialog" id="admin-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span>
+    <h2>Unlock dashboard</h2>
+    <p>Enter the private admin token configured in Vercel.</p>
+    <label>Admin token
+      <span class="token-field">
+        <input type="password" id="admin-token" autocomplete="current-password" required>
+        <button type="button" class="token-toggle" id="admin-token-toggle" aria-label="Show token">
+          <i class="hgi-stroke hgi-eye"></i>
+        </button>
+      </span>
+    </label>
+    <button class="btn btn-dark full" id="admin-login-submit">Open dashboard</button>
+    <small id="login-error"></small>
+  </form>
+</dialog>
+
+<script type="module" src="invoices-admin.js"></script>
+</body>
+</html>

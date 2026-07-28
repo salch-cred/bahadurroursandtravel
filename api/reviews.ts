@@ -1,31 +1,50 @@
 import { put } from '@vercel/blob';
-import {db,clean} from './_db.js';
+import {db,clean,requireAdmin} from './_db.js';
+
+export const config={api:{bodyParser:{sizeLimit:'50mb'}}};
+
+function safeFileName(raw: string): string {
+  // Keep only safe characters for Vercel Blob path
+  return String(raw||'upload')
+    .replace(/[^a-zA-Z0-9._\-]/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 80) || 'upload';
+}
+
+async function uploadFile(data:string,mimeType:string,fileName:string){
+  if(!process.env.BLOB_READ_WRITE_TOKEN)throw new Error('Media storage is not configured. Please contact us on WhatsApp.');
+  const buffer=Buffer.from(String(data),'base64');
+  const MAX=50*1024*1024; // 50 MB
+  if(buffer.length>MAX)throw new Error('File too large. Maximum size is 50 MB per file.');
+  const allowed=['image/jpeg','image/png','image/webp','image/heic','image/heif','video/mp4','video/webm','video/quicktime','video/mov','video/avi'];
+  const mime=String(mimeType).toLowerCase();
+  if(!allowed.includes(mime))throw new Error('Unsupported file type. Upload images (JPEG, PNG, WebP) or videos (MP4, WebM, MOV).');
+  const ext=mime.includes('video/')?'video':'image';
+  const safe=safeFileName(fileName);
+  const blob=await put(`reviews/${ext}/${Date.now()}-${safe}`,buffer,{access:'public',contentType:mime});
+  return {url:blob.url,type:ext};
+}
 
 export default async function handler(req:any,res:any){
   const sql=db();
   try{
-    // ─── GET ───────────────────────────────────────────────────────
+    // ── GET ──────────────────────────────────────────────────────────
     if(req.method==='GET'){
       const slug=clean(req.query?.package,160);
       const limit=Math.min(200,Math.max(1,Number(req.query?.limit)||8));
       const isAdmin=req.query?.admin==='1';
-
-      // Admin: return all reviews with full details including id and status
       if(isAdmin){
-        const tok=String(req.headers?.authorization||'').replace('Bearer ','').trim();
-        if(!tok||tok!==process.env.ADMIN_TOKEN)return res.status(401).json({error:'Unauthorised'});
+        if(!requireAdmin(req,res))return;
         const rows=await sql`select id,name,trip,rating,text,booking_ref,package_slug,media_url,media_type,status,created_at from reviews order by created_at desc limit ${limit}`;
         return res.status(200).json({reviews:rows});
       }
-
-      // Public: only approved reviews
       const rows=slug
         ?await sql`select name,trip,rating,text,media_url,media_type,created_at from reviews where status='approved' and (package_slug=${slug} or package_slug is null) order by created_at desc limit ${limit}`
         :await sql`select name,trip,rating,text,media_url,media_type,created_at from reviews where status='approved' order by created_at desc limit ${limit}`;
       return res.status(200).json({reviews:rows});
     }
 
-    // ─── POST (submit new review) ──────────────────────────────────
+    // ── POST (submit new review) ──────────────────────────────────────
     if(req.method==='POST'){
       const b=req.body||{};
       if(!b.consent)return res.status(400).json({error:'Publication consent is required'});
@@ -55,29 +74,28 @@ export default async function handler(req:any,res:any){
       return res.status(201).json({ok:true,status});
     }
 
-    // ─── PATCH (update status) ─────────────────────────────────────
+    // ── PATCH (update status) ─────────────────────────────────────────
     if(req.method==='PATCH'){
-      const tok=String(req.headers?.authorization||'').replace('Bearer ','').trim();
-      if(!tok||tok!==process.env.ADMIN_TOKEN)return res.status(401).json({error:'Unauthorised'});
-      const id=Number(req.query?.id);
+      if(!requireAdmin(req,res))return;
+      const id=clean(req.query?.id||'',40);
       const {status}=req.body||{};
       if(!id||!['approved','pending','rejected'].includes(status))return res.status(400).json({error:'Invalid request'});
-      await sql`update reviews set status=${status} where id=${id}`;
+      await sql`update reviews set status=${status} where id=${id}::uuid`;
       return res.status(200).json({ok:true});
     }
 
-    // ─── DELETE ────────────────────────────────────────────────────
+    // ── DELETE ────────────────────────────────────────────────────────
     if(req.method==='DELETE'){
-      const tok=String(req.headers?.authorization||'').replace('Bearer ','').trim();
-      if(!tok||tok!==process.env.ADMIN_TOKEN)return res.status(401).json({error:'Unauthorised'});
-      const id=Number(req.query?.id);
+      if(!requireAdmin(req,res))return;
+      const id=clean(req.query?.id||'',40);
       if(!id)return res.status(400).json({error:'Review ID required'});
-      await sql`delete from reviews where id=${id}`;
+      await sql`delete from reviews where id=${id}::uuid`;
       return res.status(200).json({ok:true});
     }
 
     return res.status(405).json({error:'Method not allowed'});
   }catch(error){
+    console.error('Review error:',error);
     return res.status(500).json({error:error instanceof Error?error.message:'Review request failed'});
   }
 }

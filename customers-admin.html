@@ -9,215 +9,171 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
 <style>
-/* ── Customers page specific ──────────────────────────────── */
 .cust-shell{display:grid;grid-template-columns:380px 1fr;gap:18px;height:100%}
 .cust-form-col{display:flex;flex-direction:column;gap:14px}
 .cust-form-panel{border-radius:18px;padding:22px;background:#ffffffd4;border:1px solid var(--line)}
 .cust-form-panel h2{font-size:26px;margin:0 0 18px}
 .cust-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
 .cust-field label{font-size:12px;font-weight:800;color:#65736e;text-transform:uppercase;letter-spacing:.06em}
-.cust-field input,.cust-field textarea,.cust-field select{border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;background:#fff;transition:.15s}
-.cust-field input:focus,.cust-field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px #0b665518}
-.cust-field textarea{resize:vertical;min-height:70px}
-.cust-tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.tag-chip{display:inline-flex;align-items:center;gap:4px;background:#e8f4f0;color:var(--green);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer}
-.tag-chip button{border:0;background:none;color:inherit;padding:0;line-height:1;font-size:14px;cursor:pointer}
-.tag-add{display:flex;gap:6px;margin-top:6px}
-.tag-add input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
-.tag-add button{border:0;background:var(--green);color:#fff;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer}
-.cust-form-btns{display:flex;gap:8px;margin-top:4px}
-.cust-form-btns button{flex:1;padding:12px;border-radius:11px;font-weight:800;font-size:14px;border:0;cursor:pointer;transition:.15s}
-.btn-save{background:var(--green);color:#fff}
-.btn-save:hover{background:#084f40}
-.btn-clear{background:#f0f4f2;color:var(--ink)}
-.btn-clear:hover{background:#e0e8e3}
-.btn-delete-cust{background:#fff0ef;color:#b94040;border:1px solid #f5c5c5!important}
-.btn-delete-cust:hover{background:#b94040;color:#fff}
-.cust-state{font-size:13px;color:#64716d;min-height:20px;text-align:center}
-
-/* ── Right panel: search + table ──────────────────────────── */
-.cust-list-col{display:flex;flex-direction:column;gap:14px;min-width:0}
-.cust-list-panel{border-radius:18px;padding:22px;background:#ffffffd4;border:1px solid var(--line);flex:1;overflow:hidden;display:flex;flex-direction:column}
-.cust-list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.cust-list-head h2{font-size:22px;margin:0}
-.cust-search-wrap{position:relative;flex:1;min-width:180px;max-width:320px}
-.cust-search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#8fa099;pointer-events:none}
-.cust-search-wrap input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px 9px 34px;font-size:14px;box-sizing:border-box}
-.cust-search-wrap input:focus{outline:none;border-color:var(--green)}
-.cust-table-wrap{overflow:auto;flex:1}
-.cust-table{width:100%;border-collapse:collapse;font-size:13px}
-.cust-table th{text-align:left;padding:10px 10px;border-bottom:2px solid var(--line);white-space:nowrap;color:#65736e;font-size:11px;text-transform:uppercase;letter-spacing:.07em}
-.cust-table td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-.cust-table tr:last-child td{border-bottom:0}
-.cust-table tr:hover td{background:#f6faf8;cursor:pointer}
-.cust-table tr.selected td{background:#eaf4f0}
-.cust-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),#1a9f82);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;flex-shrink:0}
-.cust-name-cell{display:flex;align-items:center;gap:10px}
-.cust-name-cell div{display:flex;flex-direction:column}
-.cust-name-cell strong{font-size:14px;line-height:1.2}
-.cust-name-cell small{color:#78847f;font-size:11px}
-.cust-badge{padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;background:#e8f4f0;color:var(--green)}
-.cust-empty{text-align:center;padding:60px 20px;color:#94a49e}
-.cust-empty i{font-size:40px;display:block;margin-bottom:12px;opacity:.4}
-.stat-bar{display:flex;gap:14px;flex-wrap:wrap}
-.stat-pill{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;min-width:100px}
-.stat-pill strong{font:800 22px Manrope;color:var(--ink)}
-.stat-pill small{font-size:11px;color:#8fa099;margin-top:2px}
-
-/* ── Responsive ──────────────────────────────────────────── */
+.cust-field input,.cust-field textarea,.cust-field select{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit;font-size:14px;transition:border-color .18s,box-shadow .18s;width:100%}
+.cust-field input:focus,.cust-field textarea:focus,.cust-field select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px #0b665520}
+.cust-field textarea{min-height:80px;resize:vertical}
+.cust-tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.cust-tag{padding:4px 12px;border-radius:99px;background:#e4f5ed;color:#167050;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #c0e8d0}
+.cust-tag.rem{background:#ffe5e5;color:#b91c1c;border-color:#fcc}
+.cust-tag-input{flex:1;min-width:100px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px}
+.form-actions{display:flex;gap:10px;margin-top:4px}
+.cust-table-wrap{background:#ffffffd4;border-radius:18px;border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+.cust-table-head{padding:18px 20px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.cust-table-head h3{margin:0;font-size:18px}
+.cust-table-head input{padding:9px 14px;border-radius:10px;border:1px solid var(--line);font-size:13px;min-width:200px;background:#fff;transition:border-color .18s,box-shadow .18s}
+.cust-table-head input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px #0b665520}
+.cust-table{overflow-y:auto;flex:1}
+.cust-table table{width:100%;border-collapse:collapse;font-size:13px}
+.cust-table th,.cust-table td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+.cust-table th{font-size:11px;font-weight:800;color:#65736e;text-transform:uppercase;letter-spacing:.06em;background:#f9fbf9;position:sticky;top:0}
+.cust-table tr{transition:background .15s}
+.cust-table tbody tr:hover{background:#f4f8f5;cursor:pointer}
+.cust-table tr.selected{background:#e4f5ed}
+.cust-count{padding:10px 20px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 @media(max-width:900px){.cust-shell{grid-template-columns:1fr;height:auto}}
-@media(max-width:620px){
-  .cust-form-panel h2{font-size:22px}
-  .cust-list-panel{padding:14px}
-  .stat-bar{gap:8px}
-  .stat-pill{min-width:80px}
-}
 </style>
 </head>
-<body>
+<body class="admin-page">
 <main class="admin-shell">
 <div class="admin-grid">
-
-<!-- ── Sidebar nav ────────────────────────────────────────── -->
 <aside class="admin-side glass">
   <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
   <nav>
     <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
-    <a href="packages-admin.html"><i class="hgi-stroke hgi-package"></i> Package manager</a>
+    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
     <a href="customers-admin.html" class="active"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
     <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
     <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
     <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
     <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
-    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
-    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
   </nav>
+  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
 </aside>
-
-<!-- ── Main content ───────────────────────────────────────── -->
 <section class="admin-main glass">
-  <div class="admin-top" style="margin-bottom:18px">
+  <div class="admin-top">
     <div>
-      <span class="kicker">Customer management</span>
+      <span class="kicker">Customer Management</span>
       <h1>Customers</h1>
+      <p class="sync-pill" id="sync-pill"><span class="sync-dot"></span><span id="sync-text">Loading…</span></p>
     </div>
     <div class="admin-actions">
-      <button class="btn btn-light" onclick="clearForm()"><i class="hgi-stroke hgi-add-01"></i> New customer</button>
+      <button type="button" class="icon-btn" id="refresh-btn" title="Refresh"><i class="hgi-stroke hgi-refresh"></i></button>
+      <button type="button" class="btn btn-outline btn-small" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'">Lock</button>
     </div>
   </div>
 
-  <!-- Stats bar -->
-  <div class="stat-bar" id="cust-stats" style="margin-bottom:18px">
-    <div class="stat-pill"><strong id="stat-total">—</strong><small>Total customers</small></div>
-    <div class="stat-pill"><strong id="stat-cities">—</strong><small>Cities</small></div>
-    <div class="stat-pill"><strong id="stat-bookings">—</strong><small>Total bookings</small></div>
+  <!-- Stats row -->
+  <div class="operations-grid" style="margin:16px 0 18px">
+    <div class="ops-card"><i class="hgi-stroke hgi-user-multiple-02"></i><small>Total Customers</small><strong id="metric-total">—</strong><span>In database</span></div>
+    <div class="ops-card"><i class="hgi-stroke hgi-location-01"></i><small>Cities</small><strong id="metric-cities">—</strong><span>Unique cities</span></div>
+    <div class="ops-card"><i class="hgi-stroke hgi-star-01"></i><small>VIP / Tagged</small><strong id="metric-tagged">—</strong><span>With tags</span></div>
+    <div class="ops-card"><i class="hgi-stroke hgi-calendar-01"></i><small>Added today</small><strong id="metric-today">—</strong><span>New customers</span></div>
   </div>
 
-  <!-- Two-column layout -->
   <div class="cust-shell">
-
-    <!-- ── Left: Add / Edit form ─────────────────────────── -->
+    <!-- Left: Add/Edit form -->
     <div class="cust-form-col">
       <div class="cust-form-panel">
         <h2 id="form-title">Add customer</h2>
         <input type="hidden" id="edit-id">
-
         <div class="cust-field">
           <label>Full name *</label>
-          <input id="f-name" placeholder="e.g. Mohammed Salman" required>
+          <input type="text" id="f-name" placeholder="e.g. Salman Ahmed" required>
         </div>
         <div class="cust-field">
-          <label>WhatsApp / Phone *</label>
-          <input id="f-phone" placeholder="+91 90000 00000" required>
+          <label>Phone *</label>
+          <input type="tel" id="f-phone" placeholder="+91 98765 43210" required>
         </div>
         <div class="cust-field">
           <label>Email</label>
-          <input id="f-email" placeholder="customer@email.com" type="email">
+          <input type="email" id="f-email" placeholder="customer@email.com">
         </div>
         <div class="cust-field">
-          <label>City / Location</label>
-          <input id="f-city" placeholder="e.g. Kozhikode, Kerala">
+          <label>City</label>
+          <input type="text" id="f-city" placeholder="e.g. Kochi">
         </div>
         <div class="cust-field">
           <label>Address</label>
-          <textarea id="f-address" placeholder="Full postal address (optional)"></textarea>
+          <textarea id="f-address" placeholder="Full address"></textarea>
+        </div>
+        <div class="cust-field">
+          <label>Tags <small style="font-weight:400;text-transform:none">(press Enter to add)</small></label>
+          <div class="cust-tags-wrap" id="tags-display"></div>
+          <input type="text" class="cust-tag-input" id="f-tag-input" placeholder="Add tag + Enter">
+        </div>
+        <div class="cust-field">
+          <label>Note</label>
+          <textarea id="f-note" placeholder="Internal notes about this customer"></textarea>
         </div>
         <div class="cust-field">
           <label>Preferred language</label>
-          <select id="f-language">
+          <select id="f-lang">
             <option>English</option>
-            <option>Malayalam</option>
             <option>Hindi</option>
+            <option>Malayalam</option>
             <option>Arabic</option>
-            <option>Tamil</option>
+            <option>Urdu</option>
           </select>
         </div>
-        <div class="cust-field">
-          <label>Notes</label>
-          <textarea id="f-note" placeholder="Dietary needs, accessibility, VIP, preferences…"></textarea>
+        <div class="form-actions">
+          <button class="btn btn-dark" id="save-btn" type="button">Save customer</button>
+          <button class="btn btn-outline" id="clear-btn" type="button">Clear</button>
         </div>
-        <div class="cust-field">
-          <label>Tags</label>
-          <div class="cust-tags-row" id="tags-row"></div>
-          <div class="tag-add">
-            <input id="tag-input" placeholder="Type a tag, press Add" maxlength="40">
-            <button type="button" onclick="addTag()">Add</button>
-          </div>
-        </div>
-
-        <div class="cust-form-btns">
-          <button class="btn-save" onclick="saveCustomer()"><i class="hgi-stroke hgi-checkmark-circle-02"></i> Save</button>
-          <button class="btn-clear" onclick="clearForm()">Clear</button>
-          <button class="btn-delete-cust" id="btn-delete" style="display:none" onclick="deleteCustomer()"><i class="hgi-stroke hgi-delete-02"></i></button>
-        </div>
-        <p class="cust-state" id="form-state"></p>
+        <small id="form-state" style="color:#167050;margin-top:8px;display:block"></small>
       </div>
     </div>
 
-    <!-- ── Right: Search + Table ─────────────────────────── -->
-    <div class="cust-list-col">
-      <div class="cust-list-panel">
-        <div class="cust-list-head">
-          <h2>All customers</h2>
-          <div class="cust-search-wrap">
-            <i class="hgi-stroke hgi-search-01"></i>
-            <input id="cust-search" placeholder="Search name, phone, city…" oninput="onSearch(this.value)">
-          </div>
-        </div>
-
-        <div class="cust-table-wrap">
-          <table class="cust-table">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>City</th>
-                <th>Tags</th>
-                <th>Added</th>
-              </tr>
-            </thead>
-            <tbody id="cust-tbody">
-              <tr><td colspan="5" class="cust-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading customers…</td></tr>
-            </tbody>
-          </table>
-        </div>
+    <!-- Right: Customer list -->
+    <div class="cust-table-wrap">
+      <div class="cust-table-head">
+        <div><span class="kicker">All Customers</span><h3 id="table-title">Customers</h3></div>
+        <input type="search" id="cust-search" placeholder="Search name, phone, city…">
       </div>
+      <div class="cust-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>City</th>
+              <th>Tags</th>
+              <th>Bookings</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="cust-tbody">
+            <tr><td colspan="6" class="empty-cell"><span class="skel-value"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cust-count" id="cust-count"></div>
     </div>
-
-  </div><!-- /cust-shell -->
+  </div>
 </section>
 </div>
 </main>
 
-<!-- Login dialog (reuses admin auth pattern) -->
 <dialog class="admin-login" id="admin-login">
   <form method="dialog" id="admin-login-form">
     <img src="assets/bahadur-logo.png" alt="Bahadur">
     <span class="kicker">Authorised staff only</span>
     <h2>Unlock dashboard</h2>
     <p>Enter the private admin token configured in Vercel.</p>
-    <label>Admin token<input type="password" id="admin-token" required></label>
-    <button class="btn btn-dark full">Open dashboard</button>
+    <label>Admin token
+      <span class="token-field">
+        <input type="password" id="admin-token" autocomplete="current-password" required>
+        <button type="button" class="token-toggle" id="admin-token-toggle" aria-label="Show token"><i class="hgi-stroke hgi-eye"></i></button>
+      </span>
+    </label>
+    <button class="btn btn-dark full" id="admin-login-submit">Open dashboard</button>
     <small id="login-error"></small>
   </form>
 </dialog>
@@ -228,12 +184,176 @@ const TOKEN_KEY = 'bahadur-admin-token';
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
 function headers()  { return { 'Content-Type':'application/json', 'x-admin-token': getToken() }; }
 
-async function checkAuth() {
-  const dlg = document.getElementById('admin-login');
-  const saved = getToken();
-  if (!saved) { dlg.showModal(); return false; }
-  const r = await fetch('/api/admin', { headers: headers() });
-  if (!r.ok) { dlg.showModal(); return false; }
+function setSyncState(state,text){
+  const pill=$('#sync-pill');if(!pill)return;
+  pill.classList.remove('is-live','is-busy','is-error');
+  if(state)pill.classList.add(state);
+  $('#sync-text').textContent=text;
+}
+
+function login(msg=''){
+  $('#login-error').textContent=msg;
+  const d=$('#admin-login');
+  if(!d.open)d.showModal();
+  setTimeout(()=>$('#admin-token')?.focus(),50);
+}
+
+function renderTags(){
+  $('#tags-display').innerHTML=tags.map((t,i)=>
+    `<span class="cust-tag rem" data-i="${i}">${t} ×</span>`).join('');
+  document.querySelectorAll('.cust-tag.rem').forEach(el=>{
+    el.onclick=()=>{tags.splice(Number(el.dataset.i),1);renderTags();};
+  });
+}
+
+$('#f-tag-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    const val=e.target.value.trim().replace(/,$/,'');
+    if(val&&!tags.includes(val)){tags.push(val);renderTags();}
+    e.target.value='';
+  }
+});
+
+function renderTable(rows){
+  $('#cust-count').textContent=`Showing ${rows.length} of ${customers.length} customers`;
+  $('#cust-tbody').innerHTML=rows.length
+    ?rows.map(c=>`<tr data-id="${c.id}">
+        <td><strong>${c.name}</strong>${c.email?`<small>${c.email}</small>`:''}</td>
+        <td>${c.phone}</td>
+        <td>${c.city||'—'}</td>
+        <td>${Array.isArray(c.tags)&&c.tags.length?c.tags.map(t=>`<span class="cust-tag">${t}</span>`).join(' '):'—'}</td>
+        <td>${c.total_bookings||0}</td>
+        <td style="display:flex;gap:6px">
+          <button class="mini-action-btn" data-edit="${c.id}" title="Edit"><i class="hgi-stroke hgi-edit-01"></i></button>
+          <a href="billing.html?customer_phone=${encodeURIComponent(c.phone)}" class="mini-action-btn" title="Create invoice"><i class="hgi-stroke hgi-receipt-02"></i></a>
+          <button class="mini-action-btn" data-del="${c.id}" style="color:#b91c1c" title="Delete"><i class="hgi-stroke hgi-delete-02"></i></button>
+        </td>
+      </tr>`).join('')
+    :'<tr><td colspan="6" class="empty-cell">No customers found.</td></tr>';
+
+  document.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick=()=>fillForm(customers.find(c=>c.id===btn.dataset.edit));
+  });
+  document.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick=()=>deleteCustomer(btn.dataset.del);
+  });
+}
+
+function fillForm(c){
+  if(!c)return;
+  editId=c.id;
+  $('#edit-id').value=c.id;
+  $('#f-name').value=c.name||'';
+  $('#f-phone').value=c.phone||'';
+  $('#f-email').value=c.email||'';
+  $('#f-city').value=c.city||'';
+  $('#f-address').value=c.address||'';
+  $('#f-note').value=c.note||'';
+  $('#f-lang').value=c.preferred_language||'English';
+  tags=Array.isArray(c.tags)?[...c.tags]:[];
+  renderTags();
+  $('#form-title').textContent='Edit customer';
+  $('#form-state').textContent='';
+  $('#f-name').focus();
+  document.querySelectorAll('.cust-table tr').forEach(tr=>tr.classList.remove('selected'));
+  document.querySelector(`tr[data-id="${c.id}"]`)?.classList.add('selected');
+}
+
+function clearForm(){
+  editId=null;
+  $('#edit-id').value='';
+  ['#f-name','#f-phone','#f-email','#f-city','#f-address','#f-note'].forEach(s=>{$(s).value='';});
+  $('#f-lang').value='English';
+  tags=[];
+  renderTags();
+  $('#form-title').textContent='Add customer';
+  $('#form-state').textContent='';
+  document.querySelectorAll('.cust-table tr').forEach(tr=>tr.classList.remove('selected'));
+}
+
+async function saveCustomer(){
+  const name=$('#f-name').value.trim();
+  const phone=$('#f-phone').value.trim();
+  if(!name||!phone){$('#form-state').textContent='Name and phone are required';$('#form-state').style.color='#b91c1c';return;}
+  const btn=$('#save-btn');btn.disabled=true;btn.textContent='Saving…';
+  const body={name,phone,email:$('#f-email').value.trim(),city:$('#f-city').value.trim(),
+    address:$('#f-address').value.trim(),note:$('#f-note').value.trim(),
+    preferred_language:$('#f-lang').value,tags};
+  try{
+    const url=editId?`/api/customers?id=${editId}`:'/api/customers';
+    const method=editId?'PUT':'POST';
+    const r=await fetch(url,{method,headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Save failed');
+    $('#form-state').textContent=editId?'Customer updated ✓':'Customer added ✓';
+    $('#form-state').style.color='#167050';
+    clearForm();
+    await loadAll();
+  }catch(e){$('#form-state').textContent='Error: '+e.message;$('#form-state').style.color='#b91c1c';}
+  finally{btn.disabled=false;btn.textContent='Save customer';}
+}
+
+async function deleteCustomer(id){
+  if(!confirm('Delete this customer? This cannot be undone.'))return;
+  try{
+    const r=await fetch(`/api/customers?id=${id}`,{method:'DELETE',headers:auth()});
+    if(!r.ok)throw new Error('Delete failed');
+    if(editId===id)clearForm();
+    await loadAll();
+  }catch(e){alert('Delete failed: '+e.message);}
+}
+
+async function loadAll(){
+  const refreshBtn=$('#refresh-btn');
+  refreshBtn?.classList.add('is-loading');refreshBtn?.setAttribute('disabled','');
+  setSyncState('is-busy','Loading customers…');
+  try{
+    const r=await fetch('/api/customers?limit=200',{headers:auth()});
+    if(r.status===401){login('Token expired.');return;}
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Load failed');
+    customers=d.customers||[];
+    // Update metric cards
+    const cities=new Set(customers.map(c=>c.city).filter(Boolean));
+    const tagged=customers.filter(c=>Array.isArray(c.tags)&&c.tags.length>0);
+    const today=new Date().toISOString().slice(0,10);
+    const todayCount=customers.filter(c=>c.created_at&&c.created_at.slice(0,10)===today);
+    const set=(id,val)=>{const el=$(id);if(el){el.textContent=val;el.dataset.loaded='1';}};
+    set('#metric-total',customers.length);
+    set('#metric-cities',cities.size);
+    set('#metric-tagged',tagged.length);
+    set('#metric-today',todayCount.length);
+    applySearch();
+    setSyncState('is-live',`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`);
+  }catch(e){
+    setSyncState('is-error','Error: '+e.message);
+    $('#cust-tbody').innerHTML=`<tr><td colspan="6" class="empty-cell">${e.message}<br><small>Check DATABASE_URL in Vercel.</small></td></tr>`;
+  }finally{
+    refreshBtn?.classList.remove('is-loading');refreshBtn?.removeAttribute('disabled');
+  }
+}
+
+function applySearch(){
+  const q=$('#cust-search').value.toLowerCase();
+  renderTable(customers.filter(c=>`${c.name} ${c.phone} ${c.email||''} ${c.city||''}`.toLowerCase().includes(q)));
+}
+
+$('#cust-search').addEventListener('input',applySearch);
+$('#save-btn').addEventListener('click',saveCustomer);
+$('#clear-btn').addEventListener('click',clearForm);
+$('#refresh-btn').addEventListener('click',loadAll);
+$('#admin-login-form').onsubmit=e=>{
+  e.preventDefault();
+  localStorage.setItem('bahadur-admin-token',$('#admin-token').value.trim());
+  $('#admin-login').close();loadAll();
+};
+$('#admin-token-toggle')?.addEventListener('click',()=>{
+  const i=$('#admin-token');i.type=i.type==='text'?'password':'text';i.focus();
+});
+
+async function checkAuth(){
+  if(!token()){login();return false;}
   return true;
 }
 document.getElementById('admin-login-form').onsubmit = async () => {
@@ -244,167 +364,9 @@ document.getElementById('admin-login-form').onsubmit = async () => {
   else { document.getElementById('login-error').textContent = 'Invalid token.'; }
 };
 
-/* ── State ──────────────────────────────────────────────── */
-let allCustomers = [];
-let currentTags  = [];
-let editingId    = null;
-let searchTimer  = null;
-
-/* ── Render table ───────────────────────────────────────── */
-function renderTable(list) {
-  const tbody = document.getElementById('cust-tbody');
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:50px 20px;color:#94a49e"><i class="hgi-stroke hgi-user-search" style="font-size:32px;display:block;margin-bottom:10px;opacity:.35"></i>No customers found.</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = list.map(c => {
-    const initials = c.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
-    const tags = Array.isArray(c.tags) ? c.tags : (typeof c.tags === 'string' ? JSON.parse(c.tags || '[]') : []);
-    const tagHtml = tags.map(t => `<span class="cust-badge">${esc(t)}</span>`).join(' ');
-    const date = new Date(c.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'2-digit'});
-    return `<tr data-id="${c.id}" onclick="selectCustomer('${c.id}')" class="${editingId===c.id?'selected':''}">
-      <td><div class="cust-name-cell">
-        <div class="cust-avatar">${initials}</div>
-        <div><strong>${esc(c.name)}</strong><small>${esc(c.email||'')}</small></div>
-      </div></td>
-      <td>${esc(c.phone)}</td>
-      <td>${esc(c.city||'—')}</td>
-      <td>${tagHtml||'—'}</td>
-      <td>${date}</td>
-    </tr>`;
-  }).join('');
-}
-
-function esc(v) {
-  return String(v||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-/* ── Load all / search ──────────────────────────────────── */
-async function loadAll() {
-  const r = await fetch('/api/customers', { headers: headers() });
-  const d = await r.json();
-  allCustomers = d.customers || [];
-  renderTable(allCustomers);
-  updateStats(allCustomers);
-}
-
-function updateStats(list) {
-  document.getElementById('stat-total').textContent    = list.length;
-  const cities = new Set(list.map(c => c.city).filter(Boolean)).size;
-  document.getElementById('stat-cities').textContent   = cities || '—';
-  const total = list.reduce((s, c) => s + (c.total_bookings || 0), 0);
-  document.getElementById('stat-bookings').textContent = total;
-}
-
-function onSearch(val) {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(async () => {
-    if (!val.trim()) { renderTable(allCustomers); return; }
-    const r = await fetch(`/api/customers?q=${encodeURIComponent(val)}`, { headers: headers() });
-    const d = await r.json();
-    renderTable(d.customers || []);
-  }, 280);
-}
-
-/* ── Form: select customer from table ──────────────────── */
-function selectCustomer(id) {
-  const c = allCustomers.find(x => x.id === id);
-  if (!c) return;
-  editingId = id;
-  document.getElementById('edit-id').value    = id;
-  document.getElementById('f-name').value     = c.name || '';
-  document.getElementById('f-phone').value    = c.phone || '';
-  document.getElementById('f-email').value    = c.email || '';
-  document.getElementById('f-city').value     = c.city || '';
-  document.getElementById('f-address').value  = c.address || '';
-  document.getElementById('f-language').value = c.preferred_language || 'English';
-  document.getElementById('f-note').value     = c.note || '';
-  currentTags = Array.isArray(c.tags) ? [...c.tags] : (typeof c.tags === 'string' ? JSON.parse(c.tags || '[]') : []);
-  renderTags();
-  document.getElementById('form-title').textContent = 'Edit customer';
-  document.getElementById('btn-delete').style.display = 'block';
-  document.getElementById('form-state').textContent = '';
-  // highlight row
-  document.querySelectorAll('.cust-table tr').forEach(tr => tr.classList.toggle('selected', tr.dataset.id === id));
-  // scroll form into view on mobile
-  document.querySelector('.cust-form-col').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-/* ── Tags ────────────────────────────────────────────────── */
-function renderTags() {
-  document.getElementById('tags-row').innerHTML = currentTags.map((t, i) =>
-    `<span class="tag-chip">${esc(t)}<button onclick="removeTag(${i})">×</button></span>`
-  ).join('');
-}
-function addTag() {
-  const inp = document.getElementById('tag-input');
-  const val = inp.value.trim();
-  if (val && !currentTags.includes(val)) { currentTags.push(val); renderTags(); }
-  inp.value = '';
-}
-function removeTag(i) { currentTags.splice(i, 1); renderTags(); }
-document.getElementById('tag-input').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } };
-
-/* ── Save ────────────────────────────────────────────────── */
-async function saveCustomer() {
-  const state = document.getElementById('form-state');
-  const id    = document.getElementById('edit-id').value;
-  const body  = {
-    name:               document.getElementById('f-name').value.trim(),
-    phone:              document.getElementById('f-phone').value.trim(),
-    email:              document.getElementById('f-email').value.trim(),
-    city:               document.getElementById('f-city').value.trim(),
-    address:            document.getElementById('f-address').value.trim(),
-    preferred_language: document.getElementById('f-language').value,
-    note:               document.getElementById('f-note').value.trim(),
-    tags:               currentTags,
-  };
-  if (!body.name || !body.phone) { state.textContent = 'Name and phone are required.'; return; }
-  state.textContent = 'Saving…';
-  const url    = id ? `/api/customers?id=${id}` : '/api/customers';
-  const method = id ? 'PUT' : 'POST';
-  const r  = await fetch(url, { method, headers: headers(), body: JSON.stringify(body) });
-  const d  = await r.json();
-  if (!r.ok) { state.textContent = d.error || 'Save failed.'; return; }
-  state.textContent = id ? 'Customer updated.' : 'Customer added.';
-  await loadAll();
-  if (!id) clearForm();
-  else selectCustomer(d.customer.id);
-}
-
-/* ── Delete ──────────────────────────────────────────────── */
-async function deleteCustomer() {
-  const id = document.getElementById('edit-id').value;
-  if (!id) return;
-  if (!confirm('Delete this customer? This cannot be undone.')) return;
-  await fetch(`/api/customers?id=${id}`, { method: 'DELETE', headers: headers() });
-  clearForm();
-  loadAll();
-}
-
-/* ── Clear form ──────────────────────────────────────────── */
-function clearForm() {
-  editingId = null;
-  document.getElementById('edit-id').value   = '';
-  document.getElementById('f-name').value    = '';
-  document.getElementById('f-phone').value   = '';
-  document.getElementById('f-email').value   = '';
-  document.getElementById('f-city').value    = '';
-  document.getElementById('f-address').value = '';
-  document.getElementById('f-language').value = 'English';
-  document.getElementById('f-note').value    = '';
-  currentTags = [];
-  renderTags();
-  document.getElementById('form-title').textContent = 'Add customer';
-  document.getElementById('btn-delete').style.display = 'none';
-  document.getElementById('form-state').textContent = '';
-  document.querySelectorAll('.cust-table tr').forEach(tr => tr.classList.remove('selected'));
-}
-
-/* ── Init ────────────────────────────────────────────────── */
-async function init() {
-  const ok = await checkAuth();
-  if (!ok) return;
+async function init(){
+  const ok=await checkAuth();
+  if(!ok)return;
   loadAll();
 }
 init();

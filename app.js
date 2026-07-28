@@ -115,6 +115,22 @@ $('#review-form')?.addEventListener('submit', (event) => {
   closeModal(reviewModal);
   form.reset();
 });
+
+function cleanAiText(text) {
+  return String(text || '')
+    .replace(/\*\*(.*?)\*\*/gs, '$1')
+    .replace(/\*(.*?)\*/gs, '$1')
+    .replace(/__(.*?)__/gs, '$1')
+    .replace(/_(.*?)_/gs, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '• ')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // ── AI Quick Chat ─────────────────────────────────────────────
 (function () {
   const aiPanel    = document.querySelector('#ai-panel');
@@ -135,7 +151,7 @@ $('#review-form')?.addEventListener('submit', (event) => {
   function addMsg (role, text) {
     const div = document.createElement('div');
     div.className = role === 'user' ? 'ai-msg ai-msg-user' : 'ai-msg ai-msg-bot';
-    div.textContent = text;
+    div.textContent = role === 'user' ? text : cleanAiText(text);
     aiMessages.appendChild(div);
     scrollBottom();
   }
@@ -174,7 +190,7 @@ $('#review-form')?.addEventListener('submit', (event) => {
       });
       const data = await res.json();
       removeTyping();
-      const reply = data.reply || 'Please WhatsApp us at +91 91874 40916 for help!';
+      const reply = cleanAiText(data.reply || 'Please WhatsApp us at +91 91874 40916 for help!');
       addMsg('bot', reply);
       chatHistory.push({ role: 'assistant', content: reply });
     } catch {

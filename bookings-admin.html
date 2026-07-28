@@ -1,10 +1,106 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Bookings — Bahadur Tours</title><link rel="stylesheet" href="styles.css">    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Bookings — Bahadur Tours</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
   <link rel="manifest" href="/site.webmanifest"/>
-</head><body class="admin-page"><main class="admin-shell"><div class="admin-grid">
+  <style>
+    .bk-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .bk-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+    }
+    .bk-stat-card .stat-icon { font-size: 1.5rem; color: var(--accent, #1e7e5e); margin-bottom: .2rem; }
+    .bk-stat-card .stat-label { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .bk-stat-card .stat-value { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--text); }
+    .bk-stat-card .stat-sub   { font-size: .78rem; color: var(--muted); }
+    .bk-stat-card.accent-pending   .stat-value { color: #d97706; }
+    .bk-stat-card.accent-confirmed .stat-value { color: #16a34a; }
+    .bk-stat-card.accent-cancelled .stat-value { color: #dc2626; }
+
+    .bk-toolbar { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .bk-search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .bk-search-wrap i { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1rem; pointer-events: none; }
+    .bk-search-wrap input { width: 100%; padding: .55rem .75rem .55rem 2.2rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: .88rem; box-sizing: border-box; }
+    .bk-toolbar select { padding: .52rem .8rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-size: .85rem; cursor: pointer; }
+    .quick-filter-btns { display: flex; gap: .35rem; }
+    .qf-btn { padding: .42rem .85rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); font-size: .8rem; cursor: pointer; white-space: nowrap; transition: all .15s; }
+    .qf-btn.active, .qf-btn:hover { background: var(--accent, #1e7e5e); color: #fff; border-color: var(--accent, #1e7e5e); }
+    .bk-export-btn { padding: .5rem 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); font-size: .82rem; cursor: pointer; display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+    .bk-export-btn:hover { background: var(--hover, #f3f4f6); }
+
+    .bk-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+    .bk-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .bk-table thead th { padding: .85rem 1rem; text-align: left; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .bk-table tbody tr.bk-main-row { border-bottom: 1px solid var(--border); transition: background .12s; cursor: pointer; }
+    .bk-table tbody tr.bk-main-row:hover { background: var(--hover, rgba(0,0,0,.03)); }
+    .bk-table tbody tr.bk-note-row td { padding: .3rem 1rem .55rem 3.2rem; font-size: .78rem; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--surface-alt, rgba(0,0,0,.015)); }
+    .bk-table tbody tr.bk-note-row td i { color: var(--accent, #1e7e5e); margin-right: .3rem; }
+    .bk-table td { padding: .85rem 1rem; vertical-align: top; }
+    .bk-table td .cell-main { font-weight: 600; color: var(--text); }
+    .bk-table td .cell-sub  { font-size: .75rem; color: var(--muted); margin-top: .1rem; display: block; }
+    .bk-table td .cell-ref  { font-family: monospace; font-weight: 700; font-size: .9rem; color: var(--text); }
+
+    .bk-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .28rem .75rem; border-radius: 20px; font-size: .74rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+    .bk-badge.pending   { background: #fef3c7; color: #92400e; }
+    .bk-badge.confirmed { background: #d1fae5; color: #065f46; }
+    .bk-badge.completed { background: #dbeafe; color: #1e40af; }
+    .bk-badge.cancelled { background: #fee2e2; color: #991b1b; }
+    .bk-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+
+    .bk-actions { display: flex; align-items: center; gap: .4rem; flex-wrap: nowrap; }
+    .bk-action-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: .95rem; text-decoration: none; color: var(--text); transition: all .12s; flex-shrink: 0; }
+    .bk-action-btn:hover { background: var(--accent, #1e7e5e); color: #fff; border-color: var(--accent, #1e7e5e); }
+    .bk-action-btn.danger:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .bk-status-sel { padding: .3rem .5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: .78rem; cursor: pointer; max-width: 105px; }
+
+    .bk-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; flex-wrap: wrap; gap: .5rem; }
+    .bk-count-pill { font-size: .8rem; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: .3rem .8rem; border-radius: 20px; }
+    .bk-empty { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+    .bk-empty i { font-size: 3rem; display: block; margin-bottom: .75rem; }
+
+    .bk-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+    .bk-modal-overlay.open { display: flex; }
+    .bk-modal { background: var(--surface, #fff); border-radius: 18px; padding: 2rem; max-width: 620px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 25px 60px rgba(0,0,0,.2); }
+    .bk-modal-close { position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+    .bk-modal-close:hover { background: #fee2e2; border-color: #dc2626; color: #dc2626; }
+    .bk-modal h2 { font-size: 1.3rem; margin: 0 0 1.2rem; }
+    .bk-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: 1.2rem; }
+    .bk-detail-item { display: flex; flex-direction: column; gap: .15rem; }
+    .bk-detail-item .dl { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+    .bk-detail-item .dv { font-size: .92rem; font-weight: 600; color: var(--text); }
+    .bk-modal-actions { display: flex; gap: .6rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .bk-modal-actions a, .bk-modal-actions button { padding: .6rem 1.2rem; border-radius: 10px; font-size: .85rem; cursor: pointer; display: flex; align-items: center; gap: .4rem; text-decoration: none; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all .12s; }
+    .bk-modal-actions .primary { background: var(--accent,#1e7e5e); color: #fff; border-color: var(--accent,#1e7e5e); }
+    .bk-modal-actions .danger  { color: #dc2626; border-color: #dc2626; }
+    .bk-modal-actions .danger:hover { background: #fee2e2; }
+
+    @media (max-width: 900px) { .bk-stats { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 600px) { .bk-stats { grid-template-columns: 1fr 1fr; } .bk-detail-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="admin-page">
+<main class="admin-shell">
+<div class="admin-grid">
+
 <aside class="admin-side glass">
   <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
   <nav>
@@ -18,8 +114,12 @@
     <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
     <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
   </nav>
-  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
+  <button class="admin-logout-btn" id="admin-logout"
+    onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'">
+    <i class="hgi-stroke hgi-logout-03"></i> Logout
+  </button>
 </aside>
+
 <section class="admin-main glass">
   <div class="admin-top">
     <div>
@@ -28,57 +128,119 @@
       <p class="sync-pill" id="admin-state"><span class="sync-dot"></span><span class="sync-text">Connecting…</span></p>
     </div>
     <div class="admin-actions">
-      <button type="button" class="icon-btn" id="admin-refresh" title="Refresh data" aria-label="Refresh data"><i class="hgi-stroke hgi-refresh"></i></button>
+      <button type="button" class="icon-btn" id="admin-refresh" title="Refresh" aria-label="Refresh data"><i class="hgi-stroke hgi-refresh"></i></button>
       <a class="btn btn-dark" href="billing.html"><i class="hgi-stroke hgi-add-01"></i> New Invoice</a>
-      <button type="button" class="btn btn-outline btn-small" id="admin-lock" title="Lock dashboard">Lock</button>
+      <button type="button" class="btn btn-outline btn-small" id="admin-lock">Lock</button>
     </div>
   </div>
 
-  <!-- Stats bar -->
-  <div class="operations-grid" style="margin-bottom:1.5rem">
-    <div class="ops-card"><i class="hgi-stroke hgi-package"></i><small>Total Bookings</small><strong id="metric-bookings">—</strong><span>All records</span></div>
-    <div class="ops-card"><i class="hgi-stroke hgi-loading-03"></i><small>Pending</small><strong id="metric-pending">—</strong><span>Needs follow-up</span></div>
-    <div class="ops-card"><i class="hgi-stroke hgi-checkmark-circle-02"></i><small>Confirmed</small><strong id="metric-confirmed">—</strong><span>Confirmed bookings</span></div>
-    <div class="ops-card"><i class="hgi-stroke hgi-cancel-circle"></i><small>Cancelled</small><strong id="metric-cancelled">—</strong><span>Cancelled bookings</span></div>
-  </div>
-
-  <div class="admin-content">
-    <div class="panel" id="bookings">
-      <div class="panel-head">
-        <div><span class="kicker">Booking Records</span><h3>Latest bookings</h3></div>
-        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-          <input id="booking-search" aria-label="Search bookings" placeholder="Search guest or trip">
-          <select id="booking-status-filter" class="mini-select" style="padding:.45rem .75rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.85rem">
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Reference</th><th>Guest</th><th>Journey</th><th>Travel date</th><th>Guests</th><th>City</th><th>Status</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="booking-rows">
-            <tr><td colspan="8" class="empty-cell">Loading secure data…</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div style="padding:.75rem 1rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)" id="booking-count">—</div>
+  <div class="bk-stats">
+    <div class="bk-stat-card">
+      <i class="hgi-stroke hgi-package stat-icon"></i>
+      <span class="stat-label">Total Bookings</span>
+      <span class="stat-value" id="metric-bookings">—</span>
+      <span class="stat-sub">All records</span>
+    </div>
+    <div class="bk-stat-card accent-pending">
+      <i class="hgi-stroke hgi-loading-03 stat-icon"></i>
+      <span class="stat-label">Pending</span>
+      <span class="stat-value" id="metric-pending">—</span>
+      <span class="stat-sub">Needs follow-up</span>
+    </div>
+    <div class="bk-stat-card accent-confirmed">
+      <i class="hgi-stroke hgi-checkmark-circle-02 stat-icon"></i>
+      <span class="stat-label">Confirmed</span>
+      <span class="stat-value" id="metric-confirmed">—</span>
+      <span class="stat-sub">Ready to travel</span>
+    </div>
+    <div class="bk-stat-card accent-cancelled">
+      <i class="hgi-stroke hgi-cancel-circle stat-icon"></i>
+      <span class="stat-label">Cancelled</span>
+      <span class="stat-value" id="metric-cancelled">—</span>
+      <span class="stat-sub">Cancelled bookings</span>
     </div>
   </div>
-  <div class="admin-footnote"><strong>Real figures only.</strong> All bookings are fetched live from the database.</div>
+
+  <div class="panel" id="bookings">
+    <div class="bk-panel-head">
+      <div>
+        <span class="kicker">Booking Records</span>
+        <h3 style="margin:0">Latest Bookings</h3>
+      </div>
+      <span class="bk-count-pill" id="booking-count">Loading…</span>
+    </div>
+
+    <div class="bk-toolbar">
+      <div class="bk-search-wrap">
+        <i class="hgi-stroke hgi-search-01"></i>
+        <input id="booking-search" type="search" placeholder="Search guest, trip, city, phone…" autocomplete="off">
+      </div>
+      <select id="booking-status-filter">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <div class="quick-filter-btns">
+        <button class="qf-btn active" data-range="all">All</button>
+        <button class="qf-btn" data-range="today">Today</button>
+        <button class="qf-btn" data-range="week">This Week</button>
+        <button class="qf-btn" data-range="month">This Month</button>
+      </div>
+      <button class="bk-export-btn" id="export-csv" title="Export to CSV">
+        <i class="hgi-stroke hgi-download-04"></i> Export CSV
+      </button>
+    </div>
+
+    <div class="bk-table-wrap">
+      <table class="bk-table">
+        <thead>
+          <tr>
+            <th style="width:145px">Reference</th>
+            <th style="min-width:180px">Guest</th>
+            <th style="min-width:200px">Journey</th>
+            <th style="width:115px">Travel Date</th>
+            <th style="width:80px">Guests</th>
+            <th style="width:100px">City</th>
+            <th style="width:115px">Status</th>
+            <th style="width:200px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="booking-rows">
+          <tr><td colspan="8" style="padding:3rem;text-align:center;color:var(--muted)">Loading bookings…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </section>
-</div></main>
-<dialog class="admin-login" id="admin-login">
-  <form method="dialog" id="admin-login-form">
-    <img src="assets/bahadur-logo.png" alt="Bahadur">
-    <span class="kicker">Authorised staff only</span><h2>Unlock dashboard</h2><p>Enter the private admin token configured in Vercel.</p><label>Admin token<span class="token-field"><input type="password" id="admin-token" autocomplete="current-password" required><button type="button" class="token-toggle" id="admin-token-toggle" aria-label="Show token"><i class="hgi-stroke hgi-eye"></i></button></span></label><button class="btn btn-dark full" id="admin-login-submit">Open dashboard</button><small id="login-error"></small>
+</div>
+</main>
+
+<div class="bk-modal-overlay" id="bk-modal-overlay">
+  <div class="bk-modal" id="bk-modal">
+    <button class="bk-modal-close" id="bk-modal-close" aria-label="Close"><i class="hgi-stroke hgi-cancel-01"></i></button>
+    <h2 id="bk-modal-title">Booking Details</h2>
+    <div class="bk-detail-grid" id="bk-modal-body"></div>
+    <div class="bk-modal-actions" id="bk-modal-actions"></div>
+  </div>
+</div>
+
+<dialog id="admin-login" class="admin-dialog">
+  <h2>Admin Access</h2>
+  <p>Enter your admin token to access booking records.</p>
+  <form id="admin-login-form" method="dialog">
+    <label>Admin Token
+      <span class="token-field">
+        <input type="password" id="admin-token" autocomplete="current-password" required>
+        <button type="button" class="token-toggle" id="admin-token-toggle" aria-label="Show token"><i class="hgi-stroke hgi-eye"></i></button>
+      </span>
+    </label>
+    <button class="btn btn-dark full" id="admin-login-submit">Open dashboard</button>
+    <small id="login-error"></small>
   </form>
 </dialog>
-<script type="module" src="bookings-admin.js"></script></body></html>
+
+<script type="module" src="bookings-admin.js"></script>
+</body>
+</html>

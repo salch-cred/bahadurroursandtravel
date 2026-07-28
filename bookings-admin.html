@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Bookings — Bahadur Tours</title><link rel="stylesheet" href="styles.css">    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+  <link rel="manifest" href="/site.webmanifest"/>
+</head><body class="admin-page"><main class="admin-shell"><div class="admin-grid">
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="bookings-admin.html" class="active"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+  </nav>
+  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
+</aside>
+<section class="admin-main glass">
+  <div class="admin-top">
+    <div>
+      <span class="kicker" id="admin-date">Booking Records</span>
+      <h1>Latest Bookings</h1>
+      <p class="sync-pill" id="admin-state"><span class="sync-dot"></span><span class="sync-text">Connecting…</span></p>
+    </div>
+    <div class="admin-actions">
+      <button type="button" class="icon-btn" id="admin-refresh" title="Refresh data" aria-label="Refresh data"><i class="hgi-stroke hgi-refresh"></i></button>
+      <a class="btn btn-dark" href="billing.html"><i class="hgi-stroke hgi-add-01"></i> New Invoice</a>
+      <button type="button" class="btn btn-outline btn-small" id="admin-lock" title="Lock dashboard">Lock</button>
+    </div>
+  </div>
+  <div class="operations-grid" style="margin-bottom:1.5rem">
+    <div class="ops-card"><i class="hgi-stroke hgi-package"></i><small>Total Bookings</small><strong id="metric-bookings">—</strong><span>All records</span></div>
+    <div class="ops-card"><i class="hgi-stroke hgi-loading-03"></i><small>Pending</small><strong id="metric-pending">—</strong><span>Needs follow-up</span></div>
+    <div class="ops-card"><i class="hgi-stroke hgi-checkmark-circle-02"></i><small>Confirmed</small><strong id="metric-confirmed">—</strong><span>Confirmed bookings</span></div>
+    <div class="ops-card"><i class="hgi-stroke hgi-cancel-circle"></i><small>Cancelled</small><strong id="metric-cancelled">—</strong><span>Cancelled bookings</span></div>
+  </div>
+  <div class="admin-content">
+    <div class="panel" id="bookings">
+      <div class="panel-head">
+        <div><span class="kicker">Booking Records</span><h3>Latest bookings</h3></div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          <input id="booking-search" aria-label="Search bookings" placeholder="Search guest or trip">
+          <select id="booking-status-filter" class="mini-select" style="padding:.45rem .75rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.85rem">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Reference</th><th>Guest</th><th>Journey</th><th>Travel date</th><th>Guests</th><th>City</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="booking-rows"><tr><td colspan="8" class="empty-cell">Loading secure data…</td></tr></tbody>
+        </table>
+      </div>
+      <div style="padding:.75rem 1rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)" id="booking-count">—</div>
+    </div>
+  </div>
+  <div class="admin-footnote"><strong>Real figures only.</strong> All bookings are fetched live from the database.</div>
+</section>
+</div></main>
+<dialog class="admin-login" id="admin-login">
+  <form method="dialog" id="admin-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span><h2>Unlock dashboard</h2><p>Enter the private admin token configured in Vercel.</p><label>Admin token<span class="token-field"><input type="password" id="admin-token" autocomplete="current-password" required><button type="button" class="token-toggle" id="admin-token-toggle" aria-label="Show token"><i class="hgi-stroke hgi-eye"></i></button></span></label><button class="btn btn-dark full" id="admin-login-submit">Open dashboard</button><small id="login-error"></small>
+  </form>
+</dialog>
+<script type="module" src="bookings-admin.js"></script></body></html>

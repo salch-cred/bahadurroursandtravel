@@ -50,7 +50,12 @@ export default async function handler(req:any,res:any){
       if(!b.consent)return res.status(400).json({error:'Publication consent is required'});
       let media_url=null,media_type=null;
       const filePayload = b.files && b.files.length > 0 ? b.files[0] : b;
-      if(filePayload.data&&filePayload.mimeType){
+      
+      if(filePayload.url && filePayload.mimeType && filePayload.url.includes('vercel-storage.com')){
+        // Direct Client Upload support
+        media_url = filePayload.url;
+        media_type = String(filePayload.mimeType).startsWith('video/')?'video':'image';
+      } else if(filePayload.data&&filePayload.mimeType){
         if(!process.env.BLOB_READ_WRITE_TOKEN)return res.status(503).json({error:'Visitor media storage is not configured'});
         const buffer=Buffer.from(String(filePayload.data),'base64');
         if(buffer.length>5*1024*1024)return res.status(400).json({error:'Media must be smaller than 5 MB'});

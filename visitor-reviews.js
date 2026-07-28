@@ -230,16 +230,37 @@ dialog.querySelector('#vr-form').onsubmit=async e=>{
       return;
     }
     stateEl.textContent=`Preparing ${userFiles.length} file(s)…`;
-    for(let i=0;i<userFiles.length;i++){
-      stateEl.textContent=`Uploading file ${i+1} of ${userFiles.length}…`;
-      try{
-        const b64=await toBase64(userFiles[i]);
-        payload.files.push({data:b64,fileName:userFiles[i].name,mimeType:userFiles[i].type});
-      }catch{}
+    let upload;
+    try {
+      const blobClient = await import('https://esm.sh/@vercel/blob/client@0.27.0');
+      upload = blobClient.upload;
+    } catch (e) {
+      console.error('Failed to load blob client', e);
     }
-    stateEl.textContent='Submitting…';
+
+    for(let i=0;i<userFiles.length;i++){
+      stateEl.textContent=`Uploading file ${i+1} of ${userFiles.length} (Max 5MB)…`;
+      try{
+        if (upload) {
+          // Direct Vercel Blob Upload
+          const newBlob = await upload(userFiles[i].name, userFiles[i], {
+            access: 'public',
+            handleUploadUrl: '/api/upload',
+          });
+          payload.files.push({url:newBlob.url, fileName:userFiles[i].name, mimeType:userFiles[i].type});
+        } else {
+          // Fallback to Base64 (Will fail for >3MB on Vercel)
+          const b64=await toBase64(userFiles[i]);
+          payload.files.push({data:b64,fileName:userFiles[i].name,mimeType:userFiles[i].type});
+        }
+      }catch (err) {
+        console.error('Upload error', err);
+        throw new Error('Failed to upload media. Please try again.');
+      }
+    }
+    stateEl.textContent='Submitting review…';
   }else{
-    stateEl.textContent='Submitting…';
+    stateEl.textContent='Submitting review…';
   }
 
   try{

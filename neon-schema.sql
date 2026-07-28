@@ -8,6 +8,7 @@ create index if not exists bookings_created_idx on bookings(created_at desc);cre
 
 -- v5 billing, package and traffic migration
 alter table packages add column if not exists package_type text not null default 'domestic';
+alter table packages add column if not exists package_price numeric;
 alter table packages add column if not exists flight_details jsonb not null default '{}'::jsonb;
 alter table packages add column if not exists room_details jsonb not null default '{}'::jsonb;
 alter table packages add column if not exists gallery jsonb not null default '[]'::jsonb;

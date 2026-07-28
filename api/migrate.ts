@@ -15,6 +15,7 @@ export default async function handler(req: any, res: any) {
         category TEXT DEFAULT 'domestic',
         duration TEXT DEFAULT '',
         price TEXT DEFAULT 'Custom quote',
+        package_price NUMERIC,
         summary TEXT DEFAULT '',
         description TEXT DEFAULT '',
         image_url TEXT DEFAULT '',
@@ -33,6 +34,11 @@ export default async function handler(req: any, res: any) {
         created_at TIMESTAMPTZ DEFAULT now(),
         updated_at TIMESTAMPTZ DEFAULT now()
       )
+    `;
+
+    // Ensure package_price column exists (migration)
+    await sql`
+      ALTER TABLE packages ADD COLUMN IF NOT EXISTS package_price NUMERIC;
     `;
 
     // Create bookings table

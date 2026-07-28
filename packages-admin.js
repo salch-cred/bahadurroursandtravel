@@ -298,3 +298,12 @@ $('#package-type').onchange=toggleType;
 toggleType();
 initImageUploads();
 load();
+
+// Auto-fill slug
+const nameInput = $('#package-form').elements.name;
+const slugInput = $('#package-form').elements.slug;
+nameInput.addEventListener('input', () => {
+  if (!$('#package-form').elements.id.value) {
+    slugInput.value = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  }
+});

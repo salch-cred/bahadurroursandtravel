@@ -93,9 +93,8 @@
     <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
     <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
     <a href="media-manager.html" class="active"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
-    <a href="community.html"><i class="hgi-stroke hgi-user-group"></i> Public stories</a>
-    <a href="terms.html"><i class="hgi-stroke hgi-file-02"></i> Terms</a>
   </nav>
+  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
 </aside>
 
 <!-- ── Main ────────────────────────────────────────────────── -->
@@ -200,12 +199,12 @@
 <script>
 /* ── Auth ─────────────────────────────────────────────────── */
 const TOKEN_KEY = 'bahadur-admin-token';
-const getToken  = () => sessionStorage.getItem(TOKEN_KEY) || '';
+const getToken  = () => localStorage.getItem(TOKEN_KEY) || '';
 const hdrs      = () => ({ 'Content-Type': 'application/json', 'x-admin-token': getToken() });
 
 document.getElementById('admin-login-form').onsubmit = async () => {
   const tok = document.getElementById('admin-token').value;
-  sessionStorage.setItem(TOKEN_KEY, tok);
+  localStorage.setItem(TOKEN_KEY, tok);
   const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
   if (r.ok) { document.getElementById('admin-login').close(); init(); }
   else { document.getElementById('login-error').textContent = 'Invalid token.'; }

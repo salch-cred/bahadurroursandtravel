@@ -6,9 +6,9 @@ const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 
 let invoiceId=null;
 
-async function getToken(){
-  let t=sessionStorage.getItem('bahadur-admin-token');
-  if(!t){t=prompt('Enter the private admin token to view this receipt');if(!t)return null;sessionStorage.setItem('bahadur-admin-token',t);}
+function getToken(){
+  const t=localStorage.getItem('bahadur-admin-token');
+  if(!t){window.location.href='admin.html?return=paid-bill';return null;}
   return t;
 }
 
@@ -213,7 +213,7 @@ async function load(){
     $('#receipt-card').innerHTML='<div class="receipt-loading"><i class="hgi-stroke hgi-alert-02"></i><p>No invoice ID provided. Open this page from an invoice in the dashboard.</p></div>';
     return;
   }
-  const t=await getToken();
+  const t=getToken();
   if(!t){
     $('#receipt-card').innerHTML='<div class="receipt-loading"><i class="hgi-stroke hgi-lock-01"></i><p>Authentication required.</p></div>';
     return;

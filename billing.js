@@ -132,9 +132,9 @@ function populateForm(inv){
   $('#invoice-state').textContent=`Loaded · ${inv.invoice_number}`;
 }
 
-async function getToken(){
-  let t=sessionStorage.getItem('bahadur-admin-token');
-  if(!t){t=prompt('Enter the private admin token');if(!t)return null;sessionStorage.setItem('bahadur-admin-token',t);}
+function getToken(){
+  const t=localStorage.getItem('bahadur-admin-token');
+  if(!t){window.location.href='admin.html?return=billing';return null;}
   return t;
 }
 
@@ -158,7 +158,7 @@ document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.i
 $('#invoice-print').onclick=()=>{update();document.title=`${value('#invoice-number')} · Bahadur Tours`;window.print()};
 
 $('#invoice-save').onclick=async()=>{
-  const t=await getToken();if(!t)return;
+  const t=getToken();if(!t)return;
   $('#invoice-state').textContent='Saving…';
   try{
     let r,d;
@@ -185,7 +185,7 @@ $('#invoice-save').onclick=async()=>{
 $('#invoice-mark-paid').onclick=async()=>{
   if(!currentInvoiceId){alert('Save the invoice first before marking as paid.');return;}
   if(!confirm('Mark this invoice as Paid?'))return;
-  const t=await getToken();if(!t)return;
+  const t=getToken();if(!t)return;
   $('#invoice-state').textContent='Updating status…';
   try{
     const r=await fetch('/api/admin',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${t}`},body:JSON.stringify({type:'invoice_status',id:currentInvoiceId,status:'Paid'})});
@@ -206,7 +206,7 @@ $('#invoice-view-bill').onclick=()=>{
 $('#load-invoice-btn').onclick=async()=>{
   const id=$('#load-invoice-id').value.trim();
   if(!id){alert('Enter an invoice ID first');return;}
-  const t=await getToken();if(!t)return;
+  const t=getToken();if(!t)return;
   $('#invoice-state').textContent='Loading invoice…';
   try{
     const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${t}`}});
@@ -230,7 +230,7 @@ async function autoLoadFromUrl(){
   }
   const id=params.get('id');
   if(!id)return;
-  const t=await getToken();if(!t)return;
+  const t=getToken();if(!t)return;
   $('#invoice-state').textContent='Loading invoice…';
   try{
     const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${t}`}});

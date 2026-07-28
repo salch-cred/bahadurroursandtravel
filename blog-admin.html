@@ -43,8 +43,8 @@
     <a href="customers-admin.html" ><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
           <a class="active" href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
           <a href="media-manager.html">▧ Guest media</a>
-          <a href="community.html">☆ Public stories</a>
         </nav>
+        <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
       </aside>
 
       <section class="admin-main glass">
@@ -119,7 +119,7 @@
   </dialog>
 
   <script>
-    const token = () => sessionStorage.getItem('bahadur-admin-token') || '';
+    const token = () => localStorage.getItem('bahadur-admin-token') || '';
     const auth = () => ({ 'Authorization': `Bearer ${token()}`, 'Content-Type': 'application/json' });
     let posts = [];
 
@@ -130,7 +130,7 @@
 
     document.getElementById('admin-login-form').onsubmit = (e) => {
       e.preventDefault();
-      sessionStorage.setItem('bahadur-admin-token', document.getElementById('admin-token').value.trim());
+      localStorage.setItem('bahadur-admin-token', document.getElementById('admin-token').value.trim());
       document.getElementById('admin-login').close();
       load();
     };
@@ -139,7 +139,7 @@
       if (!token()) { login(); return; }
       try {
         const res = await fetch('/api/blog?admin=1', { headers: auth() });
-        if (res.status === 401) { sessionStorage.removeItem('bahadur-admin-token'); login(); return; }
+        if (res.status === 401) { localStorage.removeItem('bahadur-admin-token'); login(); return; }
         const data = await res.json();
         posts = data.posts || [];
         renderPosts();

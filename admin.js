@@ -1,6 +1,6 @@
 const $=s=>document.querySelector(s);let bookings=[];
 const money=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(v||0));
-const token=()=>sessionStorage.getItem('bahadur-admin-token')||'';
+const token=()=>localStorage.getItem('bahadur-admin-token')||'';
 const auth=()=>({Authorization:`Bearer ${token()}`});
 const statusClass=v=>{const s=String(v||'').toLowerCase();return s.includes('confirm')||s.includes('complet')||s==='paid'?'status':s.includes('cancel')?'status danger':'status pending'};
 
@@ -67,19 +67,44 @@ function renderBookings(rows){
 let allInvoices=[];
 function renderInvoices(rows){
   $('#invoice-rows').innerHTML=rows.length
-    ?rows.map(x=>`<tr>
-      <td><strong>${x.invoice_number||'—'}</strong></td>
-      <td>${x.customer_name||'—'}<small>${x.phone||''}</small></td>
-      <td>${x.booking_ref||'—'}</td>
-      <td>${x.invoice_date||'—'}</td>
-      <td><span class="${statusClass(x.status)}">${x.status||'Draft'}</span></td>
-      <td>${money(x.total)}</td>
-      <td class="invoice-actions">
-        <a href="billing.html?id=${x.id}" class="mini-action-btn" title="Edit invoice"><i class="hgi-stroke hgi-edit-01"></i></a>
-        ${(x.status==='Paid'||x.status==='Part paid')?`<a href="paid-bill.html?id=${x.id}" class="mini-action-btn paid" title="View paid bill" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`:''}
-      </td>
-    </tr>`).join('')
+    ?rows.map(x=>{
+      const isPaid=x.status==='Paid'||x.status==='Part paid';
+      return `<tr>
+        <td><strong>${x.invoice_number||'—'}</strong></td>
+        <td>${x.customer_name||'—'}<small>${x.phone||''}</small></td>
+        <td>${x.booking_ref||'—'}</td>
+        <td>${x.invoice_date||'—'}</td>
+        <td>
+          ${isPaid?'<i class="hgi-stroke hgi-checkmark-circle-02" style="color:#22753a;font-size:16px;vertical-align:-2px" title="Paid"></i> ':''}
+          <span class="${statusClass(x.status)}">${x.status||'Draft'}</span>
+        </td>
+        <td>${money(x.total)}</td>
+        <td class="invoice-actions">
+          <a href="billing.html?id=${x.id}" class="mini-action-btn" title="Edit invoice"><i class="hgi-stroke hgi-edit-01"></i></a>
+          ${isPaid
+            ?`<a href="paid-bill.html?id=${x.id}" class="mini-action-btn paid" title="Download paid receipt" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`
+            :`<button class="mini-action-btn" title="Mark as Paid" data-mark-paid="${x.id}"><i class="hgi-stroke hgi-money-receive-02"></i></button>`
+          }
+        </td>
+      </tr>`;
+    }).join('')
     :'<tr><td colspan="7" class="empty-cell">No invoices saved yet.</td></tr>';
+  // Bind Mark as Paid buttons
+  document.querySelectorAll('[data-mark-paid]').forEach(btn=>{
+    btn.onclick=async()=>{
+      const id=btn.dataset.markPaid;
+      if(!confirm('Mark this invoice as Paid?'))return;
+      btn.disabled=true;
+      try{
+        const r=await fetch('/api/admin',{method:'PATCH',headers:{'Content-Type':'application/json',...auth()},body:JSON.stringify({type:'invoice_status',id,status:'Paid'})});
+        if(!r.ok)throw new Error('Update failed');
+        // Update local data and re-render
+        const inv=allInvoices.find(i=>i.id===id);
+        if(inv){inv.status='Paid';}
+        renderInvoices(allInvoices);
+      }catch(e){alert('Could not update: '+e.message);btn.disabled=false;}
+    };
+  });
 }
 
 function renderActivity(rows){
@@ -140,7 +165,7 @@ async function load(){
   try{
     const res=await fetch('/api/admin',{headers:auth()});
     const d=await safeJson(res);
-    if(res.status===401){sessionStorage.removeItem('bahadur-admin-token');setSyncState('is-error','Sign-in required');login('Incorrect or expired token.');return;}
+    if(res.status===401){localStorage.removeItem('bahadur-admin-token');setSyncState('is-error','Sign-in required');login('Incorrect or expired token.');return;}
     if(!res.ok)throw new Error(d.error||'Unknown error');
     bookings=d.bookings||[];
     const m=d.metrics;
@@ -174,7 +199,7 @@ async function load(){
 
 $('#admin-login-form').onsubmit=e=>{
   e.preventDefault();
-  sessionStorage.setItem('bahadur-admin-token',$('#admin-token').value.trim());
+  localStorage.setItem('bahadur-admin-token',$('#admin-token').value.trim());
   $('#admin-login').close();
   load();
 };
@@ -185,9 +210,8 @@ $('#admin-token-toggle')?.addEventListener('click',()=>{
 });
 $('#admin-refresh')?.addEventListener('click',load);
 $('#admin-lock')?.addEventListener('click',()=>{
-  sessionStorage.removeItem('bahadur-admin-token');
-  setSyncState(null,'Locked');
-  login('Dashboard locked. Enter your token to continue.');
+  localStorage.removeItem('bahadur-admin-token');
+  window.location.href='admin.html';
 });
 $('#invoice-search')?.addEventListener('input',e=>{
   const q=e.target.value.toLowerCase();

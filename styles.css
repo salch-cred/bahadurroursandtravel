@@ -427,3 +427,27 @@ body.mob-nav-active { overflow: hidden; }
 .footer-social-link.ig  { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
 
 .footer-social-link:hover { transform: translateY(-2px); opacity: 0.88; }
+
+/* Admin sidebar logout button */
+.admin-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  margin: 12px 12px 8px;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid rgba(200,60,60,0.25);
+  border-radius: 10px;
+  color: #c53030;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  text-align: left;
+}
+.admin-logout-btn:hover {
+  background: rgba(200,60,60,0.08);
+  border-color: rgba(200,60,60,0.5);
+}
+.admin-logout-btn i { font-size: 16px; }

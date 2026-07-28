@@ -20,27 +20,30 @@ function renderInvoices(rows){
   $('#invoice-rows').innerHTML=rows.length
     ?rows.map(x=>{
       const isPaid=x.status==='Paid'||x.status==='Part paid';
-      return `<tr>
-        <td><strong>${x.invoice_number||'\u2014'}</strong></td>
-        <td>${x.customer_name||'\u2014'}<small>${x.phone||''}</small></td>
-        <td>${x.booking_ref||'\u2014'}</td>
-        <td>${x.invoice_date||'\u2014'}</td>
-        <td>
-          ${isPaid?'<i class="hgi-stroke hgi-checkmark-circle-02" style="color:#22753a;font-size:16px;vertical-align:-2px" title="Paid"></i> ':''}
+      return `<tr data-inv-id="${x.id}">
+        <td style="min-width:175px"><strong>${x.invoice_number||'\u2014'}</strong></td>
+        <td style="min-width:160px">${x.customer_name||'\u2014'}<br><small style="color:var(--muted)">${x.phone||''}</small></td>
+        <td style="min-width:150px">${x.booking_ref||'\u2014'}</td>
+        <td style="min-width:110px">${x.invoice_date||'\u2014'}</td>
+        <td style="min-width:110px">
           <span class="${statusClass(x.status)}">${x.status||'Draft'}</span>
         </td>
-        <td>${money(x.total)}</td>
-        <td class="invoice-actions">
-          <a href="billing.html?id=${x.id}" class="mini-action-btn" title="Edit invoice"><i class="hgi-stroke hgi-edit-01"></i></a>
-          ${isPaid
-            ?`<a href="paid-bill.html?id=${x.id}" class="mini-action-btn paid" title="Download paid receipt" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`
-            :`<button class="mini-action-btn" title="Mark as Paid" data-mark-paid="${x.id}"><i class="hgi-stroke hgi-money-receive-02"></i></button>`
-          }
+        <td style="min-width:100px;font-weight:700">${money(x.total)}</td>
+        <td style="min-width:130px">
+          <div class="invoice-actions">
+            <a href="billing.html?id=${x.id}" class="mini-action-btn" title="Edit invoice"><i class="hgi-stroke hgi-edit-01"></i></a>
+            ${isPaid
+              ?`<a href="paid-bill.html?id=${x.id}" class="mini-action-btn paid" title="Download receipt" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`
+              :`<button class="mini-action-btn" title="Mark as Paid" data-mark-paid="${x.id}"><i class="hgi-stroke hgi-money-receive-02"></i></button>`
+            }
+            <button class="mini-action-btn" style="color:#b91c1c;border-color:#fcc;background:#fff5f5" title="Delete invoice" data-del-inv="${x.id}" data-inv-num="${x.invoice_number||'this invoice'}"><i class="hgi-stroke hgi-delete-02"></i></button>
+          </div>
         </td>
       </tr>`;
     }).join('')
     :'<tr><td colspan="7" class="empty-cell">No invoices found.</td></tr>';
 
+  // Bind Mark as Paid
   document.querySelectorAll('[data-mark-paid]').forEach(btn=>{
     btn.onclick=async()=>{
       const id=btn.dataset.markPaid;
@@ -52,6 +55,29 @@ function renderInvoices(rows){
         const inv=allInvoices.find(i=>i.id===id);if(inv){inv.status='Paid';}
         renderInvoices(allInvoices);updateMetrics();
       }catch(e){alert('Could not update: '+e.message);btn.disabled=false;}
+    };
+  });
+
+  // Bind Delete
+  document.querySelectorAll('[data-del-inv]').forEach(btn=>{
+    btn.onclick=async()=>{
+      const id=btn.dataset.delInv;
+      const num=btn.dataset.invNum;
+      if(!confirm(`Delete invoice ${num}?\n\nThis cannot be undone.`))return;
+      btn.disabled=true;
+      const row=btn.closest('tr');
+      if(row){row.style.opacity='.4';row.style.pointerEvents='none';}
+      try{
+        const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{method:'DELETE',headers:{...auth()}});
+        if(!r.ok){const err=await r.json().catch(()=>({}));throw new Error(err.error||'Delete failed ('+r.status+')');}
+        allInvoices=allInvoices.filter(i=>i.id!==id);
+        renderInvoices(allInvoices);
+        updateMetrics();
+      }catch(e){
+        alert('Delete failed: '+e.message);
+        btn.disabled=false;
+        if(row){row.style.opacity='1';row.style.pointerEvents='';}
+      }
     };
   });
 }
@@ -72,7 +98,7 @@ function applyFilter(){
   const q=$('#invoice-search').value.toLowerCase();
   const sf=$('#invoice-status-filter').value.toLowerCase();
   renderInvoices(allInvoices.filter(x=>{
-    const matchText=`${x.invoice_number} ${x.customer_name} ${x.booking_ref}`.toLowerCase().includes(q);
+    const matchText=`${x.invoice_number} ${x.customer_name} ${x.booking_ref} ${x.phone||''}`.toLowerCase().includes(q);
     const matchStatus=!sf||String(x.status||'').toLowerCase().includes(sf);
     return matchText&&matchStatus;
   }));

@@ -350,3 +350,75 @@ body.mob-nav-active { overflow: hidden; }
   0%, 80%, 100% { opacity: .4; transform: scale(.8); }
   40%           { opacity: 1;  transform: scale(1.1); }
 }
+
+
+/* ═══════════════════════════════════════════════════════
+   SOCIAL STICKY / FAB BUTTONS
+   ═══════════════════════════════════════════════════════ */
+.wa-sticky,
+.ig-sticky {
+  position: fixed;
+  right: 20px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: #fff;
+}
+
+.wa-sticky {
+  bottom: 24px;
+  background: #25D366;
+}
+
+.ig-sticky {
+  bottom: 90px;
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+}
+
+.wa-sticky:hover,
+.ig-sticky:hover {
+  transform: translateY(-3px) scale(1.07);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+}
+
+.wa-sticky svg,
+.ig-sticky svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .wa-sticky { right: 14px; bottom: 18px; width: 50px; height: 50px; }
+  .ig-sticky { right: 14px; bottom: 80px; width: 50px; height: 50px; }
+}
+
+/* Footer social icons */
+.footer-social {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.footer-social-link {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  text-decoration: none;
+}
+
+.footer-social-link.wa  { background: #25D366; }
+.footer-social-link.ig  { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+
+.footer-social-link:hover { transform: translateY(-2px); opacity: 0.88; }

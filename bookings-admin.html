@@ -33,12 +33,15 @@
       <button type="button" class="btn btn-outline btn-small" id="admin-lock" title="Lock dashboard">Lock</button>
     </div>
   </div>
+
+  <!-- Stats bar -->
   <div class="operations-grid" style="margin-bottom:1.5rem">
     <div class="ops-card"><i class="hgi-stroke hgi-package"></i><small>Total Bookings</small><strong id="metric-bookings">—</strong><span>All records</span></div>
     <div class="ops-card"><i class="hgi-stroke hgi-loading-03"></i><small>Pending</small><strong id="metric-pending">—</strong><span>Needs follow-up</span></div>
     <div class="ops-card"><i class="hgi-stroke hgi-checkmark-circle-02"></i><small>Confirmed</small><strong id="metric-confirmed">—</strong><span>Confirmed bookings</span></div>
     <div class="ops-card"><i class="hgi-stroke hgi-cancel-circle"></i><small>Cancelled</small><strong id="metric-cancelled">—</strong><span>Cancelled bookings</span></div>
   </div>
+
   <div class="admin-content">
     <div class="panel" id="bookings">
       <div class="panel-head">
@@ -56,8 +59,14 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Reference</th><th>Guest</th><th>Journey</th><th>Travel date</th><th>Guests</th><th>City</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="booking-rows"><tr><td colspan="8" class="empty-cell">Loading secure data…</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>Reference</th><th>Guest</th><th>Journey</th><th>Travel date</th><th>Guests</th><th>City</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="booking-rows">
+            <tr><td colspan="8" class="empty-cell">Loading secure data…</td></tr>
+          </tbody>
         </table>
       </div>
       <div style="padding:.75rem 1rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)" id="booking-count">—</div>

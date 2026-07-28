@@ -12,7 +12,6 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
 <link rel="manifest" href="/site.webmanifest"/>
 <style>
-/* ── Billing page admin grid ── */
 .billing-page.admin-page {
   background: radial-gradient(circle at 80% 4%,#c7efe4,transparent 30%),#edf2ef;
 }
@@ -23,78 +22,58 @@
   height: 100vh;
   overflow: hidden;
 }
-
-/* ── Top bar with action buttons ── */
 .billing-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 18px 28px 14px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--line);
-  background: #ffffffcc;
+  background: #ffffffee;
   backdrop-filter: blur(10px);
   flex-shrink: 0;
   flex-wrap: wrap;
+  z-index: 5;
 }
-.billing-topbar h1 {
-  font-size: 26px;
-  margin: 0;
-  color: var(--ink);
-}
+.billing-topbar h1 { font-size: 24px; margin: 0; color: var(--ink); }
 .billing-topbar .kicker {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--green);
-  display: block;
-  margin-bottom: 2px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--green); display: block; margin-bottom: 2px;
 }
-.billing-topbar-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-/* ── Live preview split layout ── */
+.billing-topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .billing-split {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: minmax(380px, 440px) 1fr;
   gap: 0;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
-
-/* Form panel — left side */
 .billing-form-pane {
   overflow-y: auto;
   border-right: 1px solid var(--line);
   background: #fff;
+  min-height: 0;
 }
 .billing-form-pane .invoice-controls {
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  padding: 24px;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 22px 22px 40px !important;
+  position: static !important;
+  max-height: none !important;
+  top: auto !important;
 }
-.billing-form-pane .invoice-controls h1,
-.billing-form-pane .invoice-controls > p,
-.billing-form-pane .invoice-controls > .kicker {
-  display: none; /* hidden — title is in topbar */
-}
-
-/* Invoice preview panel — right side */
+.billing-form-pane .invoice-controls > .kicker,
+.billing-form-pane .invoice-controls > h1,
+.billing-form-pane .invoice-controls > p { display: none; }
 .billing-preview-pane {
   overflow-y: auto;
-  background: #f4f7f4;
-  padding: 20px 24px 40px;
-  position: relative;
+  background: #eef3f0;
+  padding: 18px 22px 48px;
+  min-height: 0;
 }
-
-/* Live indicator badge */
 .live-badge {
   display: inline-flex;
   align-items: center;
@@ -109,65 +88,42 @@
   padding: 5px 12px 5px 8px;
   border-radius: 99px;
   margin-bottom: 14px;
-  display: flex;
 }
 .live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
   background: #167050;
   animation: livepulse 1.5s infinite;
   flex-shrink: 0;
 }
 @keyframes livepulse {
-  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 #16705060; }
-  50%       { opacity: .7; transform: scale(1.2); box-shadow: 0 0 0 5px #16705020; }
+  0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 #16705055; }
+  50% { opacity:.75; transform:scale(1.15); box-shadow:0 0 0 5px #16705018; }
 }
-
-/* Invoice sheet inside preview pane */
 .billing-preview-pane .invoice-sheet {
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 40px #062f2a18;
-  overflow: hidden;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px #062f2a18;
   max-width: 820px;
   margin: 0 auto;
-  transition: box-shadow .2s;
+  width: 100%;
+  min-height: auto;
 }
-.billing-preview-pane .invoice-sheet:hover {
-  box-shadow: 0 12px 52px #062f2a24;
-}
-
-/* Typing flash animation */
 @keyframes previewFlash {
-  0%   { outline: 2px solid #0b665522; }
+  0% { outline: 2px solid #0b665544; }
   100% { outline: 2px solid transparent; }
 }
-.invoice-sheet.just-updated {
-  animation: previewFlash .4s ease-out;
+.invoice-sheet.just-updated { animation: previewFlash .35s ease-out; }
+@media (max-width: 1000px) {
+  .billing-split { grid-template-columns: 1fr; grid-template-rows: minmax(280px,45vh) 1fr; }
+  .billing-form-pane { border-right: none; border-bottom: 1px solid var(--line); }
 }
-
-/* ── Responsive ── */
-@media (max-width: 1100px) {
-  .billing-split { grid-template-columns: 380px 1fr; }
-}
-@media (max-width: 900px) {
-  .billing-split {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-  }
-  .billing-form-pane { border-right: none; border-bottom: 1px solid var(--line); max-height: 55vh; }
-  .billing-preview-pane { min-height: 600px; }
-}
-
-/* Print — hide everything except the invoice */
 @media print {
-  .admin-side, .billing-topbar, .billing-form-pane, .live-badge { display: none !important; }
-  .billing-page.admin-page { background: white !important; }
-  .admin-grid { display: block !important; }
+  .admin-side, .billing-topbar, .billing-form-pane, .live-badge, .no-print { display: none !important; }
+  body.admin-page .admin-grid { display: block !important; height: auto !important; }
+  body.admin-page .admin-main { height: auto !important; overflow: visible !important; display: block !important; }
   .billing-split { display: block !important; }
-  .billing-preview-pane { background: white !important; padding: 0 !important; overflow: visible !important; }
-  .invoice-sheet { box-shadow: none !important; border-radius: 0 !important; }
+  .billing-preview-pane { background: #fff !important; padding: 0 !important; overflow: visible !important; }
+  .invoice-sheet { box-shadow: none !important; border-radius: 0 !important; max-width: none !important; width: 210mm !important; }
 }
 </style>
 </head>
@@ -189,26 +145,19 @@
   <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
 </aside>
 <section class="admin-main">
-
-  <!-- Top action bar -->
   <div class="billing-topbar no-print">
     <div>
       <span class="kicker">Billing workspace</span>
       <h1>Create Invoice</h1>
     </div>
     <div class="billing-topbar-actions">
-      <div class="save-state" id="invoice-state" style="font-size:12px;color:var(--muted)">Not saved.</div>
       <button class="btn btn-small btn-light" id="invoice-save"><i class="hgi-stroke hgi-floppy-disk"></i> Save</button>
       <button class="btn btn-small btn-outline" id="invoice-mark-paid" style="display:none"><i class="hgi-stroke hgi-checkmark-circle-02"></i> Mark as Paid</button>
       <button class="btn btn-small btn-light" id="invoice-view-bill" style="display:none"><i class="hgi-stroke hgi-receipt-02"></i> View Receipt</button>
       <button class="btn btn-small btn-dark" id="invoice-print"><i class="hgi-stroke hgi-printer"></i> Print / PDF</button>
     </div>
   </div>
-
-  <!-- Split: Form left | Preview right -->
   <div class="billing-split">
-
-    <!-- LEFT: Invoice form -->
     <div class="billing-form-pane">
 <section class="invoice-controls glass no-print"><span class="kicker">Billing workspace</span><h1>Issue a travel invoice.</h1><p>Structured for packages, flights, accommodation and A4 printing.</p><div class="control-section"><h3>Invoice & customer</h3><div class="form-grid"><label>Invoice number<input id="invoice-number" required></label><label>Invoice date<input id="invoice-date" type="date" required></label><label>Due date<input id="invoice-due" type="date"></label><label>Booking reference<input id="invoice-booking"></label><label class="span-2">Customer name<input id="invoice-customer" required></label><label class="span-2">Billing address<textarea id="invoice-address" rows="2"></textarea></label><label>Phone<input id="invoice-phone"></label><label>Email<input id="invoice-email" type="email"></label></div></div><div class="control-section"><h3>Travel booking</h3><div class="form-grid"><label class="span-2">Package<select id="invoice-package"><option value="">Select or enter manually</option></select></label><label class="span-2">Package / journey name<input id="invoice-trip" required></label><label>Package type<select id="invoice-type"><option value="domestic">Domestic</option><option value="international">International</option></select></label><label>Travel date<input id="invoice-travel-date" type="date"></label><label>Travellers<input id="invoice-travellers" type="number" min="1" value="2"></label><label>Destination<input id="invoice-destination"></label></div></div><div class="control-section international-controls" id="international-controls"><div class="section-toggle"><h3>International arrangements</h3><label><input type="checkbox" id="flight-included"> Flight booked</label></div><div class="form-grid flight-fields"><label>Airline<input id="flight-airline"></label><label>Flight number<input id="flight-number"></label><label>PNR / ticket reference<input id="flight-pnr"></label><label>Cabin class<select id="flight-cabin"><option>Economy</option><option>Premium economy</option><option>Business</option><option>First</option></select></label><label>Departure airport<input id="flight-from"></label><label>Arrival airport<input id="flight-to"></label><label>Departure date & time<input id="flight-departure" type="datetime-local"></label><label>Arrival date & time<input id="flight-arrival" type="datetime-local"></label><label class="span-2">Baggage allowance<input id="flight-baggage" placeholder="20 kg checked + 7 kg cabin"></label></div></div><div class="control-section"><div class="section-toggle"><h3>Accommodation</h3><label><input type="checkbox" id="hotel-included"> Hotel booked</label></div><div class="form-grid hotel-fields"><label class="span-2">Hotel / property<input id="hotel-name"></label><label>City<input id="hotel-city"></label><label>Category<input id="hotel-category" placeholder="4 star"></label><label>Check-in<input id="hotel-checkin" type="date"></label><label>Check-out<input id="hotel-checkout" type="date"></label><label>Room type<input id="hotel-room-type"></label><label>Number of rooms<input id="hotel-rooms" type="number" min="1" value="1"></label><label>Meal plan<input id="hotel-meals" placeholder="Breakfast included"></label><label>Confirmation number<input id="hotel-confirmation"></label></div></div><div class="line-editor control-section"><div class="panel-head"><h3>Charges</h3><button class="mini-btn" id="add-line">＋ Add charge</button></div><div id="line-inputs"></div></div><div class="control-section"><h3>Totals & payment</h3><div class="form-grid"><label>Tax label<input id="tax-label" value="GST"></label><label>Tax rate %<input id="tax-rate" type="number" min="0" step="0.01" value="0"></label><label>Discount ₹<input id="discount" type="number" min="0" step="0.01" value="0"></label><label>Status<select id="payment-status"><option>Draft</option><option>Sent</option><option>Part paid</option><option>Paid</option><option>Cancelled</option></select></label><label class="span-2">Payment instructions<textarea id="payment-details" rows="3"></textarea></label><label class="span-2">Invoice note<textarea id="invoice-notes" rows="2">Services are subject to the confirmed itinerary and supplier terms.</textarea></label></div></div><div class="save-state" id="invoice-state">Not saved.</div>
 <input type="hidden" id="invoice-db-id" value="">
@@ -224,35 +173,25 @@
   </div>
 </div></section>
     </div>
-
-    <!-- RIGHT: Live invoice preview -->
     <div class="billing-preview-pane">
-      <div class="live-badge">
-        <span class="live-dot"></span>
-        Live preview — updates as you type
-      </div>
+      <div class="live-badge no-print"><span class="live-dot"></span> Live preview — updates as you type</div>
 <section class="invoice-sheet pro-invoice" id="invoice-sheet"><header class="pro-invoice-head"><div><img src="assets/bahadur-logo.png" alt="Bahadur Tours"><span>TOURS & TRAVELS</span></div><div><small>TRAVEL INVOICE</small><strong id="out-number">—</strong><b class="invoice-status" id="out-status">Draft</b></div></header><div class="invoice-rule"></div><section class="pro-invoice-meta"><div><small>FROM</small><strong>Bahadur Tours & Travels</strong><span>Mangaluru, Karnataka, India</span><span>bahadurtourstravels@gmail.com</span><span>+91 91874 40916</span></div><div><small>BILL TO</small><strong id="out-customer">Customer name</strong><span id="out-address">Billing address</span><span id="out-contact"></span></div><dl><dt>Invoice date</dt><dd id="out-date">—</dd><dt>Due date</dt><dd id="out-due">—</dd><dt>Booking ref.</dt><dd id="out-booking">—</dd></dl></section><section class="invoice-route-band"><div><small>JOURNEY</small><strong id="out-trip">Travel package</strong><span id="out-destination">Destination</span></div><div><small>TRAVEL DATE</small><strong id="out-travel-date">—</strong></div><div><small>TRAVELLERS</small><strong id="out-travellers">—</strong></div><div><small>TYPE</small><strong id="out-type">Domestic</strong></div></section><section class="invoice-travel-details" id="out-travel-details"><article id="out-flight-card" hidden><small>FLIGHT</small><strong id="out-flight-title"></strong><dl id="out-flight-list"></dl></article><article id="out-hotel-card" hidden><small>ACCOMMODATION</small><strong id="out-hotel-title"></strong><dl id="out-hotel-list"></dl></article></section><table class="invoice-table pro-invoice-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody id="out-lines"></tbody></table><section class="pro-invoice-bottom"><div><small>PAYMENT INSTRUCTIONS</small><p id="out-payment">Payment details will appear here.</p><small>NOTE</small><p id="out-notes"></p></div><dl><dt>Subtotal</dt><dd id="out-subtotal">₹0.00</dd><dt>Discount</dt><dd id="out-discount">− ₹0.00</dd><dt id="out-tax-label">GST</dt><dd id="out-tax">₹0.00</dd><dt class="grand-total">TOTAL</dt><dd class="grand-total" id="out-total">₹0.00</dd></dl></section><section class="invoice-terms"><strong>Booking conditions</strong><span>1. Services are confirmed only as stated in the final itinerary.</span><span>2. Airline, hotel and cancellation rules apply to their respective services.</span><span>3. Quote the invoice and booking references with every payment.</span></section><footer class="pro-invoice-footer"><span>bahadurtourstravels@gmail.com · +91 91874 40916</span><strong>Thank you for travelling with Bahadur.</strong></footer></section>
-</section>
     </div>
-
-  </div><!-- /billing-split -->
+  </div>
 </section>
 </div>
 <script type="module" src="billing.js"></script>
 <script>
-// Flash the invoice sheet whenever update() runs
 (function(){
-  const orig = window.__billingUpdate;
   const sheet = document.getElementById('invoice-sheet');
   if (!sheet) return;
-  // Watch for DOM mutations in the sheet = update happened
   const observer = new MutationObserver(() => {
     sheet.classList.remove('just-updated');
-    void sheet.offsetWidth; // reflow
+    void sheet.offsetWidth;
     sheet.classList.add('just-updated');
-    setTimeout(() => sheet.classList.remove('just-updated'), 400);
+    setTimeout(() => sheet.classList.remove('just-updated'), 350);
   });
-  observer.observe(sheet, { childList: true, subtree: true, characterData: true, attributes: true });
+  observer.observe(sheet, { childList: true, subtree: true, characterData: true });
 })();
 </script>
 </body>

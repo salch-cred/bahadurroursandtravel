@@ -6,21 +6,27 @@ const openModal = (element) => { if (!element) return; element.classList.add('sh
 const closeModal = (element) => { if (!element) return; element.classList.remove('show'); element.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
 
 function bindBookingButtons() {
+  // Mark buttons so CSS/JS can detect readiness; clicks handled via delegation below
   $$('[data-book]:not([data-book-bound])').forEach((button) => {
     button.setAttribute('data-book-bound', 'true');
-    button.addEventListener('click', () => {
-      const trip = button.getAttribute('data-trip');
-      const select = $('#trip-select');
-      if (trip && select) {
-        if (!Array.from(select.options).some((option) => option.value === trip)) select.add(new Option(trip, trip));
-        select.value = trip;
-      }
-      openModal(bookingModal);
-    });
   });
 }
 bindBookingButtons();
 window.addEventListener('bahadur:destinations-ready', bindBookingButtons);
+
+// Event delegation so static + dynamic Book buttons always open the modal
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-book]');
+  if (!button) return;
+  event.preventDefault();
+  const trip = button.getAttribute('data-trip');
+  const select = $('#trip-select');
+  if (trip && select) {
+    if (!Array.from(select.options).some((option) => option.value === trip)) select.add(new Option(trip, trip));
+    select.value = trip;
+  }
+  openModal(bookingModal);
+});
 
 // Load all packages from API into booking form trip select
 async function loadPackageOptions() {
@@ -44,7 +50,7 @@ async function loadPackageOptions() {
 loadPackageOptions();
 
 $$('[data-close]').forEach((button) => button.addEventListener('click', () => closeModal(bookingModal)));
-$('#finder')?.addEventListener('submit', (event) => { event.preventDefault(); openModal(bookingModal); });
+// Finder is handled by AI panel block when present; booking fallback below if no AI
 $('#add-review')?.addEventListener('click', () => { window.location.href = 'community.html#share'; });
 $$('[data-review-close]').forEach((button) => button.addEventListener('click', () => closeModal(reviewModal)));
 
@@ -181,8 +187,18 @@ $('#review-form')?.addEventListener('submit', (event) => {
     }
   }
 
-  // Send button + Enter key
-  if (aiSend) aiSend.addEventListener('click', () => send(aiInput?.value));
+  // Send button, form submit, and Enter key
+  const chatForm = document.querySelector('#chat-form');
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      send(aiInput?.value);
+    });
+  }
+  if (aiSend) aiSend.addEventListener('click', (e) => {
+    e.preventDefault();
+    send(aiInput?.value);
+  });
   if (aiInput) {
     aiInput.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(aiInput.value); }
@@ -233,39 +249,12 @@ $('#review-form')?.addEventListener('submit', (event) => {
   });
 })();
 
-
-  if (t.includes('budget') || t.includes('cheap') || t.includes('affordable')) {
-    return 'Great budget options from Bahadur Tours:\n• Kashmir: from ₹28,000/person\n• Goa: from ₹18,000/person\n• Kerala: from ₹20,000/person\n• Umrah Economy: contact for current rates\nShare your max budget, travel month and number of guests — I\'ll find the best fit!';
-  }
-  if (/book|reserve|confirm|how to book/.test(t)) {
-    return 'Ready to book? 🎉 Click the "Plan my trip" button at the top, fill in your details, and our team will contact you within 2 hours via WhatsApp (+91 91874 40916) and email. You can also WhatsApp us directly!';
-  }
-  if (t.includes('price') || t.includes('cost') || t.includes('rate') || t.includes('how much')) {
-    return 'Here are our starting prices:\n• Lakshadweep: custom quote (permit + flights)\n• Umrah Premium: from ₹1.2L/person\n• Kashmir: from ₹28,000/person\n• Dubai: from ₹55,000/person\n• Maldives: from ₹80,000/couple\n• Thailand: from ₹65,000/person\nPrices vary by season and group size. Which destination interests you?';
-  }
-  return 'Welcome to Bahadur Tours! 🌍 We specialise in Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives, Thailand, and more. Share your destination, travel month, number of guests and approximate budget — I\'ll suggest the perfect package!';
+// If no AI panel on page, finder opens booking modal
+if (!document.querySelector('#ai-panel')) {
+  $('#finder')?.addEventListener('submit', (event) => { event.preventDefault(); openModal(bookingModal); });
 }
-$('#chat-form')?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const input = $('#chat-input');
-  const message = input?.value.trim();
-  if (!message) return;
-  addChatMessage('user', message);
-  chatHistory.push({ role: 'user', content: message });
-  input.value = '';
-  let reply;
-  try {
-    const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: chatHistory }) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Chat unavailable');
-    reply = result.reply;
-  } catch {
-    reply = localTravelReply(message);
-  }
-  chatHistory.push({ role: 'assistant', content: reply });
-  addChatMessage('assistant', reply);
-  if (/book|reserve|confirm/.test(message.toLowerCase())) setTimeout(() => openModal(bookingModal), 550);
-});
+
+
 
 $$('[data-filter]').forEach((tab) => tab.addEventListener('click', () => {
   const filter = tab.getAttribute('data-filter');

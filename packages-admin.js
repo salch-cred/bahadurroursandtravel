@@ -92,7 +92,9 @@ function renderGallery() {
 function syncPrimaryToForm() {
   const primary = galleryImages.find(g => g.primary) || galleryImages[0];
   const urlInput = $('[name="image_url"]');
-  if (urlInput && primary) urlInput.value = primary.src;
+  if (urlInput) {
+    urlInput.value = primary ? primary.src : '';
+  }
 }
 
 /* ── Upload file handler ─────────────────────────────────── */

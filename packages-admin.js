@@ -7,7 +7,7 @@ const money=v=>v||'Custom quote';
 let items=[];
 let galleryImages=[]; // [{src: dataURL or https URL, label: 'primary'|'gallery'}]
 
-const token=()=>sessionStorage.getItem('bahadur-admin-token')||'';
+const token=()=>localStorage.getItem('bahadur-admin-token')||'';
 const auth=()=>({Authorization:`Bearer ${token()}`});
 
 /* ── Activity log ─────────────────────────────────────────── */
@@ -350,7 +350,7 @@ async function load(){
   try{
     const r=await fetch('/api/packages?admin=1',{headers:auth()});
     const d=await safeJson(r);
-    if(r.status===401){sessionStorage.removeItem('bahadur-admin-token');$('#package-login')?.showModal();return;}
+    if(r.status===401){localStorage.removeItem('bahadur-admin-token');$('#package-login')?.showModal();return;}
     if(!r.ok)throw new Error(d.error);
     items=d.packages||[];
     render();
@@ -490,7 +490,7 @@ document.addEventListener('keydown',e=>{
 /* ── Login ────────────────────────────────────────────────── */
 $('#package-login-form')?.addEventListener('submit',e=>{
   e.preventDefault();
-  sessionStorage.setItem('bahadur-admin-token',$('#package-token').value.trim());
+  localStorage.setItem('bahadur-admin-token',$('#package-token').value.trim());
   $('#package-login').close();
   load();
 });

@@ -3,17 +3,28 @@ const slug=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-
 function getTypeLabel(p) {
   const cat = String(p.category||'').toLowerCase();
   const type = String(p.package_type||'domestic').toLowerCase();
-  if(p.slug?.startsWith('force-urbania') || cat.includes('vehicle')) return 'Vehicle Hire';
-  if(type==='pilgrimage' || cat.includes('umrah')) return 'Pilgrimage';
+  if(type==='transport' || p.slug?.startsWith('force-urbania') || cat.includes('vehicle')) return 'Vehicle Hire';
+  if(type==='pilgrimage' || cat.includes('umrah') || cat.includes('pilgrim')) return 'Pilgrimage';
   if(type==='international') return 'International';
   if(cat.includes('lakshadweep') || cat.includes('island')) return 'Island';
   return 'Domestic';
 }
 
+function filterCategory(p){
+  const type = String(p.package_type||'').toLowerCase();
+  const cat = `${p.category||''} ${p.name||''} ${p.slug||''}`.toLowerCase();
+  if(type==='pilgrimage' || cat.includes('umrah') || cat.includes('ziyarat') || cat.includes('tirupati') || cat.includes('ajmer')) return 'pilgrimage';
+  if(type==='international') return 'international';
+  if(type==='transport' || cat.includes('urbania') || cat.includes('vehicle')) return 'local';
+  if(cat.includes('lakshadweep') || cat.includes('island') || cat.includes('goa') || cat.includes('andaman')) return 'local';
+  if(cat.includes('family')) return 'family';
+  return 'domestic';
+}
+
 function getIncChips(p) {
   const isVehicle = p.slug?.startsWith('force-urbania') || String(p.category||'').toLowerCase().includes('vehicle');
   if(isVehicle) return ['<i class="hgi-stroke hgi-car-01"></i> AC Vehicle','👨‍✈️ Driver','🛣 All routes'];
-  const isPilgrimage = p.package_type==='pilgrimage';
+  const isPilgrimage = p.package_type==='pilgrimage' || String(p.category||'').toLowerCase().includes('umrah');
   if(isPilgrimage) return ['<i class="hgi-stroke hgi-airplane-01"></i> Flights','<i class="hgi-stroke hgi-building-05"></i> Hotel','<i class="hgi-stroke hgi-maps"></i> Guided'];
   const isIsland = String(p.category||'').toLowerCase().includes('lakshadweep') || String(p.category||'').toLowerCase().includes('island');
   if(isIsland) return ['<i class="hgi-stroke hgi-document-attachment"></i> Permit','<i class="hgi-stroke hgi-building-05"></i> Stay','<i class="hgi-stroke hgi-restaurant-02"></i> Meals'];
@@ -38,7 +49,7 @@ function cardHTML(p) {
   const meta = [region, dur].filter(Boolean).join(' · ');
   const price = p.price && p.price!=='Custom quote' ? p.price : 'Custom quote';
   const img = p.image_url||'assets/images/island-beach.jpg';
-  return `<article class="package-card" data-category="${p.package_type||'domestic'}" data-name="${p.name} ${p.region}" data-slug="${p.slug}">
+  return `<article class="package-card" data-category="${filterCategory(p)}" data-type="${p.package_type||'domestic'}" data-name="${p.name} ${p.region}" data-slug="${p.slug}">
     <div class="package-image">
       <img src="${img}" alt="${p.name}" loading="lazy" onerror="this.classList.add('img-error');this.src='assets/bahadur-logo.png';this.style.objectFit='contain';this.style.padding='20px'">
       <span class="pkg-cat-badge">${typeLabel}</span>

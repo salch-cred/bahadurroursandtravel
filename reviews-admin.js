@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s);
-const token=()=>sessionStorage.getItem('bahadur-admin-token')||'';
+const token=()=>localStorage.getItem('bahadur-admin-token')||'';
 const auth=()=>({Authorization:`Bearer ${token()}`});
 
 let allReviews=[];
@@ -11,7 +11,7 @@ function login(){
 
 $('#reviews-login-form').onsubmit=e=>{
   e.preventDefault();
-  sessionStorage.setItem('bahadur-admin-token',$('#reviews-token').value.trim());
+  localStorage.setItem('bahadur-admin-token',$('#reviews-token').value.trim());
   $('#reviews-login').close();
   load();
 };
@@ -94,7 +94,7 @@ async function load(){
   $('#reviews-state').textContent='Loading…';
   try{
     const r=await fetch('/api/reviews?admin=1&limit=200',{headers:auth()});
-    if(r.status===401){sessionStorage.removeItem('bahadur-admin-token');login();return;}
+    if(r.status===401){localStorage.removeItem('bahadur-admin-token');login();return;}
     const d=await safeJson(r);
     if(!r.ok)throw new Error(d.error);
     allReviews=d.reviews||[];

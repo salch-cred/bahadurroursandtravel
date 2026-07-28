@@ -189,6 +189,22 @@ $('#review-form')?.addEventListener('submit', (event) => {
     });
   }
 
+  // Open AI panel — the FAB button
+  const aiOpen = document.querySelector('#ai-open');
+  if (aiOpen) {
+    aiOpen.addEventListener('click', () => {
+      const isOpen = aiPanel.classList.contains('show');
+      if (isOpen) {
+        aiPanel.classList.remove('show');
+        aiPanel.setAttribute('aria-hidden', 'true');
+      } else {
+        aiPanel.classList.add('show');
+        aiPanel.setAttribute('aria-hidden', 'false');
+        if (aiInput) aiInput.focus();
+      }
+    });
+  }
+
   // Close AI panel
   if (aiClose) aiClose.addEventListener('click', () => {
     aiPanel.classList.remove('show');

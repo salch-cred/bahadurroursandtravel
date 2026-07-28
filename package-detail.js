@@ -78,8 +78,10 @@ function openTripModal(name,dur,region){
   setTimeout(()=>form?.querySelector('input[name="name"]')?.focus(),120);
 }
 
-const tripForm=document.getElementById('trip-request-form');
-if(tripForm&&!tripForm.dataset.bound){
+// Bind form submit — deferred until render() has created the modal in the DOM
+function bindTripForm(){
+  const tripForm=document.getElementById('trip-request-form');
+  if(!tripForm||tripForm.dataset.bound) return;
   tripForm.dataset.bound='1';
   tripForm.addEventListener('submit',async(e)=>{
     e.preventDefault();
@@ -124,6 +126,7 @@ I'd like to request a trip.
   });
 }
 
+bindTripForm();
 document.querySelectorAll('[data-detail-book]').forEach(b=>{
   b.onclick=()=>openTripModal(p.name,p.duration,p.region);
 });

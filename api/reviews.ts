@@ -53,7 +53,7 @@ export default async function handler(req:any,res:any){
       if(filePayload.data&&filePayload.mimeType){
         if(!process.env.BLOB_READ_WRITE_TOKEN)return res.status(503).json({error:'Visitor media storage is not configured'});
         const buffer=Buffer.from(String(filePayload.data),'base64');
-        if(buffer.length>3*1024*1024)return res.status(400).json({error:'Media must be smaller than 3 MB'});
+        if(buffer.length>5*1024*1024)return res.status(400).json({error:'Media must be smaller than 5 MB'});
         const allowed=['image/jpeg','image/png','image/webp','video/mp4','video/webm'];
         if(!allowed.includes(filePayload.mimeType))return res.status(400).json({error:'Unsupported media type'});
         const safeName = clean(filePayload.fileName,120).replace(/[^a-zA-Z0-9.\-_]/g, '_');

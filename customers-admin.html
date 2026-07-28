@@ -181,8 +181,13 @@
 <script>
 /* ── Auth helper ────────────────────────────────────────── */
 const TOKEN_KEY = 'bahadur-admin-token';
+const $ = s => document.querySelector(s);
+let customers = [];
+let editId = null;
+let tags = [];
+
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
-function headers()  { return { 'Content-Type':'application/json', 'x-admin-token': getToken() }; }
+function auth()  { return { 'Content-Type':'application/json', 'x-admin-token': getToken() }; }
 
 function setSyncState(state,text){
   const pill=$('#sync-pill');if(!pill)return;
@@ -353,7 +358,7 @@ $('#admin-token-toggle')?.addEventListener('click',()=>{
 });
 
 async function checkAuth(){
-  if(!token()){login();return false;}
+  if(!getToken()){login();return false;}
   return true;
 }
 document.getElementById('admin-login-form').onsubmit = async () => {

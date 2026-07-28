@@ -15,8 +15,8 @@ function readLines(){lines=[...document.querySelectorAll('.line-input-row')].map
 function renderLineInputs(){
   const h=$('#line-inputs');
   h.innerHTML=lines.map((x,i)=>`<div class="line-input-row"><input data-description value="${x.description}" placeholder="Package, flight, hotel or service"><input data-qty type="number" min="0" value="${x.qty}"><input data-rate type="number" min="0" step="0.01" value="${x.rate}"><button type="button" data-remove="${i}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="hgi-stroke hgi-cancel-01" style="font-size:14px"></i></button></div>`).join('');
-  h.querySelectorAll('input').forEach(x=>x.oninput=()=>{readLines();update()});
-  h.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{readLines();lines.splice(Number(b.dataset.remove),1);if(!lines.length)lines=[{description:'Travel service',qty:1,rate:0}];renderLineInputs();update()});
+  h.querySelectorAll('input').forEach(x=>x.oninput=()=>{readLines();update();setTimeout(scalePreview,80);});
+  h.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{readLines();lines.splice(Number(b.dataset.remove),1);if(!lines.length)lines=[{description:'Travel service',qty:1,rate:0}];renderLineInputs();update();setTimeout(scalePreview,80);});
 }
 
 const dl=rows=>rows.filter(x=>x[1]).map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('');
@@ -75,25 +75,16 @@ function getToken(){const t=localStorage.getItem('bahadur-admin-token')||'';if(!
 
 function populateForm(inv){
   const set=(id,val)=>{if($(id)&&val!=null)$(id).value=val};
-  set('#invoice-number',inv.invoice_number);
-  set('#invoice-date',inv.invoice_date);
-  set('#invoice-due',inv.due_date);
-  set('#invoice-booking',inv.booking_ref);
-  set('#invoice-customer',inv.customer_name);
-  set('#invoice-address',inv.customer_address);
-  set('#invoice-phone',inv.phone);
-  set('#invoice-email',inv.email);
-  set('#tax-label',inv.tax_label||'GST');
-  set('#tax-rate',inv.tax_rate||0);
-  set('#discount',inv.discount||0);
-  set('#payment-status',inv.status||'Draft');
-  set('#payment-details',inv.payment_details);
-  set('#invoice-notes',inv.notes);
+  set('#invoice-number',inv.invoice_number);set('#invoice-date',inv.invoice_date);
+  set('#invoice-due',inv.due_date);set('#invoice-booking',inv.booking_ref);
+  set('#invoice-customer',inv.customer_name);set('#invoice-address',inv.customer_address);
+  set('#invoice-phone',inv.phone);set('#invoice-email',inv.email);
+  set('#tax-label',inv.tax_label||'GST');set('#tax-rate',inv.tax_rate||0);
+  set('#discount',inv.discount||0);set('#payment-status',inv.status||'Draft');
+  set('#payment-details',inv.payment_details);set('#invoice-notes',inv.notes);
   const td=inv.travel_details||{};
-  set('#invoice-trip',td.package_name);
-  set('#invoice-type',td.package_type||'domestic');
-  set('#invoice-travel-date',td.travel_date);
-  set('#invoice-travellers',td.travellers||2);
+  set('#invoice-trip',td.package_name);set('#invoice-type',td.package_type||'domestic');
+  set('#invoice-travel-date',td.travel_date);set('#invoice-travellers',td.travellers||2);
   set('#invoice-destination',td.destination);
   if(td.flight){
     if($('#flight-included'))$('#flight-included').checked=Boolean(td.flight.included);
@@ -112,12 +103,11 @@ function populateForm(inv){
     set('#hotel-confirmation',td.hotel.confirmation);
   }
   if(Array.isArray(inv.items)&&inv.items.length){lines=inv.items;renderLineInputs();}
-  update();
+  update();setTimeout(scalePreview,150);
 }
 
 async function loadPackages(){
-  const t=localStorage.getItem('bahadur-admin-token')||'';
-  if(!t)return;
+  const t=localStorage.getItem('bahadur-admin-token')||'';if(!t)return;
   try{
     const r=await fetch('/api/packages?admin=1',{headers:{Authorization:`Bearer ${t}`}});
     if(!r.ok)return;
@@ -128,17 +118,33 @@ async function loadPackages(){
   }catch{}
 }
 
-$('#add-line').onclick=()=>{readLines();lines.push({description:'',qty:1,rate:0});renderLineInputs();update()};
-document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select').forEach(x=>x.addEventListener('input',update));
+$('#add-line').onclick=()=>{readLines();lines.push({description:'',qty:1,rate:0});renderLineInputs();update();setTimeout(scalePreview,80);};
+document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select').forEach(x=>x.addEventListener('input',()=>{update();setTimeout(scalePreview,80);}));
 
-/* ── Print (browser print dialog) ── */
+/* ── Auto-scale preview to fit the narrow pane ── */
+function scalePreview(){
+  const pane=document.querySelector('.billing-preview-pane');
+  const sheet=document.getElementById('invoice-sheet');
+  const scaler=document.getElementById('preview-scaler');
+  if(!pane||!sheet||!scaler)return;
+  const paneW=Math.max(200,pane.clientWidth-24);
+  const scale=Math.min(1,paneW/820);
+  sheet.style.transform='scale('+scale+')';
+  sheet.style.transformOrigin='top left';
+  requestAnimationFrame(function(){
+    scaler.style.height=(sheet.offsetHeight*scale+20)+'px';
+  });
+}
+window.addEventListener('resize',scalePreview);
+
+/* ── Print ── */
 $('#invoice-print').onclick=()=>{
   update();
   document.title=`${value('#invoice-number')} \u00b7 Bahadur Tours`;
   window.print();
 };
 
-/* ── Download PDF (opens clean invoice window → Save as PDF) ── */
+/* ── Download PDF ── */
 $('#invoice-download').onclick=()=>{
   update();
   const sheet=document.getElementById('invoice-sheet');
@@ -146,43 +152,24 @@ $('#invoice-download').onclick=()=>{
   const num=value('#invoice-number','Invoice');
   const linkTags=[...document.querySelectorAll('link[rel="stylesheet"]')]
     .map(l=>`<link rel="stylesheet" href="${l.href}">`).join('\n');
-  const styleText=[...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');
   const pw=window.open('','_blank','width=870,height=1120,scrollbars=yes');
-  if(!pw){alert('Pop-up blocked. Please allow pop-ups for this site and try again.');return;}
+  if(!pw){alert('Pop-up blocked. Please allow pop-ups and try again.');return;}
   pw.document.write(`<!doctype html>
-<html lang="en">
-<head>
+<html lang="en"><head>
   <meta charset="UTF-8">
   <title>${num} \u00b7 Bahadur Tours</title>
   ${linkTags}
   <style>
-    @page { size: A4 portrait; margin: 10mm 12mm; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { margin: 0; padding: 0; background: #fff !important; }
-    .invoice-sheet {
-      box-shadow: none !important;
-      border-radius: 0 !important;
-      transform: none !important;
-      width: 100% !important;
-      max-width: none !important;
-    }
-    .no-print, .live-badge { display: none !important; }
-    .pro-invoice-head { background: linear-gradient(135deg,#0b4a3f,#0d5e51); }
+    @page{size:A4 portrait;margin:10mm 12mm}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    html,body{margin:0;padding:0;background:#fff!important}
+    .invoice-sheet{box-shadow:none!important;border-radius:0!important;transform:none!important;width:100%!important;max-width:none!important}
+    .no-print,.live-badge{display:none!important}
   </style>
-</head>
-<body>
+</head><body>
   ${sheet.outerHTML}
-  <script>
-    window.onload=function(){
-      setTimeout(function(){
-        window.document.title='${num} \u00b7 Bahadur Tours';
-        window.print();
-        setTimeout(function(){window.close();},2000);
-      },400);
-    };
-  <\/script>
-</body>
-</html>`);
+  <script>window.onload=function(){setTimeout(function(){window.document.title='${num} \u00b7 Bahadur Tours';window.print();setTimeout(function(){window.close();},2000);},400);};<\/script>
+</body></html>`);
   pw.document.close();
 };
 
@@ -213,11 +200,10 @@ $('#invoice-mark-paid').onclick=async()=>{
   if(!currentInvoiceId){alert('Save the invoice first before marking as paid.');return;}
   if(!confirm('Mark this invoice as Paid?'))return;
   const t=getToken();if(!t)return;
-  $('#invoice-state').textContent='Updating status\u2026';
+  $('#invoice-state').textContent='Updating\u2026';
   try{
     const r=await fetch('/api/admin',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${t}`},body:JSON.stringify({type:'invoice',id:currentInvoiceId,status:'Paid'})});
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error);
+    const d=await r.json();if(!r.ok)throw new Error(d.error);
     $('#payment-status').value='Paid';
     $('#invoice-mark-paid').style.display='none';
     $('#invoice-view-bill').style.display='';
@@ -234,24 +220,22 @@ $('#load-invoice-btn').onclick=async()=>{
   const id=$('#load-invoice-id').value.trim();
   if(!id){alert('Enter an invoice ID first');return;}
   const t=getToken();if(!t)return;
-  $('#invoice-state').textContent='Loading invoice\u2026';
+  $('#invoice-state').textContent='Loading\u2026';
   try{
     const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${t}`}});
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||'Not found');
+    const d=await r.json();if(!r.ok)throw new Error(d.error||'Not found');
     currentInvoiceId=d.invoice.id;
     $('#invoice-db-id').value=currentInvoiceId;
     populateForm(d.invoice);
-    $('#invoice-mark-paid').style.display=value('#payment-status','')!=='Paid'?'':'';
     $('#invoice-state').textContent='Invoice loaded.';
-  }catch(e){$('#invoice-state').textContent=`Auto-load failed: ${e.message}`}
+  }catch(e){$('#invoice-state').textContent=`Load failed: ${e.message}`}
 };
 
 renderLineInputs();
 loadPackages();
 update();
+setTimeout(scalePreview,150);
 
-// Auto-load from URL param
 (async function autoLoadFromUrl(){
   const params=new URLSearchParams(window.location.search);
   const id=params.get('id')||params.get('invoice_id');
@@ -261,8 +245,7 @@ update();
   $('#invoice-state').textContent='Loading invoice\u2026';
   try{
     const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${t}`}});
-    const d=await r.json();
-    if(!r.ok)throw new Error(d.error||'Not found');
+    const d=await r.json();if(!r.ok)throw new Error(d.error||'Not found');
     currentInvoiceId=d.invoice.id;
     $('#invoice-db-id').value=currentInvoiceId;
     populateForm(d.invoice);

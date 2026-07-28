@@ -610,3 +610,248 @@ body.mob-nav-active { overflow: hidden; }
   .wa-sticky{ bottom:68px; }
   .ig-sticky{ bottom:122px; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN PANEL — DEBUG PATCH  (added by debug pass)
+   Fixes: --border / --surface / --muted vars, status-select,
+   smooth transitions, loading shimmer, responsive side-nav
+   ══════════════════════════════════════════════════════════ */
+
+/* ── CSS variable aliases (used by bookings-admin / invoices-admin) ── */
+:root {
+  --border:  #dbe3df;    /* alias for --line */
+  --surface: #ffffffd4;  /* alias for panel bg */
+  --muted:   #74807c;    /* subdued text */
+}
+
+/* ── Status select inside booking rows ── */
+.status-select {
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  appearance: auto;
+  min-width: 108px;
+  transition: border-color .18s, box-shadow .18s;
+}
+.status-select:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px #0b665522;
+}
+.status-select:hover { border-color: var(--green); }
+
+/* ── Status badges ── */
+.status         { padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;
+                  background:#e4f5ed; color:#167050; white-space:nowrap; }
+.status.pending { background:#fff3d9; color:#8b6214; }
+.status.danger  { background:#ffe5e5; color:#b91c1c; }
+
+/* ── Smooth panel transitions ── */
+.panel { transition: box-shadow .2s; }
+.panel:hover { box-shadow: 0 6px 24px #062f2a12; }
+
+/* ── ops-card and turnover-card loading data-loaded state ── */
+.ops-card strong[data-loaded], .turnover-card strong[data-loaded] {
+  animation: fadeUp .35s ease forwards;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── Admin sync pill ── */
+.sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: #f2f6f4;
+  border: 1px solid var(--line);
+  margin-top: 6px;
+  transition: all .2s;
+}
+.sync-pill.is-live  { color: #167050; background: #e4f5ed; border-color: #b6e2cf; }
+.sync-pill.is-busy  { color: #8b6214; background: #fff3d9; border-color: #f5dfa0; }
+.sync-pill.is-error { color: #b91c1c; background: #ffe5e5; border-color: #fcc; }
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor; flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50%      { opacity:.35; }
+}
+
+/* ── Skeleton shimmer ── */
+.skel-value {
+  display: inline-block;
+  width: 72px; height: 22px;
+  background: linear-gradient(90deg,#e8ede8 25%,#d4dbd4 50%,#e8ede8 75%);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── icon-btn spinner ── */
+.icon-btn.is-loading i { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Empty cell ── */
+.empty-cell { text-align:center; padding:42px; color:var(--muted); font-size:14px; }
+.empty-cell small { display:block; margin-top:6px; font-size:12px; opacity:.7; }
+
+/* ── Booking note row ── */
+.booking-note-row td {
+  background: #f9fbf9;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── Panel head ── */
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-head h3 { margin: 0; font-size: 18px; }
+.panel-head .kicker { font-size:11px; font-weight:800; text-transform:uppercase;
+                       letter-spacing:.08em; color:var(--green); }
+.panel-head input {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 13px;
+  min-width: 200px;
+  transition: border-color .18s, box-shadow .18s;
+}
+.panel-head input:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px #0b665522;
+}
+
+/* ── mini-action-btn ── */
+.mini-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .18s, border-color .18s, transform .15s;
+  text-decoration: none;
+  font-size: 16px;
+}
+.mini-action-btn:hover {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  transform: scale(1.05);
+}
+.mini-action-btn.paid {
+  color: #167050;
+  border-color: #b6e2cf;
+  background: #e4f5ed;
+}
+.mini-action-btn.paid:hover {
+  background: #167050;
+  color: #fff;
+}
+
+/* ── Booking-actions / invoice-actions cell ── */
+.booking-actions, .invoice-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* ── Table row hover ── */
+table tbody tr {
+  transition: background .15s;
+}
+table tbody tr:hover {
+  background: #f4f8f5;
+}
+
+/* ── Admin footnote ── */
+.admin-footnote {
+  margin-top: 24px;
+  padding: 14px 20px;
+  background: #f4f7f4;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Responsive admin sidebar ── */
+@media (max-width: 900px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .admin-side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .admin-side img { width: 80px; height: 40px; }
+  .admin-side nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+  }
+  .admin-side nav a {
+    padding: 7px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .admin-main {
+    overflow: visible;
+  }
+  .admin-top { flex-wrap: wrap; gap: 12px; }
+  .admin-top h1 { font-size: 28px; }
+  .admin-content { grid-template-columns: 1fr; }
+  .operations-grid, .turnover-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 600px) {
+  .operations-grid, .turnover-grid { grid-template-columns: 1fr 1fr; }
+  .panel-head { flex-direction: column; align-items: flex-start; }
+  .panel-head input { min-width: 100%; width: 100%; }
+  .admin-actions { flex-wrap: wrap; gap: 8px; }
+  th { font-size: 11px; }
+  td { font-size: 12px; }
+  .admin-side { position: relative; top: auto; }
+}

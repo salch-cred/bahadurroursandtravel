@@ -179,7 +179,14 @@
   </form>
 </dialog>
 
-<script>
+<script type="importmap">
+{
+  "imports": {
+    "@vercel/blob/client": "https://cdn.jsdelivr.net/npm/@vercel/blob@0.27.1/+esm"
+  }
+}
+</script>
+<script type="module">
 /* ── Auth ─────────────────────────────────────────────────── */
 const TOKEN_KEY = 'bahadur-admin-token';
 const getToken  = () => localStorage.getItem(TOKEN_KEY) || '';
@@ -250,37 +257,43 @@ function renderQueue() {
   `;
 }
 
-/* ── Upload logic ─────────────────────────────────────────── */
-async function startUpload() {
+/* ── Upload logic (Vercel Blob client-side direct upload) ─── */
+import { upload } from '@vercel/blob/client';
+
+window.startUpload = async function startUpload() {
   if (!queueFile || queueFile.status === 'done') return;
   uploadBtn.disabled = true;
-  document.getElementById('upload-summary').textContent = 'Uploading reel... Please wait, this might take a minute.';
+  document.getElementById('upload-summary').textContent = 'Uploading reel directly to storage... Please wait.';
   
   const title = document.getElementById('meta-title').value;
   const active = document.getElementById('meta-status').value === 'true';
 
   queueFile.status = 'uploading';
-  queueFile.progress = 50;
+  queueFile.progress = 10;
   renderQueue();
 
   try {
-    const fd = new FormData();
-    fd.append('file', queueFile.file);
+    const file = queueFile.file;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 80);
 
-    // 1. Upload media
-    const upRes = await fetch('/api/upload-media', { method: 'POST', body: fd, headers: { 'x-admin-token': getToken() } });
-    if (!upRes.ok) {
-      const e = await upRes.json();
-      throw new Error(e.error || `Upload failed (${upRes.status})`);
-    }
-    const upData = await upRes.json();
-    queueFile.progress = 90; renderQueue();
+    // 1. Upload directly from browser to Vercel Blob (no serverless body limit)
+    const blob = await upload(`reels/${Date.now()}-${safeName}`, file, {
+      access: 'public',
+      handleUploadUrl: '/api/upload-media',
+      clientPayload: JSON.stringify({ adminToken: getToken() }),
+      onUploadProgress: ({ percentage }) => {
+        queueFile.progress = Math.round(percentage * 0.9);
+        renderQueue();
+      },
+    });
 
-    // 2. Save reel to db
+    queueFile.progress = 95; renderQueue();
+
+    // 2. Save reel record to database
     const r = await fetch('/api/reels', {
       method: 'POST',
       headers: hdrs(),
-      body: JSON.stringify({ video_url: upData.url, title, active })
+      body: JSON.stringify({ video_url: blob.url, title, active })
     });
     if (!r.ok) {
       const e = await r.json();
@@ -299,8 +312,9 @@ async function startUpload() {
     queueFile.status = 'error';
     renderQueue();
     document.getElementById('upload-summary').innerHTML = `<span style="color:#b91c1c">Error: ${err.message}</span>`;
+    uploadBtn.disabled = false;
   }
-}
+};
 
 /* ── Library logic ────────────────────────────────────────── */
 async function loadLibrary() {

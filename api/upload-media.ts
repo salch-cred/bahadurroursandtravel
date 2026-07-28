@@ -1,60 +1,79 @@
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 
-// Vercel processes multipart natively — no sizeLimit needed
-export const config = { api: { bodyParser: false } };
+export const config = { api: { bodyParser: true } };
 
+/**
+ * This endpoint handles the two-phase client-side Vercel Blob upload:
+ * 1. generateClientTokenFromReadWriteToken  — browser asks for a one-time signed URL
+ * 2. onUploadCompleted                      — Vercel calls us back after the file lands in Blob
+ *
+ * Because the browser talks directly to Blob storage, we never hit Vercel's 4.5 MB
+ * serverless body limit regardless of file size.
+ */
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return res.status(503).json({ error: 'Media storage not configured' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return res.status(503).json({ error: 'Media storage not configured' });
+  }
+
+  // Admin check for token generation phase
+  const token =
+    String(req.headers['x-admin-token'] || '').trim() ||
+    String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
 
   try {
-    // Vercel makes the raw stream available in req
-    // Use the content-type and filename from the multipart data
-    const contentType = req.headers['content-type'] || '';
-    
-    if (!contentType.includes('multipart/form-data')) {
-      return res.status(400).json({ error: 'Expected multipart/form-data' });
-    }
+    const body: HandleUploadBody = req.body;
 
-    // Parse multipart using built-in formidable on Vercel
-    const { IncomingForm } = await import('formidable');
-    const form = new IncomingForm({ maxFileSize: 50 * 1024 * 1024 }); // 50MB formidable limit
+    const jsonResponse = await handleUpload({
+      body,
+      request: req,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
+        // Validate admin token before issuing upload token
+        // Token can come from the request header OR the clientPayload (for client-side uploads)
+        const expected = process.env.ADMIN_API_TOKEN;
+        if (expected) {
+          let clientToken = '';
+          try {
+            const parsed = JSON.parse(clientPayload || '{}');
+            clientToken = parsed.adminToken || '';
+          } catch {}
+          const effectiveToken = token || clientToken;
+          if (!effectiveToken || effectiveToken !== expected) {
+            throw new Error('Unauthorised');
+          }
+        }
 
-    const [, files] = await new Promise<[any, any]>((resolve, reject) => {
-      form.parse(req, (err: any, fields: any, files: any) => {
-        if (err) reject(err);
-        else resolve([fields, files]);
-      });
+        // Allow only safe media types
+        const ext = pathname.split('.').pop()?.toLowerCase() || '';
+        const videoExts = ['mp4', 'webm', 'mov', 'avi', 'mkv'];
+        const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+        const allowed = [...videoExts, ...imageExts];
+
+        if (!allowed.includes(ext)) {
+          throw new Error(`File type .${ext} is not allowed`);
+        }
+
+        return {
+          allowedContentTypes: [
+            'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif',
+            'video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo',
+          ],
+          // No maximumSizeInBytes set — use Blob defaults (no cap on our side)
+        };
+      },
+      onUploadCompleted: async ({ blob }) => {
+        // Called by Vercel after file is uploaded to Blob
+        console.log('Blob upload completed:', blob.url);
+      },
     });
 
-    const fileEntry = files?.file;
-    const file = Array.isArray(fileEntry) ? fileEntry[0] : fileEntry;
-    if (!file) return res.status(400).json({ error: 'No file received' });
-
-    const mimeType = file.mimetype || 'application/octet-stream';
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 
-                     'video/mp4', 'video/webm', 'video/quicktime', 'video/mov', 'video/avi'];
-    if (!allowed.includes(mimeType)) return res.status(400).json({ error: 'Unsupported file type' });
-
-    const maxBytes = 50 * 1024 * 1024;
-    if (file.size > maxBytes) return res.status(400).json({ error: 'File must be under 50 MB' });
-
-    const fs = await import('fs');
-    const buffer = fs.readFileSync(file.filepath);
-
-    const ext = mimeType.startsWith('video/') ? 'video' : 'image';
-    const safeName = (file.originalFilename || 'upload').replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 80);
-    const blob = await put(`reviews/${ext}/${Date.now()}-${safeName}`, buffer, {
-      access: 'public',
-      contentType: mimeType,
-    });
-
-    // Clean up temp file
-    try { fs.unlinkSync(file.filepath); } catch {}
-
-    return res.status(200).json({ url: blob.url, mimeType, type: ext });
+    return res.status(200).json(jsonResponse);
   } catch (err: any) {
     console.error('upload-media error', err);
-    return res.status(500).json({ error: err.message || 'Upload failed' });
+    return res.status(400).json({ error: err.message || 'Upload failed' });
   }
 }

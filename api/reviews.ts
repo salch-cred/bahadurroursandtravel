@@ -36,7 +36,8 @@ export default async function handler(req:any,res:any){
         if(buffer.length>3*1024*1024)return res.status(400).json({error:'Media must be smaller than 3 MB'});
         const allowed=['image/jpeg','image/png','image/webp','video/mp4','video/webm'];
         if(!allowed.includes(b.mimeType))return res.status(400).json({error:'Unsupported media type'});
-        const blob=await put(`reviews/${Date.now()}-${clean(b.fileName,120)}`,buffer,{access:'public',contentType:b.mimeType});
+        const safeName = clean(b.fileName,120).replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const blob=await put(`reviews/${Date.now()}-${safeName}`,buffer,{access:'public',contentType:b.mimeType});
         media_url=blob.url;
         media_type=String(b.mimeType).startsWith('video/')?'video':'image';
       }
@@ -48,7 +49,7 @@ export default async function handler(req:any,res:any){
         text:clean(b.text,1200),media_url,media_type,consent:true
       };
       if(!row.name||!row.trip||!row.booking_ref||!row.text)return res.status(400).json({error:'Complete all required fields'});
-      const booking=await sql`select booking_id from bookings where upper(booking_id)=${row.booking_ref} limit 1`;
+      const booking=await sql`select booking_ref from bookings where upper(booking_ref)=${row.booking_ref} limit 1`;
       const status=booking.length?'approved':'pending';
       await sql`insert into reviews(name,trip,rating,booking_ref,package_slug,text,media_url,media_type,consent,status) values(${row.name},${row.trip},${row.rating},${row.booking_ref},${row.package_slug},${row.text},${row.media_url},${row.media_type},true,${status})`;
       return res.status(201).json({ok:true,status});

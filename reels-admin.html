@@ -187,6 +187,8 @@
 }
 </script>
 <script type="module">
+import { upload } from '@vercel/blob/client';
+
 /* ── Auth ─────────────────────────────────────────────────── */
 const TOKEN_KEY = 'bahadur-admin-token';
 const getToken  = () => localStorage.getItem(TOKEN_KEY) || '';
@@ -214,9 +216,9 @@ dropZone.ondragleave = () => dropZone.classList.remove('dragover');
 dropZone.ondrop = e => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
-  if(e.dataTransfer.files.length > 0) addFile(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files.length > 0) addFile(e.dataTransfer.files[0]);
 };
-fileInput.onchange = () => { if(fileInput.files.length > 0) addFile(fileInput.files[0]); fileInput.value = ''; };
+fileInput.onchange = () => { if (fileInput.files.length > 0) addFile(fileInput.files[0]); fileInput.value = ''; };
 
 function addFile(f) {
   if (!f.type.startsWith('video/')) {
@@ -228,68 +230,68 @@ function addFile(f) {
   uploadBtn.disabled = false;
 }
 
-function clearQueue() {
+window.clearQueue = function() {
   queueFile = null;
   renderQueue();
   uploadBtn.disabled = true;
   document.getElementById('upload-summary').textContent = '';
-}
+};
 
 function renderQueue() {
   const q = document.getElementById('upload-queue');
   if (!queueFile) { q.style.display = 'none'; q.innerHTML = ''; return; }
   q.style.display = 'flex';
   const x = queueFile;
+  const mb = (x.file.size / (1024 * 1024)).toFixed(1);
   const kb = (x.file.size / 1024).toFixed(1);
-  const mb = (x.file.size / (1024*1024)).toFixed(1);
-  const size = x.file.size > 1024*1024 ? `${mb} MB` : `${kb} KB`;
-  
+  const size = x.file.size > 1024 * 1024 ? `${mb} MB` : `${kb} KB`;
   q.innerHTML = `
     <div class="queue-item">
       <div class="queue-thumb video-icon"><i class="hgi-stroke hgi-video-01"></i></div>
       <div class="queue-meta">
         <strong>${x.file.name.replace(/[&<>"']/g, '')}</strong>
         <span>${size}</span>
-        <div class="queue-progress"><div class="queue-progress-bar" style="width:${x.progress}%"></div></div>
+        <div class="queue-progress"><div class="queue-progress-bar" id="prog-bar" style="width:${x.progress}%"></div></div>
       </div>
-      <span class="queue-status ${x.status}">${x.status}</span>
+      <span class="queue-status ${x.status}" id="prog-status">${x.status}</span>
     </div>
   `;
 }
 
-/* ── Upload logic (Vercel Blob client-side direct upload) ─── */
-import { upload } from '@vercel/blob/client';
-
-window.startUpload = async function startUpload() {
+/* ── Upload (Vercel Blob client-side direct upload) ────────── */
+window.startUpload = async function() {
   if (!queueFile || queueFile.status === 'done') return;
   uploadBtn.disabled = true;
-  document.getElementById('upload-summary').textContent = 'Uploading reel directly to storage... Please wait.';
-  
-  const title = document.getElementById('meta-title').value;
+  const summary = document.getElementById('upload-summary');
+  summary.textContent = 'Uploading directly to storage… please wait.';
+
+  const title  = document.getElementById('meta-title').value;
   const active = document.getElementById('meta-status').value === 'true';
 
-  queueFile.status = 'uploading';
-  queueFile.progress = 10;
+  queueFile.status   = 'uploading';
+  queueFile.progress = 5;
   renderQueue();
 
   try {
-    const file = queueFile.file;
+    const file     = queueFile.file;
     const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_').slice(0, 80);
 
-    // 1. Upload directly from browser to Vercel Blob (no serverless body limit)
+    /* Upload directly from browser → Vercel Blob (bypasses 4.5 MB serverless limit) */
     const blob = await upload(`reels/${Date.now()}-${safeName}`, file, {
       access: 'public',
       handleUploadUrl: '/api/upload-media',
       clientPayload: JSON.stringify({ adminToken: getToken() }),
       onUploadProgress: ({ percentage }) => {
-        queueFile.progress = Math.round(percentage * 0.9);
-        renderQueue();
+        queueFile.progress = Math.min(90, Math.round(percentage));
+        const bar = document.getElementById('prog-bar');
+        if (bar) bar.style.width = queueFile.progress + '%';
       },
     });
 
-    queueFile.progress = 95; renderQueue();
+    queueFile.progress = 95;
+    renderQueue();
 
-    // 2. Save reel record to database
+    /* Save reel record to DB */
     const r = await fetch('/api/reels', {
       method: 'POST',
       headers: hdrs(),
@@ -297,26 +299,24 @@ window.startUpload = async function startUpload() {
     });
     if (!r.ok) {
       const e = await r.json();
-      throw new Error(e.error || 'Failed to save reel record');
+      throw new Error(e.error || 'Failed to save reel');
     }
 
-    queueFile.status = 'done';
+    queueFile.status   = 'done';
     queueFile.progress = 100;
     renderQueue();
-    document.getElementById('upload-summary').innerHTML = '<span style="color:var(--green)">Reel uploaded successfully!</span>';
-    
-    // Clear form
+    summary.innerHTML = '<span style="color:var(--green)">✓ Reel uploaded successfully!</span>';
     document.getElementById('meta-title').value = '';
     loadLibrary();
   } catch (err) {
     queueFile.status = 'error';
     renderQueue();
-    document.getElementById('upload-summary').innerHTML = `<span style="color:#b91c1c">Error: ${err.message}</span>`;
+    summary.innerHTML = `<span style="color:#b91c1c">Error: ${err.message}</span>`;
     uploadBtn.disabled = false;
   }
 };
 
-/* ── Library logic ────────────────────────────────────────── */
+/* ── Library ──────────────────────────────────────────────── */
 async function loadLibrary() {
   const grid = document.getElementById('media-grid');
   grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading reels…</div>';
@@ -337,23 +337,22 @@ function renderLibrary(items) {
     grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-video-01"></i>No reels yet</div>';
     return;
   }
-  
   grid.innerHTML = items.map(m => `
     <div class="media-tile">
       <video src="${m.video_url}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>
       <div class="tile-status-badge ${m.active ? '' : 'hidden'}">${m.active ? 'Live' : 'Hidden'}</div>
       <div class="tile-overlay">
-        <div class="tile-title">${m.title ? m.title.replace(/[&<>"']/g,'') : 'Untitled'}</div>
+        <div class="tile-title">${m.title ? m.title.replace(/[&<>"']/g, '') : 'Untitled'}</div>
         <div class="tile-actions">
-          <button class="tile-pending" onclick="toggleActive('${m.id}', ${!m.active})">${m.active ? 'Hide' : 'Publish'}</button>
-          <button class="tile-delete" onclick="deleteReel('${m.id}')">Delete</button>
+          <button class="tile-pending" onclick="window.toggleActive('${m.id}',${!m.active})">${m.active ? 'Hide' : 'Publish'}</button>
+          <button class="tile-delete" onclick="window.deleteReel('${m.id}')">Delete</button>
         </div>
       </div>
     </div>
   `).join('');
 }
 
-async function toggleActive(id, newActive) {
+window.toggleActive = async function(id, newActive) {
   try {
     const r = await fetch('/api/reels?id=' + id, {
       method: 'PUT',
@@ -363,16 +362,19 @@ async function toggleActive(id, newActive) {
     if (r.ok) loadLibrary();
     else alert('Failed to update reel');
   } catch (e) { alert(e.message); }
-}
+};
 
-async function deleteReel(id) {
+window.deleteReel = async function(id) {
   if (!confirm('Permanently delete this reel?')) return;
   try {
     const r = await fetch('/api/reels?id=' + id, { method: 'DELETE', headers: hdrs() });
     if (r.ok) loadLibrary();
     else alert('Delete failed');
   } catch (e) { alert(e.message); }
-}
+};
+
+/* Expose for onclick in sidebar refresh button */
+window.loadLibrary = loadLibrary;
 
 function login() {
   const d = document.getElementById('admin-login');
@@ -386,5 +388,4 @@ async function init() {
 
 init();
 </script>
-</body>
-</html>
+</body></html>

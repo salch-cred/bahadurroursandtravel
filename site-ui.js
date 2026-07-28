@@ -104,4 +104,64 @@
     document.body.appendChild(ig);
   }
 
+  /* ═══════════════════════════════════════════════════════
+     4. REELS SYSTEM
+  ═══════════════════════════════════════════════════════ */
+  async function loadReels() {
+    const section = document.getElementById('reels-section');
+    const container = document.getElementById('reels-container');
+    if (!section || !container) return;
+
+    try {
+      const res = await fetch('/api/reels');
+      if (!res.ok) return;
+      const data = await res.json();
+      const reels = data.reels || [];
+
+      if (reels.length === 0) return;
+
+      container.innerHTML = reels.map(reel => `
+        <div class="reel-card">
+          <video src="${reel.video_url}" loop playsinline muted autoplay></video>
+          <div class="reel-gradient"></div>
+          ${reel.title ? `<div class="reel-title">${reel.title.replace(/[&<>"']/g, '')}</div>` : ''}
+          <button class="reel-sound-btn" onclick="toggleReelSound(this)">
+            <i class="hgi-stroke hgi-volume-mute"></i>
+          </button>
+        </div>
+      `).join('');
+
+      section.style.display = 'block';
+    } catch (e) {
+      console.error('Failed to load reels', e);
+    }
+  }
+
+  window.toggleReelSound = function(btn) {
+    const video = btn.parentElement.querySelector('video');
+    if (!video) return;
+    
+    if (video.muted) {
+      // Mute all other videos first
+      document.querySelectorAll('.reel-card video').forEach(v => {
+        v.muted = true;
+        const b = v.parentElement.querySelector('.reel-sound-btn i');
+        if (b) {
+          b.classList.remove('hgi-volume-high');
+          b.classList.add('hgi-volume-mute');
+        }
+      });
+      
+      video.muted = false;
+      btn.querySelector('i').classList.remove('hgi-volume-mute');
+      btn.querySelector('i').classList.add('hgi-volume-high');
+    } else {
+      video.muted = true;
+      btn.querySelector('i').classList.remove('hgi-volume-high');
+      btn.querySelector('i').classList.add('hgi-volume-mute');
+    }
+  };
+
+  loadReels();
+
 })();

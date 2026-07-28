@@ -23,6 +23,76 @@
   </div>
 </section>
 
+<section class="section" id="reels-section" style="display:none; padding:40px 5%; overflow:hidden;">
+  <div class="section-head" style="margin-bottom:24px;">
+    <div>
+      <span class="kicker">Discover through</span>
+      <h2>Short Reels.</h2>
+    </div>
+  </div>
+  <div class="reels-scroll" id="reels-container" style="display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom:10px;">
+    <!-- Reels injected here by JS -->
+  </div>
+  <style>
+    .reels-scroll::-webkit-scrollbar { display: none; }
+    .reel-card {
+      position: relative;
+      flex: 0 0 280px;
+      height: 500px;
+      scroll-snap-align: center;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .reel-card video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .reel-title {
+      position: absolute;
+      bottom: 20px;
+      left: 16px;
+      right: 16px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      z-index: 2;
+    }
+    .reel-gradient {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 40%;
+      background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .reel-sound-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      border: none;
+      color: #fff;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 3;
+    }
+    @media (max-width: 768px) {
+      .reel-card { flex: 0 0 80%; height: 420px; scroll-snap-align: start; }
+    }
+  </style>
+</section>
+
 <section class="section intro" id="experiences"><div class="section-head"><div><span class="kicker">Handpicked for the islands</span><h2>Not packages.<br/><em>Proper experiences.</em></h2></div><p>Small details make island travel effortless. We pair each activity with dependable transfers, timing and local support.</p></div><div class="experience-grid">
 <article class="exp-card exp-tall"><img alt="Scuba diving over coral reef" src="assets/images/scuba.jpg"/><div class="card-tint"></div><div class="card-copy"><span class="tag">Signature</span><h3>Discover scuba</h3><p>A guided first dive in clear island water.</p><button data-book="" data-trip="Discover scuba">View experience <i class="hgi-stroke hgi-arrow-right-01"></i></button></div></article>
 <article class="exp-card"><img alt="Kayaking at sunset" src="assets/images/kayak-sunset.jpg"/><div class="card-tint"></div><div class="card-copy"><span class="tag">Golden hour</span><h3>Sunset kayaking</h3><p>Quiet water. A slow horizon.</p><button data-book="" data-trip="Sunset kayaking">View experience <i class="hgi-stroke hgi-arrow-right-01"></i></button></div></article>

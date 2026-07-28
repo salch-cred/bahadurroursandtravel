@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Reels Manager — Bahadur Tours</title>
+<link rel="icon" href="assets/bahadur-logo.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<style>
+/* ── Upload zone ──────────────────────────────────────────── */
+.drop-zone{border:2px dashed var(--line);border-radius:18px;padding:48px 24px;text-align:center;cursor:pointer;transition:.2s;background:#fafcfb;position:relative}
+.drop-zone.dragover{border-color:var(--green);background:#eef9f5}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-zone i{font-size:42px;color:#b0c4bc;display:block;margin-bottom:10px}
+.drop-zone h3{font-size:18px;margin:0 0 6px}
+.drop-zone p{color:#8fa099;font-size:13px;margin:0}
+.drop-zone .unlimited{display:inline-block;margin-top:10px;background:#e8f4f0;color:var(--green);border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800}
+
+/* ── Upload queue ─────────────────────────────────────────── */
+.upload-queue{display:flex;flex-direction:column;gap:8px;margin-top:16px;max-height:300px;overflow-y:auto}
+.queue-item{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.queue-thumb{width:52px;height:44px;object-fit:cover;border-radius:8px;background:#eef4f1}
+.queue-thumb.video-icon{display:flex;align-items:center;justify-content:center;font-size:22px;color:#8fa099}
+.queue-meta{display:flex;flex-direction:column;gap:2px}
+.queue-meta strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.queue-meta span{font-size:11px;color:#8fa099}
+.queue-progress{width:100%;height:4px;background:#e8f4f0;border-radius:99px;margin-top:4px;overflow:hidden}
+.queue-progress-bar{height:100%;background:var(--green);border-radius:99px;transition:width .3s}
+.queue-status{font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.queue-status.uploading{background:#fff3d9;color:#8b6214}
+.queue-status.done{background:#e8f4f0;color:var(--green)}
+.queue-status.error{background:#fff0ef;color:#b94040}
+.queue-status.waiting{background:#f0f4f2;color:#8fa099}
+
+/* ── Upload form meta fields ──────────────────────────────── */
+.upload-meta{display:grid;grid-template-columns:1fr;gap:12px;margin:16px 0}
+.upload-meta label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#65736e}
+.upload-meta input,.upload-meta select{border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit}
+.upload-meta input:focus,.upload-meta select:focus{outline:none;border-color:var(--green)}
+.upload-actions{display:flex;gap:10px;align-items:center;margin-top:8px}
+.upload-actions .btn{flex:1}
+.upload-count{font-size:13px;color:#8fa099}
+
+/* ── Media library ────────────────────────────────────────── */
+.media-lib-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.media-lib-head h2{font-size:22px;margin:0}
+.media-masonry-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.media-tile{position:relative;border-radius:14px;overflow:hidden;background:#eef4f1;aspect-ratio:9/16;transition:.2s}
+.media-tile video{width:100%;height:100%;object-fit:cover;display:block}
+.media-tile .tile-overlay{position:absolute;inset:0;background:linear-gradient(0deg,#031c19dd,transparent 50%);transition:.2s;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;opacity:0}
+.media-tile:hover .tile-overlay{opacity:1}
+.tile-actions{display:flex;gap:6px;margin-top:8px}
+.tile-actions button{border:0;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:800;cursor:pointer;flex:1}
+.tile-approve{background:#41c799;color:#fff}
+.tile-pending{background:#ffd977;color:#664d00}
+.tile-delete{background:#f04040;color:#fff}
+.tile-title{color:#fff;font-weight:bold;font-size:13px;text-shadow:0 1px 2px rgba(0,0,0,0.5);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tile-status-badge{position:absolute;top:8px;right:8px;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:800;background:#41c799;color:#fff}
+.tile-status-badge.hidden{background:#8fa099;color:#fff}
+.media-empty{grid-column:1/-1;text-align:center;padding:60px;color:#8fa099}
+.media-empty i{font-size:48px;display:block;margin-bottom:12px;opacity:.3}
+
+/* ── Panel layout ─────────────────────────────────────────── */
+.media-shell{display:grid;grid-template-columns:400px 1fr;gap:18px;height:100%}
+.media-left{display:flex;flex-direction:column;gap:14px}
+.media-panel{border-radius:18px;padding:22px;background:#ffffffd4;border:1px solid var(--line)}
+.media-panel h2{font-size:20px;margin:0 0 16px}
+
+@media(max-width:900px){.media-shell{grid-template-columns:1fr;height:auto}}
+@media(max-width:540px){.media-masonry-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
+</style>
+</head>
+<body class="admin-page">
+<main class="admin-shell">
+<div class="admin-grid">
+
+<!-- ── Sidebar ─────────────────────────────────────────────── -->
+<aside class="admin-side glass">
+  <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+  <nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star"></i> Reviews</a>
+    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+    <a href="reels-admin.html" class="active"><i class="hgi-stroke hgi-video-01"></i> Reels</a>
+  </nav>
+  <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
+</aside>
+
+<!-- ── Main ────────────────────────────────────────────────── -->
+<section class="admin-main glass">
+  <div class="admin-top" style="margin-bottom:18px">
+    <div>
+      <span class="kicker">Landing Page</span>
+      <h1>Manage Reels</h1>
+    </div>
+    <div class="admin-actions">
+      <a class="btn btn-light" href="index.html" target="_blank"><i class="hgi-stroke hgi-arrow-up-right-01"></i> View live</a>
+    </div>
+  </div>
+
+  <div class="media-shell">
+
+    <!-- ── Left: Upload panel ──────────────────────────────── -->
+    <div class="media-left">
+      <div class="media-panel">
+        <h2><i class="hgi-stroke hgi-upload-04" style="color:var(--green)"></i> Upload reel</h2>
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept="video/mp4,video/webm,video/quicktime,video/mov">
+          <i class="hgi-stroke hgi-video-01"></i>
+          <h3>Drop video here</h3>
+          <p>MP4, WebM, or MOV formats</p>
+          <span class="unlimited">Max size 50 MB</span>
+        </div>
+
+        <!-- Queue -->
+        <div class="upload-queue" id="upload-queue" style="display:none"></div>
+
+        <!-- Meta fields -->
+        <div class="upload-meta">
+          <label>Reel Title (optional)
+            <input id="meta-title" placeholder="e.g. Swimming in Lakshadweep">
+          </label>
+          <label>Visibility
+            <select id="meta-status">
+              <option value="true">Active (Show on landing page)</option>
+              <option value="false">Hidden (Save for later)</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="upload-actions">
+          <button class="btn btn-dark" onclick="startUpload()" id="upload-btn" disabled>
+            <i class="hgi-stroke hgi-upload-04"></i> Upload Reel
+          </button>
+          <button class="btn btn-outline" onclick="clearQueue()">Clear</button>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:#65736e" id="upload-summary"></div>
+      </div>
+    </div>
+
+    <!-- ── Right: Library ──────────────────────────────────── -->
+    <div>
+      <div class="media-panel" style="height:100%;display:flex;flex-direction:column">
+        <div class="media-lib-head">
+          <h2>Uploaded Reels</h2>
+          <button class="btn btn-light btn-small" onclick="loadLibrary()"><i class="hgi-stroke hgi-refresh"></i> Refresh</button>
+        </div>
+        <div class="media-masonry-grid" id="media-grid">
+          <div class="media-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading reels…</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /media-shell -->
+</section>
+</div>
+</main>
+
+<!-- Login dialog -->
+<dialog class="admin-login" id="admin-login">
+  <form method="dialog" id="admin-login-form">
+    <img src="assets/bahadur-logo.png" alt="Bahadur">
+    <span class="kicker">Authorised staff only</span>
+    <h2>Unlock reels manager</h2>
+    <p>Enter the private admin token configured in Vercel.</p>
+    <label>Admin token<input type="password" id="admin-token" required></label>
+    <button class="btn btn-dark full">Open manager</button>
+    <small id="login-error"></small>
+  </form>
+</dialog>
+
+<script>
+/* ── Auth ─────────────────────────────────────────────────── */
+const TOKEN_KEY = 'bahadur-admin-token';
+const getToken  = () => localStorage.getItem(TOKEN_KEY) || '';
+const hdrs      = () => ({ 'Content-Type': 'application/json', 'x-admin-token': getToken() });
+
+document.getElementById('admin-login-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const tok = document.getElementById('admin-token').value;
+  localStorage.setItem(TOKEN_KEY, tok);
+  const r = await fetch('/api/admin', { headers: { 'x-admin-token': tok } });
+  if (r.ok) { document.getElementById('admin-login').close(); init(); }
+  else { document.getElementById('login-error').textContent = 'Invalid token.'; }
+};
+
+/* ── Queue state ──────────────────────────────────────────── */
+let queueFile = null;
+
+/* ── Drop zone setup ──────────────────────────────────────── */
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadBtn = document.getElementById('upload-btn');
+
+dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('dragover'); };
+dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+dropZone.ondrop = e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if(e.dataTransfer.files.length > 0) addFile(e.dataTransfer.files[0]);
+};
+fileInput.onchange = () => { if(fileInput.files.length > 0) addFile(fileInput.files[0]); fileInput.value = ''; };
+
+function addFile(f) {
+  if (!f.type.startsWith('video/')) {
+    alert('Only video files are supported for reels.');
+    return;
+  }
+  queueFile = { file: f, status: 'waiting', progress: 0 };
+  renderQueue();
+  uploadBtn.disabled = false;
+}
+
+function clearQueue() {
+  queueFile = null;
+  renderQueue();
+  uploadBtn.disabled = true;
+  document.getElementById('upload-summary').textContent = '';
+}
+
+function renderQueue() {
+  const q = document.getElementById('upload-queue');
+  if (!queueFile) { q.style.display = 'none'; q.innerHTML = ''; return; }
+  q.style.display = 'flex';
+  const x = queueFile;
+  const kb = (x.file.size / 1024).toFixed(1);
+  const mb = (x.file.size / (1024*1024)).toFixed(1);
+  const size = x.file.size > 1024*1024 ? `${mb} MB` : `${kb} KB`;
+  
+  q.innerHTML = `
+    <div class="queue-item">
+      <div class="queue-thumb video-icon"><i class="hgi-stroke hgi-video-01"></i></div>
+      <div class="queue-meta">
+        <strong>${x.file.name.replace(/[&<>"']/g, '')}</strong>
+        <span>${size}</span>
+        <div class="queue-progress"><div class="queue-progress-bar" style="width:${x.progress}%"></div></div>
+      </div>
+      <span class="queue-status ${x.status}">${x.status}</span>
+    </div>
+  `;
+}
+
+/* ── Upload logic ─────────────────────────────────────────── */
+async function startUpload() {
+  if (!queueFile || queueFile.status === 'done') return;
+  uploadBtn.disabled = true;
+  document.getElementById('upload-summary').textContent = 'Uploading reel... Please wait, this might take a minute.';
+  
+  const title = document.getElementById('meta-title').value;
+  const active = document.getElementById('meta-status').value === 'true';
+
+  queueFile.status = 'uploading';
+  queueFile.progress = 50;
+  renderQueue();
+
+  try {
+    const fd = new FormData();
+    fd.append('file', queueFile.file);
+
+    // 1. Upload media
+    const upRes = await fetch('/api/upload-media', { method: 'POST', body: fd, headers: { 'x-admin-token': getToken() } });
+    if (!upRes.ok) {
+      const e = await upRes.json();
+      throw new Error(e.error || `Upload failed (${upRes.status})`);
+    }
+    const upData = await upRes.json();
+    queueFile.progress = 90; renderQueue();
+
+    // 2. Save reel to db
+    const r = await fetch('/api/reels', {
+      method: 'POST',
+      headers: hdrs(),
+      body: JSON.stringify({ video_url: upData.url, title, active })
+    });
+    if (!r.ok) {
+      const e = await r.json();
+      throw new Error(e.error || 'Failed to save reel record');
+    }
+
+    queueFile.status = 'done';
+    queueFile.progress = 100;
+    renderQueue();
+    document.getElementById('upload-summary').innerHTML = '<span style="color:var(--green)">Reel uploaded successfully!</span>';
+    
+    // Clear form
+    document.getElementById('meta-title').value = '';
+    loadLibrary();
+  } catch (err) {
+    queueFile.status = 'error';
+    renderQueue();
+    document.getElementById('upload-summary').innerHTML = `<span style="color:#b91c1c">Error: ${err.message}</span>`;
+  }
+}
+
+/* ── Library logic ────────────────────────────────────────── */
+async function loadLibrary() {
+  const grid = document.getElementById('media-grid');
+  grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading reels…</div>';
+  try {
+    const r = await fetch('/api/reels?admin=1', { headers: hdrs() });
+    if (r.status === 401) { login(); return; }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    renderLibrary(d.reels || []);
+  } catch (e) {
+    grid.innerHTML = `<div class="media-empty" style="color:#b91c1c">Error: ${e.message}</div>`;
+  }
+}
+
+function renderLibrary(items) {
+  const grid = document.getElementById('media-grid');
+  if (!items.length) {
+    grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-video-01"></i>No reels yet</div>';
+    return;
+  }
+  
+  grid.innerHTML = items.map(m => `
+    <div class="media-tile">
+      <video src="${m.video_url}" muted loop playsinline onmouseover="this.play()" onmouseout="this.pause()"></video>
+      <div class="tile-status-badge ${m.active ? '' : 'hidden'}">${m.active ? 'Live' : 'Hidden'}</div>
+      <div class="tile-overlay">
+        <div class="tile-title">${m.title ? m.title.replace(/[&<>"']/g,'') : 'Untitled'}</div>
+        <div class="tile-actions">
+          <button class="tile-pending" onclick="toggleActive('${m.id}', ${!m.active})">${m.active ? 'Hide' : 'Publish'}</button>
+          <button class="tile-delete" onclick="deleteReel('${m.id}')">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleActive(id, newActive) {
+  try {
+    const r = await fetch('/api/reels?id=' + id, {
+      method: 'PUT',
+      headers: hdrs(),
+      body: JSON.stringify({ active: newActive })
+    });
+    if (r.ok) loadLibrary();
+    else alert('Failed to update reel');
+  } catch (e) { alert(e.message); }
+}
+
+async function deleteReel(id) {
+  if (!confirm('Permanently delete this reel?')) return;
+  try {
+    const r = await fetch('/api/reels?id=' + id, { method: 'DELETE', headers: hdrs() });
+    if (r.ok) loadLibrary();
+    else alert('Delete failed');
+  } catch (e) { alert(e.message); }
+}
+
+function login() {
+  const d = document.getElementById('admin-login');
+  if (!d.open) d.showModal();
+}
+
+async function init() {
+  if (!getToken()) { login(); return; }
+  loadLibrary();
+}
+
+init();
+</script>
+</body>
+</html>

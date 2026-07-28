@@ -18,7 +18,7 @@ export default async function handler(req: any, res: any) {
 
     // Parse multipart using built-in formidable on Vercel
     const { IncomingForm } = await import('formidable');
-    const form = new IncomingForm({ maxFileSize: 6 * 1024 * 1024 }); // 6MB formidable limit
+    const form = new IncomingForm({ maxFileSize: 50 * 1024 * 1024 }); // 50MB formidable limit
 
     const [, files] = await new Promise<[any, any]>((resolve, reject) => {
       form.parse(req, (err: any, fields: any, files: any) => {
@@ -36,8 +36,8 @@ export default async function handler(req: any, res: any) {
                      'video/mp4', 'video/webm', 'video/quicktime', 'video/mov', 'video/avi'];
     if (!allowed.includes(mimeType)) return res.status(400).json({ error: 'Unsupported file type' });
 
-    const maxBytes = 5 * 1024 * 1024;
-    if (file.size > maxBytes) return res.status(400).json({ error: 'File must be under 5 MB' });
+    const maxBytes = 50 * 1024 * 1024;
+    if (file.size > maxBytes) return res.status(400).json({ error: 'File must be under 50 MB' });
 
     const fs = await import('fs');
     const buffer = fs.readFileSync(file.filepath);

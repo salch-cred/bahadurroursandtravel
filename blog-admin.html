@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Blog CMS — Bahadur OS</title>
+  <meta name="robots" content="noindex,nofollow">
+  <title>Travel Guides CMS — Bahadur OS</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     .cms-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
@@ -19,6 +20,7 @@
     .editor-form input, .editor-form textarea, .editor-form select { padding: 12px; border: 1px solid var(--line); border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; }
     .editor-form textarea { min-height: 300px; resize: vertical; }
   </style>
+  <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
   <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
@@ -40,15 +42,16 @@
       <aside class="admin-side glass">
         <img src="assets/bahadur-logo.png" alt="Bahadur">
         <nav>
-          <a href="admin.html">◫ Business overview</a>
-          <a href="admin.html#bookings">▤ Bookings</a>
-          <a href="admin.html#invoices">₹ Invoices</a>
-          <a href="billing.html">₹ Billing</a>
-          <a href="packages-admin.html">◇ Package manager</a>
-    <a href="customers-admin.html" ><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
-          <a class="active" href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
-          <a href="media-manager.html">▧ Guest media</a>
-        </nav>
+    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
+    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
+    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
+    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
+    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
+    <a href="billing.html"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
+    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star-01"></i> Reviews</a>
+    <a href="blog-admin.html" class="active"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
+    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
+  </nav>
         <button class="admin-logout-btn" id="admin-logout" onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'"><i class="hgi-stroke hgi-logout-03"></i> Logout</button>
       </aside>
 

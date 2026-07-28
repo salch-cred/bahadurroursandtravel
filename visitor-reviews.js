@@ -269,7 +269,16 @@ dialog.querySelector('#vr-form').onsubmit=async e=>{
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload),
     });
-    const out=await res.json();
+    
+    let out;
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    if (isJson) {
+      out = await res.json();
+    } else {
+      if (res.status === 413) throw new Error('File is too large for the server to process. Please use a smaller file or a shorter video.');
+      throw new Error(`Server returned an unexpected response (${res.status}).`);
+    }
+    
     if(!res.ok)throw new Error(out.error||'Submission failed');
 
     const msg=out.status==='approved'

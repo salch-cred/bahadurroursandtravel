@@ -855,3 +855,122 @@ table tbody tr:hover {
   td { font-size: 12px; }
   .admin-side { position: relative; top: auto; }
 }
+
+
+/* ═══════════════════════════════════════════════════
+   ADMIN SIDEBAR FIX — override old responsive rules
+   that were hiding the sidebar on narrow viewports
+   ═══════════════════════════════════════════════════ */
+
+/* Force admin grid to always stay 2-column on admin pages */
+body.admin-page .admin-grid {
+  grid-template-columns: 240px 1fr !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+}
+
+/* Keep sidebar always visible on admin pages */
+body.admin-page .admin-side {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  border-radius: 0 !important;
+  border-right: 1px solid var(--line) !important;
+  padding: 24px 14px !important;
+  background: #ffffffd4 !important;
+}
+
+/* Override the horizontal strip that appears at 768px */
+body.admin-page .admin-side nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  overflow-x: unset !important;
+  flex-wrap: nowrap !important;
+}
+
+body.admin-page .admin-side nav a {
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  padding: 11px 12px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body.admin-page .admin-main {
+  border-radius: 0 !important;
+  height: 100vh !important;
+  overflow-y: auto !important;
+}
+
+/* At 1100px: slightly narrower sidebar */
+@media (max-width: 1100px) {
+  body.admin-page .admin-grid {
+    grid-template-columns: 210px 1fr !important;
+  }
+  body.admin-page .admin-side nav a {
+    font-size: 12px !important;
+    padding: 10px 10px !important;
+  }
+}
+
+/* At 900px: sidebar stays visible, just smaller */
+@media (max-width: 900px) {
+  body.admin-page .admin-grid {
+    grid-template-columns: 190px 1fr !important;
+  }
+}
+
+/* At 768px: icon-only sidebar (show icons, hide text) */
+@media (max-width: 768px) {
+  body.admin-page .admin-grid {
+    grid-template-columns: 60px 1fr !important;
+  }
+  body.admin-page .admin-side {
+    padding: 16px 8px !important;
+    align-items: center !important;
+  }
+  body.admin-page .admin-side > img {
+    width: 36px !important;
+    height: 36px !important;
+    margin-bottom: 12px !important;
+    margin-left: 0 !important;
+  }
+  body.admin-page .admin-side nav a {
+    padding: 11px !important;
+    font-size: 0 !important;  /* hide label text */
+    justify-content: center !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+  body.admin-page .admin-side nav a i {
+    font-size: 20px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+  body.admin-page .admin-logout-btn {
+    font-size: 0 !important;
+    padding: 11px !important;
+    gap: 0 !important;
+    justify-content: center !important;
+  }
+  body.admin-page .admin-logout-btn i {
+    font-size: 18px !important;
+  }
+  body.admin-page .admin-main {
+    padding: 16px !important;
+  }
+  body.admin-page .admin-top h1 { font-size: 22px !important; }
+}
+
+/* At 600px: very narrow icon bar */
+@media (max-width: 600px) {
+  body.admin-page .admin-grid {
+    grid-template-columns: 52px 1fr !important;
+  }
+}

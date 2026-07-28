@@ -103,7 +103,7 @@ function renderReceipt(inv){
         <div class="receipt-customer-col">
           <div class="receipt-label">From</div>
           <strong>Bahadur Tours &amp; Travels</strong>
-          <span>Mangaluru, Karnataka, India</span>
+          <span>Smart City Building, Puttur Road, 1358BA, Vitla, Karnataka 574243</span>
           <a href="mailto:bahadurtourstravels@gmail.com">bahadurtourstravels@gmail.com</a>
           <a href="tel:+919187440916">+91 91874 40916</a>
         </div>

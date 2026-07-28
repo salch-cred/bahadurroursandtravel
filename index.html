@@ -132,8 +132,8 @@
     <span class="kicker">AI Travel Assistant</span>
     <p style="margin:4px 0 0;font-size:13px;color:#64716d">Ask about packages, prices or itineraries</p>
   </div>
-  <div class="chat" id="chat">
-    <p class="bot">Hi! 👋 I'm Bahadur's AI assistant. Ask me about Lakshadweep, Umrah, Kashmir, Dubai, Maldives or any other trip!</p>
+  <div class="chat" id="ai-messages">
+    <div class="ai-msg ai-msg-bot">Hi! 👋 I'm Bahadur's AI assistant. Ask me about Lakshadweep, Umrah, Kashmir, Dubai, Maldives or any other trip!</div>
   </div>
   <div class="ai-suggestions">
     <button class="ai-chip" data-q="Tell me about Lakshadweep packages">🏝 Lakshadweep</button>
@@ -143,8 +143,8 @@
     <button class="ai-chip" data-q="What are your budget-friendly packages?">💰 Budget</button>
   </div>
   <form id="chat-form" style="display:flex;gap:7px">
-    <input id="chat-input" placeholder="e.g. Umrah for 2 people in December…" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;background:#fff" autocomplete="off"/>
-    <button type="submit" class="btn" style="min-height:44px;padding:0 16px;border-radius:10px">↑</button>
+    <input id="ai-input" placeholder="e.g. Umrah for 2 people in December…" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;background:#fff" autocomplete="off"/>
+    <button id="ai-send" type="submit" class="btn" style="min-height:44px;padding:0 16px;border-radius:10px">↑</button>
   </form>
 </div>
 

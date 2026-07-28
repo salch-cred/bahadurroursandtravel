@@ -71,7 +71,7 @@ dialog.innerHTML=`
         <div class="vr-drop-inner" id="vr-drop-inner">
           <i class="hgi-stroke hgi-image-upload" style="font-size:36px;color:#9ab5ac;display:block;margin-bottom:10px"></i>
           <strong>Tap to choose photos or videos</strong>
-          <span>Or drag &amp; drop here · Any size accepted</span>
+          <span>Or drag &amp; drop here · Max 3 MB per file</span>
         </div>
       </label>
 
@@ -117,14 +117,14 @@ function renderQueue(){
   fileQueue.style.display='flex';
   fileQueue.innerHTML=userFiles.map((f,i)=>{
     const isVid=f.type.startsWith('video/');
-    const isLarge=f.size>20*1024*1024;
+    const isLarge=f.size>3*1024*1024;
     return `<div class="vr-queue-item" data-idx="${i}">
       <span class="vr-queue-icon">
         <i class="hgi-stroke ${isVid?'hgi-video-replay':'hgi-image-01'}"></i>
       </span>
       <div class="vr-queue-info">
         <span class="vr-queue-name" title="${esc(f.name)}">${esc(f.name.length>28?f.name.slice(0,25)+'…':f.name)}</span>
-        <span class="vr-queue-size ${isLarge?'vr-queue-large':''}">${formatSize(f.size)}${isLarge?' · large file':''}</span>
+        <span class="vr-queue-size ${isLarge?'vr-queue-large':''}" ${isLarge?'style="color:#d94838;font-weight:700"':''}>${formatSize(f.size)}${isLarge?' · File too large (Max 3MB)':''}</span>
       </div>
       <button type="button" class="vr-queue-remove" data-rm="${i}" aria-label="Remove file">
         <i class="hgi-stroke hgi-cancel-01"></i>
@@ -222,6 +222,13 @@ dialog.querySelector('#vr-form').onsubmit=async e=>{
 
   // Encode files
   if(userFiles.length){
+    const oversized = userFiles.find(f => f.size > 3*1024*1024);
+    if(oversized) {
+      stateEl.textContent='⚠️ Media must be smaller than 3 MB. Please remove large files.';
+      submitBtn.disabled=false;
+      submitBtn.innerHTML='<i class="hgi-stroke hgi-send-02"></i> Send for approval';
+      return;
+    }
     stateEl.textContent=`Preparing ${userFiles.length} file(s)…`;
     for(let i=0;i<userFiles.length;i++){
       stateEl.textContent=`Uploading file ${i+1} of ${userFiles.length}…`;

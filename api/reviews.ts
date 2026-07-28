@@ -49,16 +49,17 @@ export default async function handler(req:any,res:any){
       const b=req.body||{};
       if(!b.consent)return res.status(400).json({error:'Publication consent is required'});
       let media_url=null,media_type=null;
-      if(b.data&&b.mimeType){
+      const filePayload = b.files && b.files.length > 0 ? b.files[0] : b;
+      if(filePayload.data&&filePayload.mimeType){
         if(!process.env.BLOB_READ_WRITE_TOKEN)return res.status(503).json({error:'Visitor media storage is not configured'});
-        const buffer=Buffer.from(String(b.data),'base64');
+        const buffer=Buffer.from(String(filePayload.data),'base64');
         if(buffer.length>3*1024*1024)return res.status(400).json({error:'Media must be smaller than 3 MB'});
         const allowed=['image/jpeg','image/png','image/webp','video/mp4','video/webm'];
-        if(!allowed.includes(b.mimeType))return res.status(400).json({error:'Unsupported media type'});
-        const safeName = clean(b.fileName,120).replace(/[^a-zA-Z0-9.\-_]/g, '_');
-        const blob=await put(`reviews/${Date.now()}-${safeName}`,buffer,{access:'public',contentType:b.mimeType});
+        if(!allowed.includes(filePayload.mimeType))return res.status(400).json({error:'Unsupported media type'});
+        const safeName = clean(filePayload.fileName,120).replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        const blob=await put(`reviews/${Date.now()}-${safeName}`,buffer,{access:'public',contentType:filePayload.mimeType});
         media_url=blob.url;
-        media_type=String(b.mimeType).startsWith('video/')?'video':'image';
+        media_type=String(filePayload.mimeType).startsWith('video/')?'video':'image';
       }
       const row={
         name:clean(b.name,120),trip:clean(b.trip,160),

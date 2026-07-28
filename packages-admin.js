@@ -125,40 +125,27 @@ function updateLivePreview() {
   const region   = f.elements.region?.value || '';
   const duration = f.elements.duration?.value || '';
   const price    = f.elements.price?.value || 'Custom quote';
-  const summary  = f.elements.summary?.value || '';
   const active   = f.elements.active?.checked;
   const type     = f.elements.package_type?.value || 'domestic';
   const primary  = galleryImages.find(g => g.primary) || galleryImages[0];
-  const img      = primary?.src || $('[name="image_url"]')?.value || 'assets/images/island-beach.jpg';
+  const img      = primary?.src || $('[name="image_url"]')?.value || '';
   const galCount = galleryImages.length;
 
   preview.innerHTML = `
-    <div style="border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff;max-width:320px">
-      <div style="position:relative;height:200px;background:#061f1c">
-        <img src="${esc(img)}" alt="${esc(name)}" loading="lazy"
-          style="width:100%;height:100%;object-fit:cover"
-          onerror="this.src='assets/images/island-beach.jpg'">
-        <span style="position:absolute;top:10px;left:10px;background:${active ? '#0b6655' : '#666'};
-          color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:6px">
-          ${active ? 'Live' : 'Hidden'}
-        </span>
-        <span style="position:absolute;top:10px;right:10px;background:#fff;
-          color:#333;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px">
-          ${type === 'international' ? 'International' : 'Domestic'}
-        </span>
-        ${galCount > 1 ? `<span style="position:absolute;bottom:10px;right:10px;background:#00000088;
-          color:#fff;font-size:11px;padding:3px 8px;border-radius:6px">🖼 ${galCount}</span>` : ''}
+    <div style="display:flex;gap:10px;align-items:center;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff;">
+      <div style="width:72px;height:56px;flex-shrink:0;background:#0a2b26;position:relative;">
+        ${img ? `<img src="${esc(img)}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : '<div style="width:100%;height:100%;background:#d4e8e1"></div>'}
       </div>
-      <div style="padding:16px">
-        <small style="color:#64716d;font-size:12px">${esc(region)}${region && duration ? ' · ' : ''}${esc(duration)}</small>
-        <h3 style="margin:4px 0 8px;font-size:18px;line-height:1.3">${esc(name)}</h3>
-        <p style="color:#64716d;font-size:13px;margin:0 0 12px;line-height:1.5">${esc(summary.slice(0, 100))}${summary.length > 100 ? '…' : ''}</p>
-        <strong style="color:#0b6655;font-size:15px">${esc(price)}</strong>
+      <div style="flex:1;min-width:0;padding:6px 8px 6px 0">
+        <div style="display:flex;gap:5px;align-items:center;margin-bottom:3px">
+          <span style="background:${active ? '#0b6655' : '#888'};color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px">${active ? 'LIVE' : 'HIDDEN'}</span>
+          <span style="color:#64716d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${type === 'international' ? '✈ Intl' : '🏔 Dom'}</span>
+          ${galCount > 1 ? `<span style="color:#0b6655;font-size:10px">🖼 ${galCount}</span>` : ''}
+        </div>
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>
+        <div style="font-size:11px;color:#64716d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[region, duration].filter(Boolean).join(' · ')} ${price ? '· ' + esc(price) : ''}</div>
       </div>
-    </div>
-    <small style="display:block;text-align:center;color:#96a09c;margin-top:8px;font-size:11px">
-      ● Live preview — updates as you type
-    </small>`;
+    </div>`;
 }
 
 /* ── Fill form for editing ───────────────────────────────── */

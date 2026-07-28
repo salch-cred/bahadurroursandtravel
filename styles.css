@@ -451,3 +451,42 @@ body.mob-nav-active { overflow: hidden; }
   border-color: rgba(200,60,60,0.5);
 }
 .admin-logout-btn i { font-size: 16px; }
+
+/* Review card attribution footer */
+.review-attr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  background: none;
+  color: var(--ink);
+}
+.review-attr > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.review-attr a, .review-attr p { color: inherit; }
+
+/* ── Footer mobile fix ── */
+@media (max-width: 640px) {
+  .site-footer {
+    grid-template-columns: 1fr !important;
+    padding: 40px 20px 24px;
+    gap: 28px;
+  }
+  .footer-brand,
+  .footer-bottom {
+    grid-column: 1 / -1;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+  /* Push sticky FABs up to clear iOS Safari chrome */
+  .wa-sticky  { bottom: 76px; }
+  .ig-sticky  { bottom: 142px; }
+  /* Prevent AI fab overlapping with WA button on small phones */
+  .ai-fab { bottom: 76px; right: 80px; }
+}

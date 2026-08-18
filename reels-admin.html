@@ -292,7 +292,7 @@ window.startUpload = async function() {
     renderQueue();
 
     /* Save reel record to DB */
-    const r = await fetch('/api/reels', {
+    const r = await fetch('/api/media?type=reels', {
       method: 'POST',
       headers: hdrs(),
       body: JSON.stringify({ video_url: blob.url, title, active })
@@ -321,7 +321,7 @@ async function loadLibrary() {
   const grid = document.getElementById('media-grid');
   grid.innerHTML = '<div class="media-empty"><i class="hgi-stroke hgi-loading-03"></i>Loading reels…</div>';
   try {
-    const r = await fetch('/api/reels?admin=1', { headers: hdrs() });
+    const r = await fetch('/api/media?type=reels&admin=1', { headers: hdrs() });
     if (r.status === 401) { login(); return; }
     const d = await r.json();
     if (!r.ok) throw new Error(d.error);
@@ -354,7 +354,7 @@ function renderLibrary(items) {
 
 window.toggleActive = async function(id, newActive) {
   try {
-    const r = await fetch('/api/reels?id=' + id, {
+    const r = await fetch('/api/media?type=reels&id=' + id, {
       method: 'PUT',
       headers: hdrs(),
       body: JSON.stringify({ active: newActive })
@@ -367,7 +367,7 @@ window.toggleActive = async function(id, newActive) {
 window.deleteReel = async function(id) {
   if (!confirm('Permanently delete this reel?')) return;
   try {
-    const r = await fetch('/api/reels?id=' + id, { method: 'DELETE', headers: hdrs() });
+    const r = await fetch('/api/media?type=reels&id=' + id, { method: 'DELETE', headers: hdrs() });
     if (r.ok) loadLibrary();
     else alert('Delete failed');
   } catch (e) { alert(e.message); }

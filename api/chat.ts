@@ -87,7 +87,79 @@ A: Basic group travel assistance is included. Individual insurance can be arrang
 - NEVER make up pricing you're unsure about — say "prices vary by season, WhatsApp us for the latest quote"
 - Always respond in the SAME language the user writes in (English, Hindi, Kannada, Malayalam, Arabic, Urdu)`;
 
+// ── WhatsApp helper ────────────────────────────────────────────────
+async function sendWhatsAppMessage(to: string, text: string) {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneId) return;
+  const apiVersion = process.env.WHATSAPP_API_VERSION || 'v21.0';
+  await fetch(`https://graph.facebook.com/${apiVersion}/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } }),
+  });
+}
+
+async function handleWhatsAppWebhook(req: any, res: any) {
+  if (req.method === 'GET') {
+    const mode = req.query?.['hub.mode'];
+    const token = req.query?.['hub.verify_token'];
+    const challenge = req.query?.['hub.challenge'];
+    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+    if (!verifyToken) return res.status(503).json({ error: 'WHATSAPP_VERIFY_TOKEN is not configured' });
+    if (mode === 'subscribe' && token === verifyToken) return res.status(200).send(challenge);
+    return res.status(403).json({ error: 'Verification failed' });
+  }
+
+  if (req.method === 'POST') {
+    try {
+      const body = req.body;
+      if (body.object !== 'whatsapp_business_account') return res.status(404).end();
+      const entry = body.entry?.[0];
+      const change = entry?.changes?.[0]?.value;
+      if (!change?.messages?.[0]) return res.status(200).end();
+      const message = change.messages[0];
+      const from = message.from;
+      const text = message.text?.body;
+      if (!text) return res.status(200).end();
+      if (!process.env.MISTRAL_API_KEY) {
+        await sendWhatsAppMessage(from, 'Our AI assistant is temporarily unavailable. A human agent will be with you shortly.');
+        return res.status(200).end();
+      }
+      const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+          temperature: 0.3, max_tokens: 400,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT + '\n\nIMPORTANT: You are speaking directly to a user on WhatsApp.' },
+            { role: 'user', content: text },
+          ],
+        }),
+      });
+      const data: any = await mistralRes.json();
+      const reply = data?.choices?.[0]?.message?.content || 'I apologize, but I cannot process your request right now. Please call us directly.';
+      await sendWhatsAppMessage(from, reply);
+      return res.status(200).end();
+    } catch (error) {
+      console.error('WhatsApp webhook error:', error);
+      return res.status(500).end();
+    }
+  }
+  return res.status(405).end();
+}
+
+// ── Main handler ───────────────────────────────────────────────────
 export default async function handler(req: any, res: any) {
+  const type = String(req.query?.type || '').trim();
+
+  // ── WHATSAPP WEBHOOK ──────────────────────────────────────────
+  if (type === 'whatsapp') {
+    return handleWhatsAppWebhook(req, res);
+  }
+
+  // ── AI CHAT (default) ─────────────────────────────────────────
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { message, history = [] } = req.body || {};
@@ -96,7 +168,6 @@ export default async function handler(req: any, res: any) {
 
   const apiKey = process.env.MISTRAL_API_KEY;
 
-  // If no API key configured, return a helpful fallback
   if (!apiKey) {
     return res.status(200).json({
       reply: `Hi! I'm Bahadur AI. For the best help with bookings and packages, please WhatsApp our team directly at +91 91874 40916 — they respond within minutes! You can also browse all packages at bahadurtours.com/booking`,
@@ -104,10 +175,8 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  // Build messages array
   const messages: any[] = [
     { role: 'system', content: SYSTEM_PROMPT },
-    // Include recent conversation history (max 6 turns = 12 messages)
     ...history.slice(-12),
     { role: 'user', content: String(message).slice(0, 1000) },
   ];
@@ -115,37 +184,24 @@ export default async function handler(req: any, res: any) {
   try {
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
-        messages,
-        temperature: 0.4,
-        max_tokens: 500,
+        messages, temperature: 0.4, max_tokens: 500,
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
       console.error('Mistral error:', response.status, err);
-      return res.status(200).json({
-        reply: 'Our AI assistant is briefly unavailable. Please WhatsApp us at +91 91874 40916 for instant help!',
-        fallback: true,
-      });
+      return res.status(200).json({ reply: 'Our AI assistant is briefly unavailable. Please WhatsApp us at +91 91874 40916 for instant help!', fallback: true });
     }
 
     const data: any = await response.json();
-    const reply = data?.choices?.[0]?.message?.content?.trim() ||
-      'I apologise, I could not process that. Please WhatsApp us at +91 91874 40916!';
-
+    const reply = data?.choices?.[0]?.message?.content?.trim() || 'I apologise, I could not process that. Please WhatsApp us at +91 91874 40916!';
     return res.status(200).json({ reply, fallback: false });
   } catch (error) {
     console.error('Chat error:', error);
-    return res.status(200).json({
-      reply: 'Our AI assistant is briefly unavailable. Please WhatsApp us at +91 91874 40916 for instant help!',
-      fallback: true,
-    });
+    return res.status(200).json({ reply: 'Our AI assistant is briefly unavailable. Please WhatsApp us at +91 91874 40916 for instant help!', fallback: true });
   }
 }

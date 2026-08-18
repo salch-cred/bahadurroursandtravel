@@ -113,7 +113,7 @@
     if (!section || !container) return;
 
     try {
-      const res = await fetch('/api/reels');
+      const res = await fetch('/api/media?type=reels');
       if (!res.ok) return;
       const data = await res.json();
       const reels = data.reels || [];

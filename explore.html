@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="#062f2a" name="theme-color"/>
+<title>Explore Agatti Island — Bahadur Tours &amp; Travels</title>
+<link rel="icon" href="assets/bahadur-logo.png" type="image/png"/>
+<meta content="Explore Sand Castle Agx, Seaside Serenity and the stunning landscapes of Agatti Island, Lakshadweep through our interactive 3D map and explorer photo gallery." name="description"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
+<link href="styles.css" rel="stylesheet"/>
+<link href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" rel="stylesheet"/>
+</head>
+<body class="explore-page">
+<header class="nav-wrap">
+<nav class="nav glass">
+<a class="brand" href="index.html"><img alt="Bahadur Tours" src="assets/bahadur-logo.png"/><span>Bahadur</span></a>
+<div class="nav-links">
+<a href="index.html">Home</a>
+<a href="booking.html">Packages</a>
+<a href="community.html">Guest stories</a>
+<a href="explore.html" style="color:var(--green)">Explore</a>
+<a href="index.html#contact">Contact</a>
+</div>
+<div class="nav-actions">
+<a class="icon-btn" href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i></a>
+<a class="btn btn-small" href="booking.html">Plan my trip <i class="hgi-stroke hgi-arrow-up-right-01"></i></a>
+</div>
+<button aria-label="Menu" class="menu" id="menu"><i class="hgi-stroke hgi-menu-01"></i></button>
+</nav>
+</header>
+
+<main>
+<!-- Hero -->
+<section class="explore-hero">
+<div class="explore-hero-copy">
+<span class="eyebrow glass"><span class="pulse"></span> Agatti Island, Lakshadweep</span>
+<h1>Explore<br/><em>Sand Castle Agx.</em></h1>
+<p>Navigate the 3D terrain, discover Seaside Serenity on Western Road, and browse our explorer photo gallery of Agatti Island's turquoise lagoons and coral coastlines.</p>
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">
+<a class="btn btn-light" href="#explore-map">View 3D map <i class="hgi-stroke hgi-arrow-right-01"></i></a>
+<a class="btn" style="background:#ffffff22;border:1px solid #fff6;color:#fff;" href="#gallery">Photo gallery <i class="hgi-stroke hgi-arrow-right-01"></i></a>
+</div>
+</div>
+</section>
+
+<!-- 3D Map -->
+<section class="explore-map-wrap" id="explore-map">
+<div class="explore-map-container">
+<div id="explore-map-canvas"></div>
+<div class="explore-map-overlay glass">
+<span class="kicker">Featured location</span>
+<h3>Sand Castle Agx</h3>
+<p>Seaside Serenity · Western Road · Agatti Island, Lakshadweep 682553</p>
+<a class="btn btn-dark btn-small" href="https://maps.app.goo.gl/DtC2xn7gksfv7wSs9?g_st=aw" target="_blank" rel="noopener" style="margin-top:12px;">Open in Google Maps <i class="hgi-stroke hgi-arrow-up-right-01"></i></a>
+</div>
+</div>
+</section>
+
+<!-- Explorer Gallery -->
+<section class="explore-gallery" id="gallery">
+<div class="explore-gallery-head">
+<span class="kicker">Explorer gallery</span>
+<h2>Agatti through<br/><em>their lens.</em></h2>
+<p>Photographs captured by our travellers at Sand Castle Agx and across Agatti Island.</p>
+</div>
+
+<div class="explore-masonry">
+<figure>
+<img alt="Sand Castle Agx beach gateway" src="assets/images/explorer/gateway.jpg" loading="lazy"/>
+<figcaption>
+<strong>Sand Castle Agx</strong>
+<span>Gateway to Seaside Serenity — Western Road, Agatti</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Banana boat adventure at Agatti lagoon" src="assets/images/explorer/banana-boat-guests.jpg" loading="lazy"/>
+<figcaption>
+<strong>Banana Boat Adventure</strong>
+<span>Thrills on the Agatti Island lagoon</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Shipwreck dive site near Agatti" src="assets/images/explorer/shipwreck.jpg" loading="lazy"/>
+<figcaption>
+<strong>Shipwreck Dive</strong>
+<span>Underwater world of Lakshadweep's coral reef</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="River rafting in Lakshadweep islands" src="assets/images/explorer/river-rafting.jpg" loading="lazy"/>
+<figcaption>
+<strong>River Rafting</strong>
+<span>Island adventure and adrenaline rush</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Turquoise waters of Agatti Island beach" src="assets/images/island-beach.jpg" loading="lazy"/>
+<figcaption>
+<strong>Turquoise Lagoon</strong>
+<span>Crystal-clear waters surrounding Agatti Island</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Scuba diving over coral reef at Lakshadweep" src="assets/images/scuba.jpg" loading="lazy"/>
+<figcaption>
+<strong>Scuba Discovery</strong>
+<span>Guided dive in clear island water</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Sunset kayaking at Agatti" src="assets/images/kayak-sunset.jpg" loading="lazy"/>
+<figcaption>
+<strong>Sunset Kayaking</strong>
+<span>Golden hour on the Agatti lagoon</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Tropical island beach panorama" src="assets/images/sunset-beach.jpg" loading="lazy"/>
+<figcaption>
+<strong>Island Sunset</strong>
+<span>Evening light on the Lakshadweep coast</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Scuba team at Lakshadweep" src="assets/images/scuba-team.jpg" loading="lazy"/>
+<figcaption>
+<strong>Dive Team</strong>
+<span>Bahadur Tours guests after a memorable dive</span>
+</figcaption>
+</figure>
+<figure>
+<img alt="Yacht experience in Lakshadweep" src="assets/images/hero-yacht.jpg" loading="lazy"/>
+<figcaption>
+<strong>Yacht Experience</strong>
+<span>Private boat trip through the island archipelago</span>
+</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- CTA -->
+<section class="explore-cta-section">
+<span class="kicker" style="color:var(--gold)">Ready to visit?</span>
+<h2>Come see it<br/><em>in person.</em></h2>
+<p>Sand Castle Agx and the turquoise waters of Agatti Island are waiting for you.</p>
+<a class="btn btn-light" href="booking.html">Book your trip <i class="hgi-stroke hgi-arrow-right-01"></i></a>
+<a class="btn" href="https://maps.app.goo.gl/DtC2xn7gksfv7wSs9?g_st=aw" target="_blank" rel="noopener" style="background:transparent;border:1px solid #fff6;color:#fff;">Open in Maps <i class="hgi-stroke hgi-arrow-up-right-01"></i></a>
+</section>
+</main>
+
+<footer class="site-footer">
+<div class="footer-brand">
+<img alt="Bahadur Tours" src="assets/bahadur-logo.png"/>
+<p>Island travel, thoughtfully arranged.</p>
+</div>
+<div><strong>Explore</strong><a href="index.html#experiences">Experiences</a><a href="booking.html">Packages</a><a href="explore.html">3D Map</a><a href="community.html">Guest stories</a></div>
+<div><strong>Company</strong><a href="terms.html">Terms &amp; Conditions</a><a href="terms.html#privacy">Privacy</a><a href="admin.html">Admin</a></div>
+<div class="footer-bottom">© 2026 Bahadur Tours &amp; Travels <span>Made for better journeys.</span></div>
+</footer>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var container = document.getElementById('explore-map-canvas');
+  if (!container || typeof maplibregl === 'undefined') return;
+
+  var map = new maplibregl.Map({
+    container: container,
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: [72.1934, 10.8589],
+    zoom: 14.8,
+    pitch: 62,
+    bearing: -30,
+    attributionControl: true
+  });
+
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+  map.addControl(new maplibregl.FullscreenControl(), 'top-right');
+
+  // Sand Castle Agx marker
+  new maplibregl.Marker({ color: '#e3b64d' })
+    .setLngLat([72.1934, 10.8589])
+    .setPopup(new maplibregl.Popup().setHTML(
+      '<strong>Sand Castle Agx</strong><br>' +
+      '<em>Seaside Serenity</em><br>' +
+      'Western Road, Agatti Island<br>' +
+      '<small>Lakshadweep 682553</small><br>' +
+      '<a href="https://maps.app.goo.gl/DtC2xn7gksfv7wSs9?g_st=aw" target="_blank" style="color:#0b6655;font-weight:700;display:inline-block;margin-top:8px;">Open in Google Maps →</a>'
+    ))
+    .addTo(map);
+
+  // 3D buildings layer on load
+  map.on('load', function() {
+    try {
+      map.addLayer({
+        'id': 'explore-3d-buildings',
+        'source': 'openmaptiles',
+        'source-layer': 'building',
+        'filter': ['==', 'extrude', 'true'],
+        'type': 'fill-extrusion',
+        'minzoom': 14,
+        'paint': {
+          'fill-extrusion-color': '#aaa',
+          'fill-extrusion-height': ['get', 'height'],
+          'fill-extrusion-base': ['get', 'min_height'],
+          'fill-extrusion-opacity': 0.6
+        }
+      });
+    } catch(e) { /* buildings layer unavailable */ }
+  });
+});
+</script>
+<script src="site-ui.js"></script>
+</body>
+</html>

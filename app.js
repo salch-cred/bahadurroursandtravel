@@ -286,9 +286,8 @@ packageSearch?.addEventListener('input', () => {
 
 try {
   if (typeof maplibregl !== 'undefined' && $('#map')) {
-    const map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty', center: [72.1934, 10.8589], zoom: 13.2, pitch: 62, bearing: -24, attributionControl: true });
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
-    new maplibregl.Marker({ color: '#e3b64d' }).setLngLat([72.1934, 10.8589]).setPopup(new maplibregl.Popup().setHTML('<strong>Bahadur Tours — Agatti</strong><br>Island pickup point')).addTo(map);
+    const map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty', center: [72.1934, 10.8589], zoom: 14.5, pitch: 60, bearing: -30, attributionControl: true }); map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right'); map.addControl(new maplibregl.FullscreenControl(), 'top-right');
+    new maplibregl.Marker({ color: '#e3b64d' }).setLngLat([72.1934, 10.8589]).setPopup(new maplibregl.Popup().setHTML('<strong>Sand Castle Agx — Seaside Serenity</strong><br>Western Road, Agatti Island<br><small>Lakshadweep 682553</small>')).addTo(map);
     map.on('load', () => { const fallback = document.querySelector('.map-fallback'); if (fallback) fallback.style.display = 'none'; try { map.addLayer({'id': '3d-buildings','source': 'openmaptiles','source-layer': 'building','filter': ['==', 'extrude', 'true'],'type': 'fill-extrusion','minzoom': 14,'paint': {'fill-extrusion-color': '#aaa','fill-extrusion-height': ['get', 'height'],'fill-extrusion-base': ['get', 'min_height'],'fill-extrusion-opacity': 0.6}}); } catch(e) {} });
   }
 } catch (error) { console.warn('Map fallback active', error); }

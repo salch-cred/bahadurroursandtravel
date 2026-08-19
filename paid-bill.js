@@ -80,7 +80,7 @@ function renderReceipt(inv){
   $('#receipt-card').innerHTML=`
     <div class="receipt-head">
       <div class="receipt-head-left">
-        <img src="assets/bahadur-logo.png" alt="Bahadur Tours">
+        <img src="assets/bahadur-logo.png" alt="Bahadur Real-Estate Tours and Travels">
         <span>Tours &amp; Travels</span>
       </div>
       <div class="receipt-head-right">

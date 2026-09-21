@@ -1052,8 +1052,8 @@ $('#invoice-download').onclick=()=>{
     #out-travelers-list:empty{display:none!important}\n
     .pro-invoice-spacer{display:block!important;flex:1 0 auto;min-height:0}\n
     .pro-invoice-head{background:#0d3b2e;color:#fff;padding:38px 50px 36px;display:flex;justify-content:space-between;align-items:flex-start;position:relative}\n
-    .pro-invoice-head .logo-plate{background:#fff;border-radius:10px;padding:8px 12px;display:flex;align-items:center;height:68px}\n
-    .pro-invoice-head .logo-plate img{height:54px}\n
+    .invoice-sheet .pro-invoice-head .logo-plate{background:#fff;border-radius:4px;padding:4px;display:flex;align-items:center;justify-content:center;width:52px;height:52px;flex-shrink:0}
+    .invoice-sheet .pro-invoice-head .logo-plate img{height:44px;width:auto;max-width:100%;object-fit:contain}
     .pro-invoice-head .right-side{text-align:right}\n
     .pro-invoice-head .gold-label{font-size:10px;letter-spacing:3px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}\n
     .pro-invoice-head .invoice-number{font-size:26px;font-weight:700;color:#fff;line-height:1.1}\n

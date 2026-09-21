@@ -40,7 +40,8 @@ function renderInvoices(rows){
       <td>${esc(fmtDate(x.due_date))}</td>
       <td><span class="inv-badge ${invBadge(x.status)}">${esc(x.status||'Draft')}</span></td>
       <td><span class="cell-amount">${money(x.total||0)}</span></td>
-      <td><div class="inv-actions">
+            <td><span class="cell-amount" style="color:#c97c1a;font-size:.85rem">${x.pending_amount?money(x.pending_amount):'—'}</span></td>
+            <td><div class="inv-actions">
         <a href="billing.html?id=${esc(x.id)}" class="inv-action-btn" title="Edit"><i class="hgi-stroke hgi-edit-01"></i></a>
         ${isPaidStatus(x.status)
           ?`<a href="paid-bill.html?id=${esc(x.id)}" class="inv-action-btn paid-btn" title="Receipt" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`
@@ -99,7 +100,7 @@ function applyFilter(){
 }
 
 function exportCSV(){
-  const cols=['invoice_number','customer_name','phone','email','booking_ref','invoice_date','due_date','status','subtotal','discount','tax','total','notes'];
+  const cols=['invoice_number','customer_name','phone','email','booking_ref','invoice_date','due_date','status','subtotal','discount','tax','total','pending_amount','notes'];
   const rows=allInvoices.map(x=>cols.map(c=>`"${String(x[c]??'').replace(/"/g,'""')}"`).join(','));
   const blob=new Blob([cols.join(',')+"\n"+rows.join("\n")],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);

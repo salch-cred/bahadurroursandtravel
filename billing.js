@@ -21,7 +21,7 @@ function renderLineInputs(){
 
 const dl=rows=>rows.filter(x=>x[1]).map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('');
 
-function travelDetails(){return{package_name:value('#invoice-trip'),package_type:value('#invoice-type'),travel_date:value('#invoice-travel-date'),travellers:Number(value('#invoice-travellers','1')),destination:value('#invoice-destination'),flight:{included:$('#flight-included').checked,airline:value('#flight-airline'),number:value('#flight-number'),pnr:value('#flight-pnr'),cabin:value('#flight-cabin'),from:value('#flight-from'),to:value('#flight-to'),departure:value('#flight-departure'),arrival:value('#flight-arrival'),baggage:value('#flight-baggage')},hotel:{included:$('#hotel-included').checked,name:value('#hotel-name'),city:value('#hotel-city'),category:value('#hotel-category'),checkin:value('#hotel-checkin'),checkout:value('#hotel-checkout'),room_type:value('#hotel-room-type'),rooms:Number(value('#hotel-rooms','1')),meals:value('#hotel-meals'),confirmation:value('#hotel-confirmation')}}}
+function travelDetails(){return{package_name:value('#invoice-trip'),package_type:value('#invoice-type'),travel_date:value('#invoice-travel-date'),travellers:Number(value('#invoice-travellers','1')),kids:Number(value('#invoice-kids','0')),destination:value('#invoice-destination'),flight:{included:$('#flight-included').checked,airline:value('#flight-airline'),number:value('#flight-number'),pnr:value('#flight-pnr'),cabin:value('#flight-cabin'),from:value('#flight-from'),to:value('#flight-to'),departure:value('#flight-departure'),arrival:value('#flight-arrival'),baggage:value('#flight-baggage')},hotel:{included:$('#hotel-included').checked,name:value('#hotel-name'),city:value('#hotel-city'),category:value('#hotel-category'),checkin:value('#hotel-checkin'),checkout:value('#hotel-checkout'),room_type:value('#hotel-room-type'),rooms:Number(value('#hotel-rooms','1')),meals:value('#hotel-meals'),confirmation:value('#hotel-confirmation')}}}
 
 function update(){
   readLines();
@@ -39,6 +39,7 @@ function update(){
   $('#out-destination').textContent=t.destination||'Destination';
   $('#out-travel-date').textContent=t.travel_date||'\u2014';
   $('#out-travellers').textContent=t.travellers;
+  $('#out-kids').textContent=t.kids>0?t.kids+' kids':'\u2014';
   $('#out-type').textContent=international?'International':'Domestic';
   const f=$('#out-flight-card'),h=$('#out-hotel-card');
   f.hidden=!(international&&t.flight.included);
@@ -59,6 +60,7 @@ function update(){
   $('#out-tax').textContent=money(tax);
   $('#out-total').textContent=money(total);
   $('#out-payment').textContent=value('#payment-details','Payment details will be provided separately.');
+  $('#out-pending').textContent=value('#invoice-pending-amount','0');
   $('#out-notes').textContent=value('#invoice-notes','');
   const status=value('#payment-status','Draft');
   const isPaid=status==='Paid';
@@ -66,10 +68,10 @@ function update(){
     $('#invoice-mark-paid').style.display=isPaid?'none':'';
     $('#invoice-view-bill').style.display=isPaid?'':'none';
   }
-  return{subtotal,discount,tax,total,travel_details:t};
+  return{subtotal,discount,tax,total,travel_details:t,pending_amount:Number(value('#invoice-pending-amount',0))};
 }
 
-function payload(){const x=update();return{invoice_number:value('#invoice-number'),invoice_date:value('#invoice-date'),due_date:value('#invoice-due'),booking_ref:value('#invoice-booking'),customer_name:value('#invoice-customer'),customer_address:value('#invoice-address'),phone:value('#invoice-phone'),email:value('#invoice-email'),items:lines,tax_label:value('#tax-label','GST'),tax_rate:Number(value('#tax-rate','0')),discount:x.discount,subtotal:x.subtotal,tax:x.tax,total:x.total,status:value('#payment-status','Draft'),notes:value('#invoice-notes'),payment_details:value('#payment-details'),travel_details:x.travel_details}}
+function payload(){const x=update();return{invoice_number:value('#invoice-number'),invoice_date:value('#invoice-date'),due_date:value('#invoice-due'),booking_ref:value('#invoice-booking'),customer_name:value('#invoice-customer')==='__manual__'?value('#invoice-customer-new'):value('#invoice-customer'),customer_address:value('#invoice-address'),phone:value('#invoice-phone'),email:value('#invoice-email'),items:lines,tax_label:value('#tax-label','GST'),tax_rate:Number(value('#tax-rate','0')),discount:x.discount,subtotal:x.subtotal,tax:x.tax,total:x.total,status:value('#payment-status','Draft'),notes:value('#invoice-notes'),payment_details:value('#payment-details'),pending_amount:x.pending_amount,travel_details:x.travel_details}}
 
 function getToken(){const t=localStorage.getItem('bahadur-admin-token')||'';if(!t)alert('Please log in as admin first.');return t;}
 
@@ -100,7 +102,9 @@ function populateForm(inv){
     set('#hotel-category',td.hotel.category);set('#hotel-checkin',td.hotel.checkin);
     set('#hotel-checkout',td.hotel.checkout);set('#hotel-room-type',td.hotel.room_type);
     set('#hotel-rooms',td.hotel.rooms||1);set('#hotel-meals',td.hotel.meals);
-    set('#hotel-confirmation',td.hotel.confirmation);
+        set('#hotel-confirmation',td.hotel.confirmation);
+      }
+      set('#invoice-pending-amount',inv.pending_amount||0);
   }
   if(Array.isArray(inv.items)&&inv.items.length){lines=inv.items;renderLineInputs();}
   update();setTimeout(scalePreview,150);
@@ -232,7 +236,25 @@ $('#load-invoice-btn').onclick=async()=>{
 };
 
 renderLineInputs();
+// Customer dropdown handler
+const customerSel=$('#invoice-customer');
+if(customerSel){
+  customerSel.onchange=()=>{
+    const field=$('#new-customer-field');
+    if(customerSel.value==='__manual__'){
+      field.style.display='';
+      $('#invoice-customer-new').focus();
+    }else{
+      field.style.display='none';
+      $('#invoice-customer-new').value='';
+    }
+    update();
+  };
+}
+// Kids field handler
+$('#invoice-kids')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
 loadPackages();
+loadCustomers();
 update();
 setTimeout(scalePreview,150);
 

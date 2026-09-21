@@ -35,6 +35,8 @@ function renderInvoices(rows){
     <tr>
       <td><span class="cell-main">${esc(x.invoice_number||'\u2014')}</span><span class="cell-sub">${esc(x.booking_ref||'')}</span></td>
             <td><span style="font-weight:600">${esc(x.customer_name||'\u2014')}</span><span class="cell-sub">${esc(x.phone||'')}</span><span class="cell-sub">${esc(x.email||'')}</span><span class="cell-sub" style="color:#c97c1a">Kids: ${x.travel_details&&x.travel_details.kids?x.travel_details.kids:'—'}</span></td>
+          <td>${x.kids_names?esc(x.kids_names):'—'}</td>
+          <td>${x.payment_remarks?esc(x.payment_remarks):'—'}</td>
       <td>${esc(x.booking_ref||'\u2014')}</td>
       <td>${esc(fmtDate(x.invoice_date))}</td>
       <td>${esc(fmtDate(x.due_date))}</td>
@@ -100,7 +102,7 @@ function applyFilter(){
 }
 
 function exportCSV(){
-  const cols=['invoice_number','customer_name','phone','email','booking_ref','invoice_date','due_date','status','subtotal','discount','tax','total','pending_amount','notes'];
+  const cols=['invoice_number','customer_name','phone','email','booking_ref','invoice_date','due_date','status','subtotal','discount','tax','total','pending_amount','multi_customers','kids_names','payment_remarks','notes'];
   const rows=allInvoices.map(x=>cols.map(c=>`"${String(x[c]??'').replace(/"/g,'""')}"`).join(','));
   const blob=new Blob([cols.join(',')+"\n"+rows.join("\n")],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);

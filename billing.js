@@ -31,6 +31,9 @@ function travelDetails(){
     kids:Number(value('#invoice-kids','0')),
     kids_price:Number(value('#invoice-kids-price','0')),
     destination:value('#invoice-destination'),
+    multi_customers:value('#invoice-multi-customers'),
+    kids_names:value('#invoice-kids-names'),
+    payment_remarks:value('#invoice-payment-remarks'),
     flight:{
       included:$('#flight-included').checked,
       airline:value('#flight-airline'),
@@ -78,6 +81,9 @@ function update(){
   $('#out-travellers').textContent=t.travellers;
   $('#out-kids').textContent=t.kids>0?t.kids+' kids':'\u2014';
   $('#out-kids-price').textContent=t.kids_price>0?'₹'+t.kids_price.toLocaleString()+' per kid':'\u2014';
+  $('#out-kids-names').textContent=t.kids_names||'\u2014';
+  $('#out-multi-customers').innerHTML=t.multi_customers?t.multi_customers.split('\n').filter(l=>l.trim()).map(n=>'<div>'+n.trim()+'</div>').join(''):'';
+  $('#out-payment-remarks').textContent=t.payment_remarks||'';
   $('#out-type').textContent=international?'International':'Domestic';
   
   const f=$('#out-flight-card'),h=$('#out-hotel-card');
@@ -166,10 +172,11 @@ function payload(){
     status:value('#payment-status','Draft'),
     notes:value('#invoice-notes'),
     payment_details:value('#payment-details'),
-    pending_amount:x.pending_amount,
-    travel_details:x.travel_details
-  };
-}
+        pending_amount:x.pending_amount,
+        payment_remarks:value('#invoice-payment-remarks'),
+        travel_details:x.travel_details
+      };
+    }
 
 function getToken(){
   const t=localStorage.getItem('bahadur-admin-token')||'';
@@ -211,6 +218,9 @@ function populateForm(inv){
   set('#payment-details',inv.payment_details);
   set('#invoice-notes',inv.notes);
   set('#invoice-pending-amount',inv.pending_amount||0);
+  set('#invoice-multi-customers',inv.multi_customers||'');
+  set('#invoice-kids-names',inv.kids_names||'');
+  set('#invoice-payment-remarks',inv.payment_remarks||inv.payment_details||'');
   
   const td=inv.travel_details||{};
   set('#invoice-trip',td.package_name);

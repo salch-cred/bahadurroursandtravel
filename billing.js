@@ -2,6 +2,7 @@ const $=s=>document.querySelector(s);
 const money=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',minimumFractionDigits:2}).format(Number(n||0));
 let lines=[{description:'Travel package',qty:1,rate:0}],packages=[];
 let currentInvoiceId=null;
+let customers=[];
 
 const iso=d=>d.toISOString().slice(0,10),today=new Date();
 $('#invoice-date').value=iso(today);
@@ -21,7 +22,41 @@ function renderLineInputs(){
 
 const dl=rows=>rows.filter(x=>x[1]).map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('');
 
-function travelDetails(){return{package_name:value('#invoice-trip'),package_type:value('#invoice-type'),travel_date:value('#invoice-travel-date'),travellers:Number(value('#invoice-travellers','1')),kids:Number(value('#invoice-kids','0')),destination:value('#invoice-destination'),flight:{included:$('#flight-included').checked,airline:value('#flight-airline'),number:value('#flight-number'),pnr:value('#flight-pnr'),cabin:value('#flight-cabin'),from:value('#flight-from'),to:value('#flight-to'),departure:value('#flight-departure'),arrival:value('#flight-arrival'),baggage:value('#flight-baggage')},hotel:{included:$('#hotel-included').checked,name:value('#hotel-name'),city:value('#hotel-city'),category:value('#hotel-category'),checkin:value('#hotel-checkin'),checkout:value('#hotel-checkout'),room_type:value('#hotel-room-type'),rooms:Number(value('#hotel-rooms','1')),meals:value('#hotel-meals'),confirmation:value('#hotel-confirmation')}}}
+function travelDetails(){
+  return{
+    package_name:value('#invoice-trip'),
+    package_type:value('#invoice-type'),
+    travel_date:value('#invoice-travel-date'),
+    travellers:Number(value('#invoice-travellers','1')),
+    kids:Number(value('#invoice-kids','0')),
+    kids_price:Number(value('#invoice-kids-price','0')),
+    destination:value('#invoice-destination'),
+    flight:{
+      included:$('#flight-included').checked,
+      airline:value('#flight-airline'),
+      number:value('#flight-number'),
+      pnr:value('#flight-pnr'),
+      cabin:value('#flight-cabin'),
+      from:value('#flight-from'),
+      to:value('#flight-to'),
+      departure:value('#flight-departure'),
+      arrival:value('#flight-arrival'),
+      baggage:value('#flight-baggage')
+    },
+    hotel:{
+      included:$('#hotel-included').checked,
+      name:value('#hotel-name'),
+      city:value('#hotel-city'),
+      category:value('#hotel-category'),
+      checkin:value('#hotel-checkin'),
+      checkout:value('#hotel-checkout'),
+      room_type:value('#hotel-room-type'),
+      rooms:Number(value('#hotel-rooms','1')),
+      meals:value('#hotel-meals'),
+      confirmation:value('#hotel-confirmation')
+    }
+  }
+}
 
 function update(){
   readLines();
@@ -29,7 +64,9 @@ function update(){
   $('#international-controls').classList.toggle('show',international);
   $('#out-number').textContent=value('#invoice-number','\u2014');
   $('#out-status').textContent=value('#payment-status','Draft');
-  $('#out-customer').textContent=value('#invoice-customer','Customer name');
+  // Customer display - handle both dropdown and manual mode
+  const customerVal=value('#invoice-customer');
+  $('#out-customer').textContent=customerVal==='__manual__'?value('#invoice-customer-new','Customer name'):customerVal||'Customer name';
   $('#out-address').textContent=value('#invoice-address','Billing address');
   $('#out-contact').textContent=[value('#invoice-phone'),value('#invoice-email')].filter(Boolean).join(' \u00b7 ');
   $('#out-date').textContent=value('#invoice-date','\u2014');
@@ -40,20 +77,52 @@ function update(){
   $('#out-travel-date').textContent=t.travel_date||'\u2014';
   $('#out-travellers').textContent=t.travellers;
   $('#out-kids').textContent=t.kids>0?t.kids+' kids':'\u2014';
+  $('#out-kids-price').textContent=t.kids_price>0?'₹'+t.kids_price.toLocaleString()+' per kid':'\u2014';
   $('#out-type').textContent=international?'International':'Domestic';
+  
   const f=$('#out-flight-card'),h=$('#out-hotel-card');
   f.hidden=!(international&&t.flight.included);
   h.hidden=!t.hotel.included;
+  
   if(!f.hidden){
     $('#out-flight-title').textContent=[t.flight.airline,t.flight.number].filter(Boolean).join(' \u00b7 ')||'Flight booking';
-    $('#out-flight-list').innerHTML=dl([['Route',[t.flight.from,t.flight.to].filter(Boolean).join(' \u2192 ')],['Departure',t.flight.departure?.replace('T',' ')],['Arrival',t.flight.arrival?.replace('T',' ')],['Cabin',t.flight.cabin],['PNR',t.flight.pnr],['Baggage',t.flight.baggage]]);
+    $('#out-flight-list').innerHTML=dl([
+      ['Route',[t.flight.from,t.flight.to].filter(Boolean).join(' \u2192 ')],
+      ['Departure',t.flight.departure?.replace('T',' ')],
+      ['Arrival',t.flight.arrival?.replace('T',' ')],
+      ['Cabin',t.flight.cabin],
+      ['PNR',t.flight.pnr],
+      ['Baggage',t.flight.baggage]
+    ]);
   }
   if(!h.hidden){
     $('#out-hotel-title').textContent=t.hotel.name||'Accommodation';
-    $('#out-hotel-list').innerHTML=dl([['City',t.hotel.city],['Stay',[t.hotel.checkin,t.hotel.checkout].filter(Boolean).join(' \u2192 ')],['Room',`${t.hotel.rooms||1} \u00d7 ${t.hotel.room_type||'Room'}`],['Category',t.hotel.category],['Meals',t.hotel.meals],['Confirmation',t.hotel.confirmation]]);
+    $('#out-hotel-list').innerHTML=dl([
+      ['City',t.hotel.city],
+      ['Stay',[t.hotel.checkin,t.hotel.checkout].filter(Boolean).join(' \u2192 ')],
+      ['Room',`${t.hotel.rooms||1} \u00d7 ${t.hotel.room_type||'Room'}`],
+      ['Category',t.hotel.category],
+      ['Meals',t.hotel.meals],
+      ['Confirmation',t.hotel.confirmation]
+    ]);
   }
-  $('#out-lines').innerHTML=lines.map(x=>`<tr><td style="padding:10px 28px">${x.description||'Travel service'}</td><td style="padding:10px 12px;text-align:center">${x.qty}</td><td style="padding:10px 12px;text-align:right">${money(x.rate)}</td><td style="padding:10px 28px;text-align:right;font-weight:600">${money(x.qty*x.rate)}</td></tr>`).join('');
-  const subtotal=lines.reduce((s,x)=>s+x.qty*x.rate,0),discount=Number(value('#discount','0')),rate=Number(value('#tax-rate','0')),tax=Math.max(0,subtotal-discount)*rate/100,total=Math.max(0,subtotal-discount)+tax;
+  
+  $('#out-lines').innerHTML=lines.map(x=>`<tr>
+    <td style="padding:10px 28px">${x.description||'Travel service'}</td>
+    <td style="padding:10px 12px;text-align:center">${x.qty}</td>
+    <td style="padding:10px 12px;text-align:right">${money(x.rate)}</td>
+    <td style="padding:10px 28px;text-align:right;font-weight:600">${money(x.qty*x.rate)}</td>
+  </tr>`).join('');
+  
+  // Calculate totals including kids price
+  const baseSubtotal=lines.reduce((s,x)=>s+x.qty*x.rate,0);
+  const kidsCost=t.kids*t.kids_price;
+  const subtotal=baseSubtotal+kidsCost;
+  const discount=Number(value('#discount','0'));
+  const rate=Number(value('#tax-rate','0'));
+  const tax=Math.max(0,subtotal-discount)*rate/100;
+  const total=Math.max(0,subtotal-discount)+tax;
+  
   $('#out-subtotal').textContent=money(subtotal);
   $('#out-discount').textContent=`\u2212 ${money(discount)}`;
   $('#out-tax-label').textContent=`${value('#tax-label','Tax')} (${rate}%)`;
@@ -62,68 +131,191 @@ function update(){
   $('#out-payment').textContent=value('#payment-details','Payment details will be provided separately.');
   $('#out-pending').textContent=value('#invoice-pending-amount','0');
   $('#out-notes').textContent=value('#invoice-notes','');
+  
   const status=value('#payment-status','Draft');
   const isPaid=status==='Paid';
   if(currentInvoiceId){
     $('#invoice-mark-paid').style.display=isPaid?'none':'';
     $('#invoice-view-bill').style.display=isPaid?'':'none';
   }
-  return{subtotal,discount,tax,total,travel_details:t,pending_amount:Number(value('#invoice-pending-amount',0))};
+  return{
+    subtotal,discount,tax,total,
+    travel_details:t,
+    pending_amount:Number(value('#invoice-pending-amount',0))
+  };
 }
 
-function payload(){const x=update();return{invoice_number:value('#invoice-number'),invoice_date:value('#invoice-date'),due_date:value('#invoice-due'),booking_ref:value('#invoice-booking'),customer_name:value('#invoice-customer')==='__manual__'?value('#invoice-customer-new'):value('#invoice-customer'),customer_address:value('#invoice-address'),phone:value('#invoice-phone'),email:value('#invoice-email'),items:lines,tax_label:value('#tax-label','GST'),tax_rate:Number(value('#tax-rate','0')),discount:x.discount,subtotal:x.subtotal,tax:x.tax,total:x.total,status:value('#payment-status','Draft'),notes:value('#invoice-notes'),payment_details:value('#payment-details'),pending_amount:x.pending_amount,travel_details:x.travel_details}}
+function payload(){
+  const x=update();
+  return{
+    invoice_number:value('#invoice-number'),
+    invoice_date:value('#invoice-date'),
+    due_date:value('#invoice-due'),
+    booking_ref:value('#invoice-booking'),
+    customer_name:value('#invoice-customer')==='__manual__'?value('#invoice-customer-new'):value('#invoice-customer'),
+    customer_address:value('#invoice-address'),
+    phone:value('#invoice-phone'),
+    email:value('#invoice-email'),
+    items:lines,
+    tax_label:value('#tax-label','GST'),
+    tax_rate:Number(value('#tax-rate','0')),
+    discount:x.discount,
+    subtotal:x.subtotal,
+    tax:x.tax,
+    total:x.total,
+    status:value('#payment-status','Draft'),
+    notes:value('#invoice-notes'),
+    payment_details:value('#payment-details'),
+    pending_amount:x.pending_amount,
+    travel_details:x.travel_details
+  };
+}
 
-function getToken(){const t=localStorage.getItem('bahadur-admin-token')||'';if(!t)alert('Please log in as admin first.');return t;}
+function getToken(){
+  const t=localStorage.getItem('bahadur-admin-token')||'';
+  if(!t)alert('Please log in as admin first.');
+  return t;
+}
 
 function populateForm(inv){
   const set=(id,val)=>{if($(id)&&val!=null)$(id).value=val};
-  set('#invoice-number',inv.invoice_number);set('#invoice-date',inv.invoice_date);
-  set('#invoice-due',inv.due_date);set('#invoice-booking',inv.booking_ref);
-  set('#invoice-customer',inv.customer_name);set('#invoice-address',inv.customer_address);
-  set('#invoice-phone',inv.phone);set('#invoice-email',inv.email);
-  set('#tax-label',inv.tax_label||'GST');set('#tax-rate',inv.tax_rate||0);
-  set('#discount',inv.discount||0);set('#payment-status',inv.status||'Draft');
-  set('#payment-details',inv.payment_details);set('#invoice-notes',inv.notes);
+  
+  set('#invoice-number',inv.invoice_number);
+  set('#invoice-date',inv.invoice_date);
+  set('#invoice-due',inv.due_date);
+  set('#invoice-booking',inv.booking_ref);
+  
+  // Customer: try to find in dropdown, else use manual mode
+  const customerSel=$('#invoice-customer');
+  if(customerSel && customers.length){
+    const match=customers.find(c=>c.name===inv.customer_name);
+    if(match){
+      customerSel.value=match.name;
+      $('#new-customer-field').style.display='none';
+    }else{
+      customerSel.value='__manual__';
+      $('#invoice-customer-new').value=inv.customer_name;
+      $('#new-customer-field').style.display='';
+    }
+ }else{
+    set('#invoice-customer',inv.customer_name);
+  }
+  
+  set('#invoice-address',inv.customer_address);
+  set('#invoice-phone',inv.phone);
+  set('#invoice-email',inv.email);
+  set('#tax-label',inv.tax_label||'GST');
+  set('#tax-rate',inv.tax_rate||0);
+  set('#discount',inv.discount||0);
+  set('#payment-status',inv.status||'Draft');
+  set('#payment-details',inv.payment_details);
+  set('#invoice-notes',inv.notes);
+  set('#invoice-pending-amount',inv.pending_amount||0);
+  
   const td=inv.travel_details||{};
-  set('#invoice-trip',td.package_name);set('#invoice-type',td.package_type||'domestic');
-  set('#invoice-travel-date',td.travel_date);set('#invoice-travellers',td.travellers||2);
+  set('#invoice-trip',td.package_name);
+  set('#invoice-type',td.package_type||'domestic');
+  set('#invoice-travel-date',td.travel_date);
+  set('#invoice-travellers',td.travellers||2);
+  set('#invoice-kids',td.kids||0);
+  set('#invoice-kids-price',td.kids_price||0);
   set('#invoice-destination',td.destination);
+  
   if(td.flight){
     if($('#flight-included'))$('#flight-included').checked=Boolean(td.flight.included);
-    set('#flight-airline',td.flight.airline);set('#flight-number',td.flight.number);
-    set('#flight-pnr',td.flight.pnr);set('#flight-cabin',td.flight.cabin);
-    set('#flight-from',td.flight.from);set('#flight-to',td.flight.to);
-    set('#flight-departure',td.flight.departure);set('#flight-arrival',td.flight.arrival);
+    set('#flight-airline',td.flight.airline);
+    set('#flight-number',td.flight.number);
+    set('#flight-pnr',td.flight.pnr);
+    set('#flight-cabin',td.flight.cabin);
+    set('#flight-from',td.flight.from);
+    set('#flight-to',td.flight.to);
+    set('#flight-departure',td.flight.departure);
+    set('#flight-arrival',td.flight.arrival);
     set('#flight-baggage',td.flight.baggage);
   }
   if(td.hotel){
     if($('#hotel-included'))$('#hotel-included').checked=Boolean(td.hotel.included);
-    set('#hotel-name',td.hotel.name);set('#hotel-city',td.hotel.city);
-    set('#hotel-category',td.hotel.category);set('#hotel-checkin',td.hotel.checkin);
-    set('#hotel-checkout',td.hotel.checkout);set('#hotel-room-type',td.hotel.room_type);
-    set('#hotel-rooms',td.hotel.rooms||1);set('#hotel-meals',td.hotel.meals);
-        set('#hotel-confirmation',td.hotel.confirmation);
-      }
-      set('#invoice-pending-amount',inv.pending_amount||0);
+    set('#hotel-name',td.hotel.name);
+    set('#hotel-city',td.hotel.city);
+    set('#hotel-category',td.hotel.category);
+    set('#hotel-checkin',td.hotel.checkin);
+    set('#hotel-checkout',td.hotel.checkout);
+    set('#hotel-room-type',td.hotel.room_type);
+    set('#hotel-rooms',td.hotel.rooms||1);
+    set('#hotel-meals',td.hotel.meals);
+    set('#hotel-confirmation',td.hotel.confirmation);
   }
-  if(Array.isArray(inv.items)&&inv.items.length){lines=inv.items;renderLineInputs();}
-  update();setTimeout(scalePreview,150);
+  
+  if(Array.isArray(inv.items)&&inv.items.length){
+    lines=inv.items;
+    renderLineInputs();
+  }
+  update();
+  setTimeout(scalePreview,150);
 }
 
 async function loadPackages(){
-  const t=localStorage.getItem('bahadur-admin-token')||'';if(!t)return;
+  const t=localStorage.getItem('bahadur-admin-token')||'';
+  if(!t)return;
   try{
-    const r=await fetch('/api/packages?admin=1',{headers:{Authorization:`Bearer ${t}`}});
+    const r=await fetch('/api/packages?admin=1',{headers:{Authorization:'Bearer '+t}});
     if(!r.ok)return;
     const d=await r.json();
     packages=(d.packages||d||[]);
     const dl=$('#package-list');
     if(dl)dl.innerHTML=packages.map(p=>`<option value="${p.name}">`).join('');
-  }catch{}
+  }catch(e){console.warn('Package load failed:',e.message);}
 }
 
-$('#add-line').onclick=()=>{readLines();lines.push({description:'',qty:1,rate:0});renderLineInputs();update();setTimeout(scalePreview,80);};
-document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select').forEach(x=>x.addEventListener('input',()=>{update();setTimeout(scalePreview,80);}));
+async function loadCustomers(){
+  const t=localStorage.getItem('bahadur-admin-token')||'';
+  if(!t)return;
+  try{
+    const r=await fetch('/api/admin?type=customers&limit=200',{headers:{Authorization:'Bearer '+t}});
+    if(!r.ok)return;
+    const d=await r.json();
+    customers=d.customers||[];
+    const sel=$('#invoice-customer');
+    if(sel && customers.length){
+      const currentVal=sel.value;
+      sel.innerHTML='<option value="">Select a customer</option>'+
+        customers.map(c=>`<option value="${c.name}" ${c.name===currentVal?'selected':''}>${c.name} — ${c.phone} — ${c.city||'—'}</option>`).join('')+
+        '<option value="__manual__">+ Enter new customer name</option>';
+    }
+  }catch(e){console.warn('Customer load failed:',e.message);}
+}
+
+$('#add-line').onclick=()=>{
+  readLines();
+  lines.push({description:'',qty:1,rate:0});
+  renderLineInputs();
+  update();
+  setTimeout(scalePreview,80);
+};
+
+document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select').forEach(x=>{
+  x.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
+});
+
+// Customer dropdown handler
+const customerSel=$('#invoice-customer');
+if(customerSel){
+  customerSel.onchange=()=>{
+    const field=$('#new-customer-field');
+    if(customerSel.value==='__manual__'){
+      field.style.display='';
+      $('#invoice-customer-new').focus();
+    }else{
+      field.style.display='none';
+      $('#invoice-customer-new').value='';
+    }
+    update();
+  };
+}
+
+// Kids field handlers
+$('#invoice-kids')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
+$('#invoice-kids-price')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
 
 /* ── Auto-scale preview to fit the narrow pane ── */
 function scalePreview(){
@@ -178,14 +370,23 @@ $('#invoice-download').onclick=()=>{
 };
 
 $('#invoice-save').onclick=async()=>{
-  const t=getToken();if(!t)return;
+  const t=getToken();
+  if(!t)return;
   $('#invoice-state').textContent='Saving\u2026';
   try{
     let r,d;
     if(currentInvoiceId){
-      r=await fetch('/api/admin',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${t}`},body:JSON.stringify({type:'invoice',id:currentInvoiceId,...payload()})});
+      r=await fetch('/api/admin',{
+        method:'PUT',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+        body:JSON.stringify({type:'invoice',id:currentInvoiceId,...payload()})
+      });
     }else{
-      r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${t}`},body:JSON.stringify({type:'invoice',...payload()})});
+      r=await fetch('/api/admin',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+        body:JSON.stringify({type:'invoice',...payload()})
+      });
     }
     d=await r.json();
     if(!r.ok)throw new Error(d.error);
@@ -195,7 +396,10 @@ $('#invoice-save').onclick=async()=>{
       $('#invoice-mark-paid').style.display='';
     }
     const status=value('#payment-status','Draft');
-    if(status==='Paid'){$('#invoice-view-bill').style.display='';$('#invoice-mark-paid').style.display='none';}
+    if(status==='Paid'){
+      $('#invoice-view-bill').style.display='';
+      $('#invoice-mark-paid').style.display='none';
+    }
     $('#invoice-state').textContent=`Saved \u00b7 ${new Date().toLocaleString('en-IN')}`;
   }catch(e){$('#invoice-state').textContent=`Not saved: ${e.message}`}
 };
@@ -203,11 +407,17 @@ $('#invoice-save').onclick=async()=>{
 $('#invoice-mark-paid').onclick=async()=>{
   if(!currentInvoiceId){alert('Save the invoice first before marking as paid.');return;}
   if(!confirm('Mark this invoice as Paid?'))return;
-  const t=getToken();if(!t)return;
+  const t=getToken();
+  if(!t)return;
   $('#invoice-state').textContent='Updating\u2026';
   try{
-    const r=await fetch('/api/admin',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${t}`},body:JSON.stringify({type:'invoice',id:currentInvoiceId,status:'Paid'})});
-    const d=await r.json();if(!r.ok)throw new Error(d.error);
+    const r=await fetch('/api/admin',{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({type:'invoice',id:currentInvoiceId,status:'Paid'})
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error);
     $('#payment-status').value='Paid';
     $('#invoice-mark-paid').style.display='none';
     $('#invoice-view-bill').style.display='';
@@ -223,11 +433,13 @@ $('#invoice-view-bill').onclick=()=>{
 $('#load-invoice-btn').onclick=async()=>{
   const id=$('#load-invoice-id').value.trim();
   if(!id){alert('Enter an invoice ID first');return;}
-  const t=getToken();if(!t)return;
+  const t=getToken();
+  if(!t)return;
   $('#invoice-state').textContent='Loading\u2026';
   try{
-    const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${t}`}});
-    const d=await r.json();if(!r.ok)throw new Error(d.error||'Not found');
+    const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:'Bearer '+t}});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Not found');
     currentInvoiceId=d.invoice.id;
     $('#invoice-db-id').value=currentInvoiceId;
     populateForm(d.invoice);
@@ -236,23 +448,6 @@ $('#load-invoice-btn').onclick=async()=>{
 };
 
 renderLineInputs();
-// Customer dropdown handler
-const customerSel=$('#invoice-customer');
-if(customerSel){
-  customerSel.onchange=()=>{
-    const field=$('#new-customer-field');
-    if(customerSel.value==='__manual__'){
-      field.style.display='';
-      $('#invoice-customer-new').focus();
-    }else{
-      field.style.display='none';
-      $('#invoice-customer-new').value='';
-    }
-    update();
-  };
-}
-// Kids field handler
-$('#invoice-kids')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
 loadPackages();
 loadCustomers();
 update();
@@ -266,8 +461,9 @@ setTimeout(scalePreview,150);
   if(!t)return;
   $('#invoice-state').textContent='Loading invoice\u2026';
   try{
-    const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${t}`}});
-    const d=await r.json();if(!r.ok)throw new Error(d.error||'Not found');
+    const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:'Bearer '+t}});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Not found');
     currentInvoiceId=d.invoice.id;
     $('#invoice-db-id').value=currentInvoiceId;
     populateForm(d.invoice);

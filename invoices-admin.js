@@ -34,7 +34,7 @@ function renderInvoices(rows){
   body.innerHTML=rows.map(x=>`
     <tr>
       <td><span class="cell-main">${esc(x.invoice_number||'\u2014')}</span><span class="cell-sub">${esc(x.booking_ref||'')}</span></td>
-      <td><span style="font-weight:600">${esc(x.customer_name||'\u2014')}</span><span class="cell-sub">${esc(x.phone||'')}</span><span class="cell-sub">${esc(x.email||'')}</span></td>
+            <td><span style="font-weight:600">${esc(x.customer_name||'\u2014')}</span><span class="cell-sub">${esc(x.phone||'')}</span><span class="cell-sub">${esc(x.email||'')}</span><span class="cell-sub" style="color:#c97c1a">Kids: ${x.travel_details&&x.travel_details.kids?x.travel_details.kids:'—'}</span></td>
       <td>${esc(x.booking_ref||'\u2014')}</td>
       <td>${esc(fmtDate(x.invoice_date))}</td>
       <td>${esc(fmtDate(x.due_date))}</td>

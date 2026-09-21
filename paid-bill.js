@@ -19,7 +19,7 @@ function renderReceipt(inv){
   const flight=td.flight||{};
   const hotel=td.hotel||{};
   const items=inv.items||[];
-  const subtotal=Number(inv.subtotal||0),discount=Number(inv.discount||0),tax=Number(inv.tax||0),total=Number(inv.total||0);
+  const subtotal=Number(inv.subtotal||0),discount=Number(inv.discount||0),tax=Number(inv.tax||0),total=Number(inv.total||0),pending=Number(inv.pending_amount||0);
   const isIntl=td.package_type==='international';
 
   const flightCard=isIntl&&flight.included?`
@@ -177,6 +177,7 @@ function renderReceipt(inv){
             <dt>Discount</dt><dd>− ${money(discount)}</dd>
             <dt>${esc(inv.tax_label||'GST')} (${inv.tax_rate||0}%)</dt><dd>${money(tax)}</dd>
             <dt class="grand-total">Total Paid</dt><dd class="grand-total">${money(total)}</dd>
+            ${pending>0?`<dt style="color:#b91c1c;font-weight:700">Pending Amount</dt><dd style="color:#b91c1c;font-weight:700">${money(pending)}</dd>`:''}
           </dl>
         </div>
       </div>

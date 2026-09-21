@@ -22,6 +22,25 @@ function renderLineInputs(){
 
 const dl=rows=>rows.filter(x=>x[1]).map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('');
 
+function getPassengers(){
+  const passengers=[];
+  const mainName=value('#invoice-customer');
+  if(mainName)passengers.push({name:mainName,type:'adult',age:null});
+  // Also read from plain text input
+  const plain=value('#invoice-names-plain');
+  if(plain){
+    plain.split('\n').filter(l=>l.trim()).forEach(line=>{
+      const parts=line.split('-').map(p=>p.trim());
+      if(parts.length>=1){
+        let type='adult';
+        if(parts[0].toLowerCase().includes('kid')||parts[0].toLowerCase().includes('child')||parts[0].toLowerCase().includes('baby'))type='kid';
+        passengers.push({name:parts[0],type,age:parts[1]?Number(parts[1]):null});
+      }
+    });
+  }
+  return passengers;
+}
+
 function travelDetails(){
   return{
     package_name:value('#invoice-trip'),
@@ -31,6 +50,8 @@ function travelDetails(){
     kids:Number(value('#invoice-kids','0')),
     kids_price:Number(value('#invoice-kids-price','0')),
     destination:value('#invoice-destination'),
+    passenger_names:getPassengers(),
+    kids_names:value('#invoice-kids-names'),
     multi_customers:value('#invoice-multi-customers'),
     kids_names:value('#invoice-kids-names'),
     payment_remarks:value('#invoice-payment-remarks'),
@@ -81,8 +102,8 @@ function update(){
   $('#out-travellers').textContent=t.travellers;
   $('#out-kids').textContent=t.kids>0?t.kids+' kids':'\u2014';
   $('#out-kids-price').textContent=t.kids_price>0?'₹'+t.kids_price.toLocaleString()+' per kid':'\u2014';
-  $('#out-kids-names').textContent=t.kids_names||'\u2014';
-  $('#out-multi-customers').innerHTML=t.multi_customers?t.multi_customers.split('\n').filter(l=>l.trim()).map(n=>'<div>'+n.trim()+'</div>').join(''):'';
+  $('#out-kids-names').textContent=t.kids_names||(t.kids>0?'Kids names required':'—');
+  $('#out-multi-customers').innerHTML=t.passenger_names&&t.passenger_names.length?t.passenger_names.map((p,i)=>'<div style="padding:4px 0;border-bottom:1px solid #e8efec"><strong>'+(i+1)+'.</strong> '+(p.type==='kid'?'👶 ':'' )+esc(p.name)+(p.age!=null&&p.type==='kid'?' (Age: '+p.age+')':'')+'<small style="color:#74807c;margin-left:8px">'+p.type.toUpperCase()+'</small></div>').join(''):(t.multi_customers?t.multi_customers.split('\n').filter(l=>l.trim()).map(n=>'<div>'+n.trim()+'</div>').join(''):'');
   $('#out-payment-remarks').textContent=t.payment_remarks||'';
   $('#out-type').textContent=international?'International':'Domestic';
   
@@ -174,9 +195,11 @@ function payload(){
     payment_details:value('#payment-details'),
         pending_amount:x.pending_amount,
         payment_remarks:value('#invoice-payment-remarks'),
-        travel_details:x.travel_details
-      };
-    }
+            passenger_names:x.travel_details.passenger_names,
+            kids_names:x.travel_details.kids_names,
+            travel_details:x.travel_details
+          };
+        }
 
 function getToken(){
   const t=localStorage.getItem('bahadur-admin-token')||'';
@@ -219,8 +242,11 @@ function populateForm(inv){
   set('#invoice-notes',inv.notes);
   set('#invoice-pending-amount',inv.pending_amount||0);
   set('#invoice-multi-customers',inv.multi_customers||'');
-  set('#invoice-kids-names',inv.kids_names||'');
-  set('#invoice-payment-remarks',inv.payment_remarks||inv.payment_details||'');
+    set('#invoice-kids-names',inv.kids_names||'');
+    set('#invoice-names-plain',inv.multi_customers||'');
+    set('#invoice-payment-remarks',inv.payment_remarks||inv.payment_details||'');
+    // Show kids names section if kids > 0
+    if(Number(value('#invoice-kids','0'))>0){$('#kids-names-section').style.display='';}
   
   const td=inv.travel_details||{};
   set('#invoice-trip',td.package_name);

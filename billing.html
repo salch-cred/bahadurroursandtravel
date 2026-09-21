@@ -1,16 +1,41 @@
 <!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"><meta name="robots" content="noindex,nofollow"><title>Travel Billing — Bahadur Tours</title>
-<link rel="icon" href="assets/bahadur-logo-original.png" type="image/png"><link rel="stylesheet" href="styles.css">
+<link rel="icon" href="assets/bahadur-logo-original.png" type="image/png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
 <style>
 .passenger-table-wrap{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
 .passenger-table{width:100%;border-collapse:collapse;font-size:13px}
 .passenger-table th{background:#f4f7f4;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64716d;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--line)}
 .passenger-table td{padding:8px 10px;border-bottom:1px solid #f0f4f2;vertical-align:middle}
 .passenger-table tr:last-child td{border-bottom:none}
+.passenger-table input,.passenger-table select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
 .passenger-table input:focus,.passenger-table select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px #0b665522}
 #add-passenger-btn{width:100%;margin-top:8px}
-.kids-names-section{background:#f5faf8;border:1px solid #a8d9c2;border-radius:10px;padding:15px;margin-top:15px}
-.kids-names-section h3{margin:0 0 10px;color:#0b6655}
-</style>    <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
+.kids-names-section{background:#f5faf8;border:1px solid #a8d9c2;border-radius:10px;padding:15px;margin-top:15px;display:none}
+.kids-names-section h3{margin:0 0 10px;color:#0b6655;font-size:14px}
+/* Form layout */
+.billing-shell .invoice-controls{max-width:1100px;margin:0 auto}
+.billing-shell .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;align-items:end}
+.billing-shell .form-grid .span-2{grid-column:1/-1}
+.billing-shell label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#74807c;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.billing-shell input,.billing-shell select,.billing-shell textarea{
+  padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;background:#fff;color:#26312c;
+}
+.billing-shell input:focus,.billing-shell select:focus,.billing-shell textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px #0b665522}
+.billing-shell textarea{resize:vertical;min-height:60px}
+.billing-shell .control-section{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.billing-shell .control-section h3{margin:0 0 10px;font-size:13px;color:var(--ink);font-weight:700}
+.billing-shell .section-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.billing-shell .section-toggle h3{margin:0}
+.billing-shell .section-toggle input-accent{margin-right:8px}
+.billing-shell .line-editor .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.billing-shell .line-editor .panel-head h3{margin:0}
+.billing-shell .line-input-row{display:grid;grid-template-columns:3fr 60px 110px 36px;gap:8px;align-items:center;margin-bottom:8px}
+.billing-shell .line-input-row input{padding:8px 10px;font-size:13px}
+.billing-shell .kids-names-section textarea{width:100%}
+.invoice-sheet{font-family:'Poppins',Helvetica Neue,Arial,sans-serif}
+</style>
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
 </head><body class="billing-page"><header class="nav-wrap no-print"><nav class="nav glass"><a class="brand" href="admin.html"><img src="assets/bahadur-logo-original.png" alt="Bahadur Real-Estate Tours and Travels"><span>Travel billing</span></a><div class="nav-links"><a href="admin.html">Dashboard</a><a href="packages-admin.html">Packages</a>
     <a href="customers-admin.html" ><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a></div><div class="nav-actions"><button class="btn btn-small btn-light" id="invoice-save">Save invoice</button><button class="btn btn-small" id="invoice-print">Print / PDF</button><button class="btn btn-small" id="invoice-download">Download PDF</button></div></nav></header><main class="admin-shell"><div class="admin-grid">
 <aside class="admin-side glass">
@@ -32,27 +57,286 @@
     <i class="hgi-stroke hgi-logout-03"></i> Logout
   </button>
 </aside>
-<div class="admin-main glass billing-shell pro-billing"><section class="invoice-controls glass no-print"><span class="kicker">Billing workspace</span><h1>Issue a travel invoice.</h1><p>Structured for packages, flights, accommodation and A4 printing.</p><div class="control-section"><h3>Invoice & customer</h3><div class="form-grid"><label>Invoice number<input id="invoice-number" required></label><label>Invoice date<input id="invoice-date" type="date" required></label><label>Due date<input id="invoice-due" type="date"></label><label>Booking reference<input id="invoice-booking"></label><label class="span-2">Customer name
-      <select id="invoice-customer" required>
-        <option value="">Select a customer or enter manually</option>
-        <option value="__manual__">+ Enter new customer name</option>
-      </select>
-    </label>
-    <label class="span-2" id="new-customer-field" style="display:none">
-      Or enter new name
-      <input id="invoice-customer-new" placeholder="Customer full name">
-    </label><label class="span-2">Billing address<textarea id="invoice-address" rows="2"></textarea></label><label>Phone<input id="invoice-phone"></label><label>Email<input id="invoice-email" type="email"></label></div></div><div class="control-section"><h3>Passenger Names <span style="font-weight:400;font-size:12px;color:#74807c">(add multiple)</span></h3><div class="passenger-table-wrap" style="margin-top:15px"><table class="passenger-table" id="passenger-table"><thead><tr><th style="width:50px">No.</th><th>Passenger Name</th><th style="width:100px">Type</th><th>Age (if kid)</th></tr></thead><tbody><tr id="main-passenger-row"><td>1</td><td><input type="text" id="passenger-1-name" placeholder="Main customer" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px"></td><td><select id="passenger-1-type" style="padding:6px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff"><option value="adult">Adult</option><option value="kid">Kid</option></select></td><td><input type="number" id="passenger-1-age" min="0" max="120" placeholder="Age" style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px"></td></tr></tbody></table><button class="mini-btn" id="add-passenger-btn" style="margin-top:10px">＋ Add Passenger</button></div><label class="span-2" style="margin-top:15px">Or paste all names here (one per line)<textarea id="invoice-names-plain" rows="3" placeholder="Paste names here if you prefer&#10;e.g:&#10;Rahul Sharma - Adult&#10;Priya Sharma - Adult&#10;Aarav Sharma - Kid"></textarea></label><label class="span-2" style="margin-top:8px">All customer names<textarea id="invoice-multi-customers" rows="2" placeholder="All customer names, one per line"></textarea></label></div><div class="kids-names-section" id="kids-names-section" style="display:none"><h3>Kids names</h3><textarea id="invoice-kids-names-display" rows="2" placeholder="Enter kids names"></textarea></div><div class="control-section"><h3>Payment tracking</h3><div class="form-grid"><label>Payment status<select id="payment-status"><option value="Draft">Draft</option><option value="Sent">Sent</option><option value="Part paid">Part paid</option><option value="Paid">Paid</option></select></label><label class="span-2">Pending amount to collect<input id="invoice-pending-amount" type="number" min="0" step="0.01" placeholder="₹0"></label></div></div><div class="control-section"><h3>Travel booking</h3><div class="form-grid"><label class="span-2">Package<select id="invoice-package" id="package-list"><option value="">Select or enter manually</option></select></label><label class="span-2">Package / journey name<input id="invoice-trip" required></label><label>Package type<select id="invoice-type"><option value="domestic">Domestic</option><option value="international">International</option></select></label><label>Travel date<input id="invoice-travel-date" type="date"></label><label>Travellers<input id="invoice-travellers" type="number" min="1" value="2"></label><label>Kids<input id="invoice-kids" type="number" min="0" value="0"></label><label class="span-2">Kids names<textarea id="invoice-kids-names" rows="2" placeholder="Raju, Rani"></textarea></label>
-    <label>Kids offer price<input id="invoice-kids-price" type="number" min="0" step="0.01" value="0" placeholder="₹0 per kid"></label>
-    <label>Destination<input id="invoice-destination"></label></div></div><div class="control-section international-controls" id="international-controls"><div class="section-toggle"><h3>International arrangements</h3><label><input type="checkbox" id="flight-included"> Flight booked</label></div><div class="form-grid flight-fields"><label>Airline<input id="flight-airline"></label><label>Flight number<input id="flight-number"></label><label>PNR / ticket reference<input id="flight-pnr"></label><label>Cabin class<select id="flight-cabin"><option>Economy</option><option>Premium economy</option><option>Business</option><option>First</option></select></label><label>Departure airport<input id="flight-from"></label><label>Arrival airport<input id="flight-to"></label><label>Departure date & time<input id="flight-departure" type="datetime-local"></label><label>Arrival date & time<input id="flight-arrival" type="datetime-local"></label><label class="span-2">Baggage allowance<input id="flight-baggage" placeholder="20 kg checked + 7 kg cabin"></label></div></div><div class="control-section"><div class="section-toggle"><h3>Accommodation</h3><label><input type="checkbox" id="hotel-included"> Hotel booked</label></div><div class="form-grid hotel-fields"><label class="span-2">Hotel / property<input id="hotel-name"></label><label>City<input id="hotel-city"></label><label>Category<input id="hotel-category" placeholder="4 star"></label><label>Check-in<input id="hotel-checkin" type="date"></label><label>Check-out<input id="hotel-checkout" type="date"></label><label>Room type<input id="hotel-room-type"></label><label>Number of rooms<input id="hotel-rooms" type="number" min="1" value="1"></label><label>Meal plan<input id="hotel-meals" placeholder="Breakfast included"></label><label>Confirmation number<input id="hotel-confirmation"></label></div></div><div class="line-editor control-section"><div class="panel-head"><h3>Charges</h3><button class="mini-btn" id="add-line">＋ Add charge</button></div><div id="line-inputs"></div></div><div class="control-section"><h3>Totals & payment</h3><div class="form-grid"><label>Tax label<input id="tax-label" value="GST"></label><label>Tax rate %<input id="tax-rate" type="number" min="0" step="0.01" value="0"></label><label>Discount ₹<input id="discount" type="number" min="0" step="0.01" value="0"></label><label>Status<select id="payment-status"><option>Draft</option><option>Sent</option><option>Part paid</option><option>Paid</option><option>Cancelled</option></select></label><label class="span-2">Payment instructions<textarea id="payment-details" rows="3"></textarea></label><label class="span-2">Invoice note<textarea id="invoice-notes" rows="2">Services are subject to the confirmed itinerary and supplier terms.</textarea></label>
-    <label>Remarks / Payment note<textarea id="invoice-payment-remarks" rows="2" placeholder="Add payment remarks, pending amount notes, etc."></textarea></label></div></div><div class="save-state" id="invoice-state">Not saved.</div><input type="hidden" id="invoice-db-id"><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-small" id="load-invoice-btn">Load invoice</button><span style="color:#74807c;font-size:12px;align-self:center">Invoice ID:</span><input id="load-invoice-id" placeholder="e.g. 87ff78c1" style="width:140px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:12px"></div><div id="admin-actions" style="margin-top:10px;display:none"><button class="btn btn-small" id="invoice-mark-paid">Mark as Paid</button><button class="btn btn-small" id="invoice-view-bill">View receipt</button></div></section><section class="invoice-sheet pro-invoice" id="invoice-sheet"><header class="pro-invoice-head"><div><img src="assets/bahadur-logo-original.png" alt="Bahadur Real-Estate Tours and Travels"><span>TOURS & TRAVELS</span></div><div><small>TRAVEL INVOICE</small><strong id="out-number">—</strong><b class="invoice-status" id="out-status">Draft</b></div></header><div class="invoice-rule"></div><section class="pro-invoice-meta"><div><small>FROM</small><strong>Bahadur Tours & Travels</strong><span>Smart City Building, Puttur Road</span><span>1358BA, Vitla, Karnataka 574243</span><span>bahadurtourstravels@gmail.com</span><span>+91 91874 40916</span></div><div><small>BILL TO</small><strong id="out-customer">Customer name</strong><span id="out-address">Billing address</span><span id="out-contact"></span><div id="out-multi-customers" style="margin-top:10px;font-size:13px;color:#526058"></div></div><dl><dt>Invoice date</dt><dd id="out-date">—</dd><dt>Due date</dt><dd id="out-due">—</dd><dt>Booking ref.</dt><dd id="out-booking">—</dd></dl></section>
-    <section class="invoice-travelers" style="margin:16px 0;padding:14px 16px;background:#f5faf8;border:1px solid #d8e5e0;border-radius:8px">
-      <h4 style="margin:0 0 12px;color:var(--ink);font-size:13px;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Travelers <span id="traveler-count" style="font-weight:400;text-transform:none;letter-spacing:0;color:#74807c"></span></h4>
-      <div id="out-travelers-list" style="display:flex;flex-direction:column;gap:6px"></div>
-    </section>
-    <section class="invoice-route-band"><div><small>JOURNEY</small><strong id="out-trip">Travel package</strong><span id="out-destination">Destination</span></div><div><small>TRAVEL DATE</small><strong id="out-travel-date">—</strong></div><div><small>TRAVELLERS</small><strong id="out-travellers">—</strong></div><div><small>KIDS</small><strong id="out-kids">—</strong></div><div><small>KIDS NAMES</small><span id="out-kids-names" style="font-weight:400;font-size:13px">—</span></div><div><small>KIDS PRICE</small><strong id="out-kids-price">—</strong></div><div><small>TYPE</small><strong id="out-type">Domestic</strong></div></section><section class="invoice-travel-details" id="out-travel-details"><article id="out-flight-card" hidden><small>FLIGHT</small><strong id="out-flight-title"></strong><dl id="out-flight-list"></dl></article><article id="out-hotel-card" hidden><small>ACCOMMODATION</small><strong id="out-hotel-title"></strong><dl id="out-hotel-list"></dl></article></section><table class="invoice-table pro-invoice-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody id="out-lines"></tbody></table><section class="pro-invoice-bottom"><div><small>PAYMENT INSTRUCTIONS</small><p id="out-payment">Payment details will appear here.</p><small>NOTE</small><p id="out-notes"></p></div><div id="out-payment-remarks" style="margin-top:10px;padding:10px;background:#fff3d9;border-radius:6px;border:1px solid #f5d9a0;font-size:13px"></div><dl><dt>Subtotal</dt><dd id="out-subtotal">₹0.00</dd><dt>Discount</dt><dd id="out-discount">− ₹0.00</dd><dt id="out-tax-label">GST</dt><dd id="out-tax">₹0.00</dd><dt class="grand-total">TOTAL</dt><dd class="grand-total" id="out-total">₹0.00</dd>
-      <dt style="color:#b91c1c;font-weight:700">PENDING</dt><dd id="out-pending" style="color:#b91c1c;font-weight:700;font-size:16px">₹0.00</dd>
-    </dl>
-    <div id="out-pending-alert-box" style="margin-top:12px;padding:10px 12px;background:#fee2e2;border:1.5px solid #b91c1c;border-radius:6px;display:none">
-      <strong style="color:#b91c1c">⚠ Pending Payment: <span id="out-pending-alert">₹0.00</span> still to be collected</strong>
+<div class="admin-main glass billing-shell pro-billing">
+
+<!-- ═══════════════ FORM CONTROLS (all IDs preserved for billing.js) ═══════════════ -->
+<section class="invoice-controls glass no-print">
+  <span class="kicker">Billing workspace</span>
+  <h1>Issue a travel invoice.</h1>
+  <p>Fill in the details below. The invoice preview updates live — download or print when ready.</p>
+
+  <div class="control-section">
+    <h3>Invoice &amp; Customer</h3>
+    <div class="form-grid">
+      <label>Invoice number<input id="invoice-number" required></label>
+      <label>Invoice date<input id="invoice-date" type="date" required></label>
+      <label>Due date<input id="invoice-due" type="date"></label>
+      <label>Booking reference<input id="invoice-booking"></label>
+      <label class="span-2">Customer name
+        <select id="invoice-customer" required>
+          <option value="">Select a customer or enter manually</option>
+          <option value="__manual__">+ Enter new customer name</option>
+        </select>
+      </label>
+      <label class="span-2" id="new-customer-field" style="display:none">
+        Or enter new name
+        <input id="invoice-customer-new" placeholder="Customer full name">
+      </label>
+      <label class="span-2">Billing address<textarea id="invoice-address" rows="2" placeholder="Full billing address"></textarea></label>
+      <label>Phone<input id="invoice-phone" placeholder="+91 ..."></label>
+      <label>Email<input id="invoice-email" type="email" placeholder="email@example.com"></label>
     </div>
-  </section><section class="invoice-terms"><strong>Booking conditions</strong><span>1. Services are confirmed only as stated in the final itinerary.</span><span>2. Airline, hotel and cancellation rules apply to their respective services.</span><span>3. Quote the invoice and booking references with every payment.</span></section><footer class="pro-invoice-footer"><span>bahadurtourstravels@gmail.com · +91 91874 40916</span><strong>Thank you for travelling with Bahadur.</strong></footer></section></div></div></main><script type="module" src="billing.js"></script></body></html>
+  </div>
+
+  <div class="control-section">
+    <h3>Passenger Names <span style="font-weight:400;font-size:11px;color:#74807c">(add multiple — each entry feeds the PDF traveler list)</span></h3>
+    <div class="passenger-table-wrap" style="margin-top:12px">
+      <table class="passenger-table" id="passenger-table">
+        <thead><tr><th style="width:44px">No.</th><th>Passenger Name</th><th style="width:90px">Type</th><th style="width:80px">Age</th></tr></thead>
+        <tbody>
+          <tr id="main-passenger-row">
+            <td>1</td>
+            <td><input type="text" id="passenger-1-name" placeholder="Main customer / lead traveler"></td>
+            <td><select id="passenger-1-type"><option value="adult">Adult</option><option value="kid">Kid</option></select></td>
+            <td><input type="number" id="passenger-1-age" min="0" max="120" placeholder="Age"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="mini-btn" id="add-passenger-btn" style="margin-top:10px">＋ Add Passenger</button>
+    </div>
+    <label style="margin-top:14px;font-size:11px;color:#74807c;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Or paste all names (one per line — format: Name - Age)</label>
+    <textarea id="invoice-names-plain" rows="3" placeholder="Rahul Sharma - 35&#10;Priya Sharma - 32&#10;Aarav Sharma - 8" style="margin-top:6px;width:100%"></textarea>
+    <label style="margin-top:10px;font-size:11px;color:#74807c;text-transform:uppercase;letter-spacing:.04em;font-weight:600">All customer names (for multi-customer invoices)</label>
+    <textarea id="invoice-multi-customers" rows="2" placeholder="All customer names, one per line" style="margin-top:6px;width:100%"></textarea>
+  </div>
+
+  <div class="kids-names-section" id="kids-names-section">
+    <h3>Kids Names</h3>
+    <textarea id="invoice-kids-names-display" rows="2" placeholder="Enter kids names"></textarea>
+  </div>
+
+  <div class="control-section">
+    <h3>Payment Tracking</h3>
+    <div class="form-grid">
+      <label>Payment status
+        <select id="payment-status">
+          <option value="Draft">Draft</option>
+          <option value="Sent">Sent</option>
+          <option value="Part paid">Part paid</option>
+          <option value="Paid">Paid</option>
+        </select>
+      </label>
+      <label class="span-2">Pending amount to collect<input id="invoice-pending-amount" type="number" min="0" step="0.01" placeholder="₹0" value="0"></label>
+      <label class="span-2">Paid amount<input id="invoice-paid-amount" type="number" min="0" step="0.01" placeholder="₹0" value="0"></label>
+    </div>
+  </div>
+
+  <div class="control-section">
+    <h3>Travel Booking</h3>
+    <div class="form-grid">
+      <label class="span-2">Package / journey name<input id="invoice-trip" required placeholder="e.g. Weekend Goa Package"></label>
+      <label>Package type
+        <select id="invoice-type">
+          <option value="domestic">Domestic</option>
+          <option value="international">International</option>
+        </select>
+      </label>
+      <label>Travel date<input id="invoice-travel-date" type="date"></label>
+      <label>Travellers<input id="invoice-travellers" type="number" min="1" value="2"></label>
+      <label>Kids<input id="invoice-kids" type="number" min="0" value="0"></label>
+      <label class="span-2">Kids names<textarea id="invoice-kids-names" rows="2" placeholder="Raju, Rani"></textarea></label>
+      <label>Kids offer price<input id="invoice-kids-price" type="number" min="0" step="0.01" value="0" placeholder="₹0 per kid"></label>
+      <label class="span-2">Destination<input id="invoice-destination" placeholder="Goa, Kerala, etc."></label>
+    </div>
+  </div>
+
+  <div class="control-section international-controls" id="international-controls" style="display:none">
+    <div class="section-toggle"><h3>International arrangements</h3><label><input type="checkbox" id="flight-included"> Flight booked</label></div>
+    <div class="form-grid flight-fields">
+      <label>Airline<input id="flight-airline"></label>
+      <label>Flight number<input id="flight-number"></label>
+      <label>PNR / ticket reference<input id="flight-pnr"></label>
+      <label>Cabin class<select id="flight-cabin"><option>Economy</option><option>Premium economy</option><option>Business</option><option>First</option></select></label>
+      <label>Departure airport<input id="flight-from"></label>
+      <label>Arrival airport<input id="flight-to"></label>
+      <label>Departure date &amp; time<input id="flight-departure" type="datetime-local"></label>
+      <label>Arrival date &amp; time<input id="flight-arrival" type="datetime-local"></label>
+      <label class="span-2">Baggage allowance<input id="flight-baggage" placeholder="20 kg checked + 7 kg cabin"></label>
+    </div>
+  </div>
+
+  <div class="control-section">
+    <div class="section-toggle"><h3>Accommodation</h3><label><input type="checkbox" id="hotel-included"> Hotel booked</label></div>
+    <div class="form-grid hotel-fields">
+      <label class="span-2">Hotel / property<input id="hotel-name"></label>
+      <label>City<input id="hotel-city"></label>
+      <label>Category<input id="hotel-category" placeholder="4 star"></label>
+      <label>Check-in<input id="hotel-checkin" type="date"></label>
+      <label>Check-out<input id="hotel-checkout" type="date"></label>
+      <label>Room type<input id="hotel-room-type"></label>
+      <label>Number of rooms<input id="hotel-rooms" type="number" min="1" value="1"></label>
+      <label>Meal plan<input id="hotel-meals" placeholder="Breakfast included"></label>
+      <label class="span-2">Confirmation number<input id="hotel-confirmation"></label>
+    </div>
+  </div>
+
+  <div class="control-section line-editor">
+    <div class="panel-head"><h3>Charges <span style="font-weight:400;font-size:11px;color:#74807c">(each line feeds the PDF items table)</span></h3><button class="mini-btn" id="add-line">＋ Add charge</button></div>
+    <div id="line-inputs"></div>
+  </div>
+
+  <div class="control-section">
+    <h3>Totals &amp; Payment</h3>
+    <div class="form-grid">
+      <label>Tax label<input id="tax-label" value="GST"></label>
+      <label>Tax rate %<input id="tax-rate" type="number" min="0" step="0.01" value="0"></label>
+      <label>Discount ₹<input id="discount" type="number" min="0" step="0.01" value="0"></label>
+      <label>Status<select id="payment-status2"><option>Draft</option><option>Sent</option><option>Part paid</option><option>Paid</option><option>Cancelled</option></select></label>
+      <label class="span-2">Payment instructions<textarea id="payment-details" rows="3" placeholder="Bank details, UPI ID, cash terms..."></textarea></label>
+      <label class="span-2">Invoice note<textarea id="invoice-notes" rows="2">Services are subject to the confirmed itinerary and supplier terms.</textarea></label>
+      <label>Remarks / Payment note<textarea id="invoice-payment-remarks" rows="2" placeholder="Add payment remarks, pending amount notes, etc."></textarea></label>
+    </div>
+  </div>
+
+  <div class="save-state" id="invoice-state" style="margin-top:12px;font-size:12px;color:#74807c">Not saved.</div>
+  <input type="hidden" id="invoice-db-id">
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn btn-small" id="load-invoice-btn">Load invoice</button>
+    <span style="color:#74807c;font-size:12px">Invoice ID:</span>
+    <input id="load-invoice-id" placeholder="e.g. 87ff78c1" style="width:140px;padding:7px;border:1px solid var(--line);border-radius:6px;font-size:12px">
+  </div>
+  <div id="admin-actions" style="margin-top:10px;display:none">
+    <button class="btn btn-small" id="invoice-mark-paid">Mark as Paid</button>
+    <button class="btn btn-small" id="invoice-view-bill">View receipt</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ PROFESSIONAL INVOICE SHEET (A4 — captured by PDF download) ═══════════════════════════════════════════════════ -->
+<section class="invoice-sheet pro-invoice" id="invoice-sheet">
+
+  <!-- HEADER BAND -->
+  <header class="pro-invoice-head">
+    <div class="logo-plate"><img src="assets/bahadur-logo-original.png" alt="Bahadur Tours"></div>
+    <div class="right-side">
+      <div class="gold-label">Travel Invoice</div>
+      <div class="invoice-number" id="out-number">—</div>
+      <span class="status-badge" id="out-status">DRAFT</span>
+    </div>
+  </header>
+
+  <!-- THREE-COLUMN META ROW -->
+  <div class="pro-invoice-meta">
+    <div class="col">
+      <h4>From</h4>
+      <strong>Bahadur Tours &amp; Travels</strong>
+      <span>Smart City Building, Puttur Road</span>
+      <span>1358BA, Vitla, Karnataka 574243</span>
+      <span>bahadurtourstravels@gmail.com</span>
+      <span>+91 91874 40916</span>
+    </div>
+    <div class="col">
+      <h4>Bill To</h4>
+      <strong id="out-customer">Customer name</strong>
+      <span id="out-address">Billing address</span>
+      <span id="out-contact"></span>
+    </div>
+    <div class="col right">
+      <h4>Reference</h4>
+      <span>Invoice date: <strong><span id="out-date">—</span></strong></span>
+      <span>Due date: <strong><span id="out-due">—</span></strong></span>
+      <span>Booking ref: <strong><span id="out-booking">—</span></strong></span>
+    </div>
+  </div>
+
+  <!-- TWO-PANEL INFO STRIP: TRAVELERS + JOURNEY -->
+  <div class="info-strip">
+    <div class="panel">
+      <h4>Travelers</h4>
+      <div class="travelers-chips" id="out-travelers-list"></div>
+    </div>
+    <div class="panel journey">
+      <h4>Journey</h4>
+      <div class="journey-facts">
+        <div class="fact"><span class="lbl">Package</span><span class="val" id="out-trip">Travel package</span></div>
+        <div class="fact"><span class="lbl">Destination</span><span class="val" id="out-destination">Destination</span></div>
+        <div class="fact"><span class="lbl">Travel date</span><span class="val" id="out-travel-date">—</span></div>
+        <div class="fact"><span class="lbl">Type</span><span class="val" id="out-type">Domestic</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ITEMS TABLE -->
+  <div class="pro-invoice-table-wrap">
+    <table class="pro-invoice-table">
+      <thead><tr><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody id="out-lines"></tbody>
+    </table>
+  </div>
+
+  <!-- BOTTOM ROW: PAYMENT INFO + TOTALS BOX -->
+  <div class="pro-invoice-bottom">
+    <div class="left">
+      <div class="pi-block">
+        <div class="lbl">Payment Instructions</div>
+        <p id="out-payment">Payment details will appear here.</p>
+      </div>
+      <div class="pi-block">
+        <div class="lbl">Note</div>
+        <p id="out-notes"></p>
+      </div>
+      <div id="out-payment-remarks" style="margin-top:12px;padding:10px;background:#fff3d9;border-radius:6px;border:1px solid #f5d9a0;font-size:12px;display:none"></div>
+    </div>
+    <div class="right">
+      <div class="total-row"><span class="lbl">Subtotal</span><span class="val" id="out-subtotal">₹0.00</span></div>
+      <div class="total-row"><span class="lbl">Discount</span><span class="val" id="out-discount">− ₹0.00</span></div>
+      <div class="total-row"><span class="lbl" id="out-tax-label">GST (0%)</span><span class="val" id="out-tax">₹0.00</span></div>
+      <div class="total-row grand"><span class="lbl">Total</span><span class="val" id="out-total">₹0.00</span></div>
+      <div class="total-row paid"><span class="lbl">Paid</span><span class="val" id="out-paid">₹0.00</span></div>
+      <div class="total-row pending"><span class="lbl">Pending</span><span class="val" id="out-pending">₹0.00</span></div>
+    </div>
+  </div>
+
+  <!-- FULL-WIDTH RED ALERT BAR -->
+  <div class="alert-bar" id="out-pending-alert-box" style="display:none">
+    <span class="alert-icon">⚠</span>
+    <span class="alert-text"><strong>Pending Payment:</strong> <span id="out-pending-alert">₹0.00</span> still to be collected</span>
+  </div>
+  <div class="alert-bar" id="out-paid-success-box" style="display:none;background:#e6f7ec;border-color:#16a34a;border-left-color:#16a34a;color:#16a34a">
+    <span class="alert-icon">✓</span>
+    <span class="alert-text"><strong>Payment Received:</strong> <span id="out-paid-alert">₹0.00</span> paid</span>
+  </div>
+
+  <!-- SIGNATURE ROW -->
+  <div class="signature-row">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Customer Signature</div>
+    </div>
+    <div class="sig-seal">Auth.<br>Signatory</div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">For Bahadur Tours &amp; Travels</div>
+    </div>
+  </div>
+
+  <div class="pro-invoice-spacer"></div>
+
+  <!-- FOOTER -->
+  <footer class="pro-invoice-footer">
+    <div class="conditions">
+      <strong>Booking Conditions</strong>
+      <ol>
+        <li>Services are confirmed only as stated in the final itinerary.</li>
+        <li>Airline, hotel and cancellation rules apply to their respective services.</li>
+        <li>Quote the invoice and booking references with every payment.</li>
+      </ol>
+    </div>
+    <div class="contact">
+      <span>bahadurtourstravels@gmail.com · +91 91874 40916</span>
+      <span class="thank-you">Thank you for travelling with Bahadur.</span>
+    </div>
+  </footer>
+
+</section>
+
+</div></div></main><script type="module" src="billing.js"></script></body></html>

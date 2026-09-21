@@ -156,6 +156,13 @@ function update(){
   $('#out-total').textContent=money(total);
   $('#out-payment').textContent=value('#payment-details','Payment details will be provided separately.');
   $('#out-pending').textContent=value('#invoice-pending-amount','0');
+  // Show pending alert box if there's a pending amount
+  const pendingVal=Number(value('#invoice-pending-amount',0));
+  const alertBox=$('#out-pending-alert-box');
+  if(alertBox){
+    alertBox.style.display=pendingVal>0?'':'none';
+    $('#out-pending-alert').textContent=money(pendingVal);
+  }
   $('#out-notes').textContent=value('#invoice-notes','');
   
   const status=value('#payment-status','Draft');

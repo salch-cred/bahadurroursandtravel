@@ -53,7 +53,6 @@ function travelDetails(){
     passenger_names:getPassengers(),
     kids_names:value('#invoice-kids-names'),
     multi_customers:value('#invoice-multi-customers'),
-    kids_names:value('#invoice-kids-names'),
     payment_remarks:value('#invoice-payment-remarks'),
     flight:{
       included:$('#flight-included').checked,
@@ -193,18 +192,23 @@ function payload(){
     status:value('#payment-status','Draft'),
     notes:value('#invoice-notes'),
     payment_details:value('#payment-details'),
-        pending_amount:x.pending_amount,
-        payment_remarks:value('#invoice-payment-remarks'),
-            passenger_names:x.travel_details.passenger_names,
-            kids_names:x.travel_details.kids_names,
-            travel_details:x.travel_details
-          };
-        }
+    pending_amount:x.pending_amount,
+    payment_remarks:value('#invoice-payment-remarks'),
+    passenger_names:x.travel_details.passenger_names,
+    kids_names:x.travel_details.kids_names,
+    travel_details:x.travel_details
+  };
+}
 
 function getToken(){
-  const t=localStorage.getItem('bahadur-admin-token')||'';
-  if(!t)alert('Please log in as admin first.');
-  return t;
+  try{
+    const t=localStorage.getItem('bahadur-admin-token')||'';
+    if(!t)alert('Please log in as admin first.');
+    return t;
+  }catch(e){
+    alert('Storage unavailable. Please use standard browser mode.');
+    return '';
+  }
 }
 
 function populateForm(inv){
@@ -329,7 +333,7 @@ $('#add-line').onclick=()=>{
   setTimeout(scalePreview,80);
 };
 
-document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select').forEach(x=>{
+document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select,#passenger-table input,#passenger-table select').forEach(x=>{
   x.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
 });
 
@@ -353,19 +357,30 @@ if(customerSel){
 $('#invoice-kids')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
 $('#invoice-kids-price')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
 
+// Add Passenger button handler
+$('#add-passenger-btn')?.addEventListener('click',()=>{
+  const tbody=$('#passenger-table tbody');
+  if(!tbody)return;
+  const rowCount=tbody.querySelectorAll('tr').length;
+  const newRow=document.createElement('tr');
+  newRow.innerHTML=`<td>${rowCount+1}</td>
+    <td><input type="text" id="passenger-${rowCount+1}-name" placeholder="Passenger ${rowCount+1}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px"></td>
+    <td><select id="passenger-${rowCount+1}-type" style="padding:6px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff"><option value="adult">Adult</option><option value="kid">Kid</option></select></td>
+    <td><input type="number" id="passenger-${rowCount+1}-age" min="0" max="120" placeholder="Age" style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px"></td>`;
+  tbody.appendChild(newRow);
+  // Bind input events for new row
+  newRow.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
+  });
+  update();
+});
+
 /* ── Auto-scale preview to fit the narrow pane ── */
 function scalePreview(){
-  const pane=document.querySelector('.billing-preview-pane');
   const sheet=document.getElementById('invoice-sheet');
-  const scaler=document.getElementById('preview-scaler');
-  if(!pane||!sheet||!scaler)return;
-  const paneW=Math.max(200,pane.clientWidth-24);
-  const scale=Math.min(1,paneW/820);
-  sheet.style.transform='scale('+scale+')';
-  sheet.style.transformOrigin='top left';
-  requestAnimationFrame(function(){
-    scaler.style.height=(sheet.offsetHeight*scale+20)+'px';
-  });
+  if(!sheet)return;
+  // Auto-scale removed - let invoice-sheet render at natural size
+  // The sheet is hidden on screen, only shown in print/PDF
 }
 window.addEventListener('resize',scalePreview);
 

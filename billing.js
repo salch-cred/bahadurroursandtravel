@@ -29,12 +29,29 @@ function getPassengers(){
   // Also read from plain text input
   const plain=value('#invoice-names-plain');
   if(plain){
-    plain.split('\n').filter(l=>l.trim()).forEach(line=>{
+      plain.split('\n').filter(l=>l.trim()).forEach(line=>{
       const parts=line.split('-').map(p=>p.trim());
       if(parts.length>=1){
         let type='adult';
         if(parts[0].toLowerCase().includes('kid')||parts[0].toLowerCase().includes('child')||parts[0].toLowerCase().includes('baby'))type='kid';
         passengers.push({name:parts[0],type,age:parts[1]?Number(parts[1]):null});
+      }
+    });
+  }
+  // Read from dynamically added passenger table rows (skip first row which is main customer)
+  const tbody=$('#passenger-table tbody');
+  if(tbody){
+    const rows=tbody.querySelectorAll('tr');
+    rows.forEach((row,idx)=>{
+      if(idx===0)return; // Skip first row (already captured as main customer)
+      const nameInput=row.querySelector('input[type="text"]');
+      const typeSelect=row.querySelector('select');
+      const ageInput=row.querySelector('input[type="number"]');
+      if(nameInput && nameInput.value.trim()){
+        let type='adult';
+        if(typeSelect && typeSelect.value==='kid')type='kid';
+        const age=ageInput?Number(ageInput.value):null;
+        passengers.push({name:nameInput.value.trim(),type,age});
       }
     });
   }
@@ -104,7 +121,12 @@ function update(){
   $('#out-kids-names').textContent=t.kids_names||(t.kids>0?'Kids names required':'—');
   $('#out-multi-customers').innerHTML=t.passenger_names&&t.passenger_names.length?t.passenger_names.map((p,i)=>'<div style="padding:4px 0;border-bottom:1px solid #e8efec"><strong>'+(i+1)+'.</strong> '+(p.type==='kid'?'👶 ':'' )+esc(p.name)+(p.age!=null&&p.type==='kid'?' (Age: '+p.age+')':'')+'<small style="color:#74807c;margin-left:8px">'+p.type.toUpperCase()+'</small></div>').join(''):(t.multi_customers?t.multi_customers.split('\n').filter(l=>l.trim()).map(n=>'<div>'+n.trim()+'</div>').join(''):'');
   $('#out-payment-remarks').textContent=t.payment_remarks||'';
-  $('#out-type').textContent=international?'International':'Domestic';
+    // Hide empty remark box
+    const remarksBox=$('#out-payment-remarks');
+    if(remarksBox){
+      remarksBox.style.display=t.payment_remarks?'':'none';
+    }
+    $('#out-type').textContent=international?'International':'Domestic';
   
   const f=$('#out-flight-card'),h=$('#out-hotel-card');
   f.hidden=!(international&&t.flight.included);
@@ -414,16 +436,19 @@ $('#invoice-download').onclick=()=>{
   <title>${num} \u00b7 Bahadur Tours</title>
   ${linkTags}
   <style>
-    @page{size:A4 portrait;margin:10mm 12mm}
-    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    html,body{margin:0;padding:0;background:#fff!important}
-    .invoice-sheet{box-shadow:none!important;border-radius:0!important;transform:none!important;width:100%!important;max-width:none!important}
-    .no-print,.live-badge{display:none!important}
-  </style>
-</head><body>
-  ${sheet.outerHTML}
-  <script>window.onload=function(){setTimeout(function(){window.document.title='${num} \u00b7 Bahadur Tours';window.print();setTimeout(function(){window.close();},2000);},400);};<\/script>
-</body></html>`);
+      @page{size:A4 portrait;margin:10mm 12mm}
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+      html,body{margin:0;padding:0;background:#fff!important}
+      .invoice-sheet{box-shadow:none!important;border-radius:0!important;transform:none!important;width:100%!important;max-width:none!important}
+      .no-print,.live-badge{display:none!important}
+      #out-payment-remarks:empty{display:none!important}
+      #out-kids-names:empty{display:none!important}
+      #out-multi-customers:empty{display:none!important}
+    </style>
+  </head><body>
+    ${sheet.outerHTML}
+    <script>window.onload=function(){setTimeout(function(){window.document.title='${num} \u00b7 Bahadur Tours';window.print();setTimeout(function(){window.close();},2000);},400);};<\/script>
+  </body></html>`);
   pw.document.close();
 };
 

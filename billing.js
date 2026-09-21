@@ -120,6 +120,21 @@ function update(){
   $('#out-kids-price').textContent=t.kids_price>0?'₹'+t.kids_price.toLocaleString()+' per kid':'\u2014';
   $('#out-kids-names').textContent=t.kids_names||(t.kids>0?'Kids names required':'—');
   $('#out-multi-customers').innerHTML=t.passenger_names&&t.passenger_names.length?t.passenger_names.map((p,i)=>'<div style="padding:4px 0;border-bottom:1px solid #e8efec"><strong>'+(i+1)+'.</strong> '+(p.type==='kid'?'👶 ':'' )+esc(p.name)+(p.age!=null&&p.type==='kid'?' (Age: '+p.age+')':'')+'<small style="color:#74807c;margin-left:8px">'+p.type.toUpperCase()+'</small></div>').join(''):(t.multi_customers?t.multi_customers.split('\n').filter(l=>l.trim()).map(n=>'<div>'+n.trim()+'</div>').join(''):'');
+
+  // MakeMyTrip-style bold traveler list
+  const travelersList=$('#out-travelers-list');
+  const travelerCount=$('#out-traveller-count');
+  if(travelersList && t.passenger_names&&t.passenger_names.length){
+    travelersList.innerHTML=t.passenger_names.map((p,i)=>
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:#fff;border:1px solid #d4dce0">'+
+        '<span style="width:28px;height:28px;border-radius:50%;background:'+(p.type==='kid'?'#e8f5e9':'#e3f2fd')+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:'+(p.type==='kid'?'#2e7d32':'#1565c0')+'>'+(i+1)+'</span>'+
+        '<strong style="font-size:15px;color:#1a2332;flex:1">'+esc(p.name)+'</strong>'+
+        '<span style="font-size:11px;font-weight:700;color:#fff;padding:3px 10px;border-radius:4px;background:'+(p.type==='kid'?'#2e7d32':'#1565c0')+'>'+p.type.toUpperCase()+'</span>'+
+        (p.age!=null?'<span style="font-size:12px;color:#74807c;margin-left:8px">Age '+p.age+' yrs</span>':'')+
+      '</div>').join('');
+    travelerCount.textContent='('+t.passenger_names.length+')';
+  }else if(travelersList){ travelersList.innerHTML=''; travelerCount.textContent=''; }
+
   $('#out-payment-remarks').textContent=t.payment_remarks||'';
     // Hide empty remark box
     const remarksBox=$('#out-payment-remarks');
@@ -444,6 +459,11 @@ $('#invoice-download').onclick=()=>{
       #out-payment-remarks:empty{display:none!important}
       #out-kids-names:empty{display:none!important}
       #out-multi-customers:empty{display:none!important}
+    
+      #out-payment-remarks:empty{display:none!important}
+      #out-kids-names:empty{display:none!important}
+      #out-multi-customers:empty{display:none!important}
+      #out-travelers-list:empty{display:none!important}
     </style>
   </head><body>
     ${sheet.outerHTML}

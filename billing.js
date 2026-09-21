@@ -120,6 +120,30 @@ function getPassengers(){
 
   }
 
+  // Add kids from invoice-kids-names field to travelers list
+
+  const kidsNames=value('#invoice-kids-names','');
+
+  if(kidsNames){
+
+    const kidList=kidsNames.split(',').map(n=>n.trim()).filter(n=>n);
+
+    kidList.forEach((name,i)=>{
+
+      // Avoid duplicate if kid already in passenger table
+
+      const exists=passengers.some(p=>p.name.toLowerCase()===name.toLowerCase());
+
+      if(!exists){
+
+        passengers.push({name,type:'kid',age:null});
+
+      }
+
+    });
+
+  }
+
   return passengers;
 
 }
@@ -999,111 +1023,106 @@ $('#invoice-download').onclick=()=>{
 
   const num=value('#invoice-number','Invoice');
 
-  const linkTags=[...document.querySelectorAll('link[rel="stylesheet"]')]
+  // Resolve relative asset paths for popup context
+  const baseUrl=window.location.href.substring(0,window.location.href.lastIndexOf('/')+1);
+  let popupSheetHTML=sheet.outerHTML;
+  popupSheetHTML=popupSheetHTML.replace(/src="assets\//g,'src="'+baseUrl+'assets/').replace(/href="assets\//g,'href="'+baseUrl+'assets/');
 
+  const linkTags=[...document.querySelectorAll('link[rel="stylesheet"]')]
     .map(l=>`<link rel="stylesheet" href="${l.href}">`).join('\n');
 
   const pw=window.open('','_blank','width=870,height=1120,scrollbars=yes');
 
   if(!pw){alert('Pop-up blocked. Please allow pop-ups and try again.');return;}
 
-  pw.document.write(`<!doctype html>
-
-<html lang="en"><head>
-
-  <meta charset="UTF-8">
-
-  <title>${num} \u00b7 Bahadur Tours</title>
-
-  ${linkTags}
-
-  <style>
-    @page{size:A4;margin:0}
-    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-    html,body{margin:0;padding:0;background:#fff!important;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;min-height:296mm;display:flex;flex-direction:column}
-    .invoice-sheet{max-width:none!important;width:210mm!important;min-height:296mm!important;box-shadow:none!important;border-radius:0!important;transform:none!important;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;font-size:13px;color:#26312c;background:#fff;position:relative;page-break-after:always}
-    .no-print,.live-badge{display:none!important}
-    #out-payment-remarks:empty{display:none!important}
-    #out-kids-names:empty{display:none!important}
-    #out-multi-customers:empty{display:none!important}
-    #out-travelers-list:empty{display:none!important}
-    .pro-invoice-spacer{display:block!important;flex:1 0 auto;min-height:0}
-    .pro-invoice-head{background:#0d3b2e;color:#fff;padding:38px 50px 36px;display:flex;justify-content:space-between;align-items:flex-start;position:relative}
-    .pro-invoice-head .logo-plate{background:#fff;border-radius:10px;padding:8px 12px;display:flex;align-items:center;height:68px}
-    .pro-invoice-head .logo-plate img{height:54px}
-    .pro-invoice-head .right-side{text-align:right}
-    .pro-invoice-head .gold-label{font-size:10px;letter-spacing:3px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}
-    .pro-invoice-head .invoice-number{font-size:26px;font-weight:700;color:#fff;line-height:1.1}
-    .pro-invoice-head .status-badge{display:inline-block;margin-top:8px;padding:3px 12px;border-radius:20px;border:1.5px solid #d3a038;background:rgba(211,160,56,0.12);color:#d3a038;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-    .pro-invoice-head::after{content:'';position:absolute;left:50px;right:50px;bottom:0;height:6px;background:linear-gradient(to right,#d3a038 40%,#7a1f1f 40%)}
-    .pro-invoice-meta{display:flex;gap:30px;padding:30px 50px 0}
-    .pro-invoice-meta .col{flex:1;min-width:0}
-    .pro-invoice-meta .col.right{flex:0 0 auto;text-align:right}
-    .pro-invoice-meta .col h4{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid #d3a038}
-    .pro-invoice-meta .col strong{display:block;font-size:15px;font-weight:600;margin-bottom:3px}
-    .pro-invoice-meta .col span{display:block;font-size:12px;color:#888;margin-bottom:1px}
-    .pro-invoice-meta .col.right span strong{display:inline;font-weight:600;color:#26312c}
-    .pro-invoice-meta .col.right span{display:inline-block;text-align:right;margin-left:18px}
-    .pro-invoice-meta .col.right span+span{margin-top:6px}
-    .info-strip{display:flex;gap:14px;padding:28px 50px 0}
-    .info-strip .panel{flex:1;border:1px solid #ddd;border-radius:10px;padding:16px 18px;background:#fff}
-    .info-strip .panel.journey{background:#faf7ee}
-    .info-strip .panel h4{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 12px;padding-bottom:4px;border-bottom:1px solid #d3a038}
-    .info-strip .travelers-chips{display:flex;flex-wrap:wrap;gap:8px}
-    .info-strip .traveler-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #d8e5e0;font-size:12px;font-weight:600;color:#1a2332}
-    .info-strip .traveler-chip .role{font-size:10px;font-weight:400;color:#999;text-transform:uppercase;letter-spacing:.04em}
-    .info-strip .journey-facts{display:flex;flex-wrap:wrap;gap:0}
-    .info-strip .journey-facts .fact{padding:2px 0}
-    .info-strip .journey-facts .fact .lbl{display:inline-block;width:80px;font-size:11px;color:#888}
-    .info-strip .journey-facts .fact .val{display:inline-block;font-size:12px;font-weight:500;color:#26312c;margin-right:24px}
-    .pro-invoice-table-wrap{padding:28px 50px 0}
-    .pro-invoice-table{width:100%;border-collapse:collapse;font-size:13px}
-    .pro-invoice-table thead th{background:#0d3b2e;color:#fff;padding:12px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #0d3b2e}
-    .pro-invoice-table thead th:last-child,.pro-invoice-table thead th:nth-child(3),.pro-invoice-table thead th:nth-child(4){text-align:right}
-    .pro-invoice-table tbody tr:nth-child(odd){background:#fafafa}
-    .pro-invoice-table tbody tr:nth-child(even){background:#fff}
-    .pro-invoice-table td{padding:14px 16px;border-bottom:1px solid #ececec;vertical-align:top}
-    .pro-invoice-table td.desc{font-weight:600;color:#26312c}
-    .pro-invoice-table td.subdesc{display:block;font-size:11px;color:#999;font-weight:400;margin-top:2px}
-    .pro-invoice-table td:last-child,.pro-invoice-table td:nth-child(3),.pro-invoice-table td:nth-child(4){text-align:right}
-    .pro-invoice-table td.amount{font-weight:600;color:#0d3b2e}
-    .pro-invoice-bottom{display:flex;gap:24px;padding:26px 50px 0}
-    .pro-invoice-bottom .left{flex:1;min-width:0}
-    .pro-invoice-bottom .left .pi-block{margin-bottom:14px}
-    .pro-invoice-bottom .left .pi-block .lbl{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}
-    .pro-invoice-bottom .left .pi-block p{margin:0;font-size:12px;color:#555;line-height:1.5}
-    .pro-invoice-bottom .right{flex:0 0 340px;border:1px solid #ddd;border-radius:8px;padding:16px 18px;background:#fff}
-    .pro-invoice-bottom .right .total-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee}
-    .pro-invoice-bottom .right .total-row:last-child{border-bottom:none}
-    .pro-invoice-bottom .right .total-row .lbl{font-size:12px;color:#555}
-    .pro-invoice-bottom .right .total-row .val{font-size:13px;font-weight:600}
-    .pro-invoice-bottom .right .total-row.grand .lbl{color:#0d3b2e;font-weight:700;font-size:14px}
-    .pro-invoice-bottom .right .total-row.grand .val{color:#0d3b2e;font-weight:700;font-size:16px}
-    .pro-invoice-bottom .right .total-row.paid .lbl{color:#16a34a;font-weight:600}
-    .pro-invoice-bottom .right .total-row.paid .val{color:#16a34a;font-weight:700;font-size:14px}
-    .pro-invoice-bottom .right .total-row.pending .lbl{color:#a02c22;font-weight:600}
-    .pro-invoice-bottom .right .total-row.pending .val{color:#a02c22;font-weight:700;font-size:14px}
-    .alert-bar{margin:16px 50px 0;padding:10px 14px;background:#fee8e8;border:1px solid #a02c22;border-left:4px solid #a02c22;border-radius:4px;display:flex;align-items:center;gap:10px;font-size:12px;color:#a02c22}
-    .alert-bar .alert-icon{font-size:16px;font-weight:700}
-    .alert-bar .alert-text strong{font-weight:700}
-    .signature-row{display:flex;justify-content:space-between;align-items:flex-end;padding:28px 50px 0;gap:20px}
-    .signature-row .sig-block{flex:1;min-width:0}
-    .signature-row .sig-line{border-bottom:1.5px solid #26312c;height:40px}
-    .signature-row .sig-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
-    .signature-row .sig-seal{width:72px;height:72px;border:2px dashed #d3a038;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#d3a038;text-align:center;transform:rotate(-6deg);font-weight:600;letter-spacing:.04em;text-transform:uppercase;line-height:1.3;flex-shrink:0}
-    .pro-invoice-footer{border-top:1px solid #ddd;padding:14px 50px;display:flex;justify-content:space-between;font-size:11px;color:#888;background:#fff}
-    .pro-invoice-footer .conditions ol{margin:0;padding:0 0 0 16px;display:inline}
-    .pro-invoice-footer .conditions li{margin-bottom:2px}
-    .pro-invoice-footer .contact{text-align:right;line-height:1.6}
-    .pro-invoice-footer .thank-you{font-size:13px;font-weight:700;color:#0d3b2e;display:block;margin-top:2px}
-    </style>
-
-  </head><body>
-
-    ${sheet.outerHTML}
-
-    <script>window.onload=function(){setTimeout(function(){window.document.title='${num} \u00b7 Bahadur Tours';window.print();setTimeout(function(){window.close();},2000);},400);};<\/script>
-
+  pw.document.write(`<!doctype html>\n
+<html lang="en"><head>\n
+  <meta charset="UTF-8">\n
+  <title>${num} \u00b7 Bahadur Tours</title>\n
+  ${linkTags}\n
+  <style>\n
+    @page{size:A4;margin:0}\n
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}\n
+    html,body{margin:0;padding:0;background:#fff!important;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;min-height:296mm;display:flex;flex-direction:column}\n
+    .invoice-sheet{max-width:none!important;width:210mm!important;min-height:296mm!important;box-shadow:none!important;border-radius:0!important;transform:none!important;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;font-size:13px;color:#26312c;background:#fff;position:relative;page-break-after:always}\n
+    .no-print,.live-badge{display:none!important}\n
+    #out-payment-remarks:empty{display:none!important}\n
+    #out-kids-names:empty{display:none!important}\n
+    #out-multi-customers:empty{display:none!important}\n
+    #out-travelers-list:empty{display:none!important}\n
+    .pro-invoice-spacer{display:block!important;flex:1 0 auto;min-height:0}\n
+    .pro-invoice-head{background:#0d3b2e;color:#fff;padding:38px 50px 36px;display:flex;justify-content:space-between;align-items:flex-start;position:relative}\n
+    .pro-invoice-head .logo-plate{background:#fff;border-radius:10px;padding:8px 12px;display:flex;align-items:center;height:68px}\n
+    .pro-invoice-head .logo-plate img{height:54px}\n
+    .pro-invoice-head .right-side{text-align:right}\n
+    .pro-invoice-head .gold-label{font-size:10px;letter-spacing:3px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}\n
+    .pro-invoice-head .invoice-number{font-size:26px;font-weight:700;color:#fff;line-height:1.1}\n
+    .pro-invoice-head .status-badge{display:inline-block;margin-top:8px;padding:3px 12px;border-radius:20px;border:1.5px solid #d3a038;background:rgba(211,160,56,0.12);color:#d3a038;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}\n
+    .pro-invoice-head::after{content:'';position:absolute;left:50px;right:50px;bottom:0;height:6px;background:linear-gradient(to right,#d3a038 40%,#7a1f1f 40%)}\n
+    .pro-invoice-meta{display:flex;gap:30px;padding:30px 50px 0}\n
+    .pro-invoice-meta .col{flex:1;min-width:0}\n
+    .pro-invoice-meta .col.right{flex:0 0 auto;text-align:right}\n
+    .pro-invoice-meta .col h4{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid #d3a038}\n
+    .pro-invoice-meta .col strong{display:block;font-size:15px;font-weight:600;margin-bottom:3px}\n
+    .pro-invoice-meta .col span{display:block;font-size:12px;color:#888;margin-bottom:1px}\n
+    .pro-invoice-meta .col.right span strong{display:inline;font-weight:600;color:#26312c}\n
+    .pro-invoice-meta .col.right span{display:inline-block;text-align:right;margin-left:18px}\n
+    .pro-invoice-meta .col.right span+span{margin-top:6px}\n
+    .info-strip{display:flex;gap:14px;padding:28px 50px 0}\n
+    .info-strip .panel{flex:1;border:1px solid #ddd;border-radius:10px;padding:16px 18px;background:#fff}\n
+    .info-strip .panel.journey{background:#faf7ee}\n
+    .info-strip .panel h4{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 12px;padding-bottom:4px;border-bottom:1px solid #d3a038}\n
+    .info-strip .travelers-chips{display:flex;flex-wrap:wrap;gap:8px}\n
+    .info-strip .traveler-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #d8e5e0;font-size:12px;font-weight:600;color:#1a2332}\n
+    .info-strip .traveler-chip .role{font-size:10px;font-weight:400;color:#999;text-transform:uppercase;letter-spacing:.04em}\n
+    .info-strip .journey-facts{display:flex;flex-wrap:wrap;gap:0}\n
+    .info-strip .journey-facts .fact{padding:2px 0}\n
+    .info-strip .journey-facts .fact .lbl{display:inline-block;width:80px;font-size:11px;color:#888}\n
+    .info-strip .journey-facts .fact .val{display:inline-block;font-size:12px;font-weight:500;color:#26312c;margin-right:24px}\n
+    .pro-invoice-table-wrap{padding:28px 50px 0}\n
+    .pro-invoice-table{width:100%;border-collapse:collapse;font-size:13px}\n
+    .pro-invoice-table thead th{background:#0d3b2e;color:#fff;padding:12px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #0d3b2e}\n
+    .pro-invoice-table thead th:last-child,.pro-invoice-table thead th:nth-child(3),.pro-invoice-table thead th:nth-child(4){text-align:right}\n
+    .pro-invoice-table tbody tr:nth-child(odd){background:#fafafa}\n
+    .pro-invoice-table tbody tr:nth-child(even){background:#fff}\n
+    .pro-invoice-table td{padding:14px 16px;border-bottom:1px solid #ececec;vertical-align:top}\n
+    .pro-invoice-table td.desc{font-weight:600;color:#26312c}\n
+    .pro-invoice-table td.subdesc{display:block;font-size:11px;color:#999;font-weight:400;margin-top:2px}\n
+    .pro-invoice-table td:last-child,.pro-invoice-table td:nth-child(3),.pro-invoice-table td:nth-child(4){text-align:right}\n
+    .pro-invoice-table td.amount{font-weight:600;color:#0d3b2e}\n
+    .pro-invoice-bottom{display:flex;gap:24px;padding:26px 50px 0}\n
+    .pro-invoice-bottom .left{flex:1;min-width:0}\n
+    .pro-invoice-bottom .left .pi-block{margin-bottom:14px}\n
+    .pro-invoice-bottom .left .pi-block .lbl{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}\n
+    .pro-invoice-bottom .left .pi-block p{margin:0;font-size:12px;color:#555;line-height:1.5}\n
+    .pro-invoice-bottom .right{flex:0 0 340px;border:1px solid #ddd;border-radius:8px;padding:16px 18px;background:#fff}\n
+    .pro-invoice-bottom .right .total-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee}\n
+    .pro-invoice-bottom .right .total-row:last-child{border-bottom:none}\n
+    .pro-invoice-bottom .right .total-row .lbl{font-size:12px;color:#555}\n
+    .pro-invoice-bottom .right .total-row .val{font-size:13px;font-weight:600}\n
+    .pro-invoice-bottom .right .total-row.grand .lbl{color:#0d3b2e;font-weight:700;font-size:14px}\n
+    .pro-invoice-bottom .right .total-row.grand .val{color:#0d3b2e;font-weight:700;font-size:16px}\n
+    .pro-invoice-bottom .right .total-row.paid .lbl{color:#16a34a;font-weight:600}\n
+    .pro-invoice-bottom .right .total-row.paid .val{color:#16a34a;font-weight:700;font-size:14px}\n
+    .pro-invoice-bottom .right .total-row.pending .lbl{color:#a02c22;font-weight:600}\n
+    .pro-invoice-bottom .right .total-row.pending .val{color:#a02c22;font-weight:700;font-size:14px}\n
+    .alert-bar{margin:16px 50px 0;padding:10px 14px;background:#fee8e8;border:1px solid #a02c22;border-left:4px solid #a02c22;border-radius:4px;display:flex;align-items:center;gap:10px;font-size:12px;color:#a02c22}\n
+    .alert-bar .alert-icon{font-size:16px;font-weight:700}\n
+    .alert-bar .alert-text strong{font-weight:700}\n
+    .signature-row{display:flex;justify-content:space-between;align-items:flex-end;padding:28px 50px 0;gap:20px}\n
+    .signature-row .sig-block{flex:1;min-width:0}\n
+    .signature-row .sig-line{border-bottom:1.5px solid #26312c;height:40px}\n
+    .signature-row .sig-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:4px}\n
+    .signature-row .sig-seal{width:72px;height:72px;border:2px dashed #d3a038;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#d3a038;text-align:center;transform:rotate(-6deg);font-weight:600;letter-spacing:.04em;text-transform:uppercase;line-height:1.3;flex-shrink:0}\n
+    .pro-invoice-footer{border-top:1px solid #ddd;padding:14px 50px;display:flex;justify-content:space-between;font-size:11px;color:#888;background:#fff}\n
+    .pro-invoice-footer .conditions ol{margin:0;padding:0 0 0 16px;display:inline}\n
+    .pro-invoice-footer .conditions li{margin-bottom:2px}\n
+    .pro-invoice-footer .contact{text-align:right;line-height:1.6}\n
+    .pro-invoice-footer .thank-you{font-size:13px;font-weight:700;color:#0d3b2e;display:block;margin-top:2px}\n
+  </style>\n
+</head><body>\n
+    ${popupSheetHTML}\n
+    <script>window.onload=function(){setTimeout(function(){window.document.title='${num} \u00b7 Bahadur Tours';window.print();setTimeout(function(){window.close();},2000);},400);};<\/script>\n
   </body></html>`);
 
   pw.document.close();

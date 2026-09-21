@@ -899,9 +899,73 @@ function scalePreview(){
 
   if(!sheet)return;
 
-  // Auto-scale removed - let invoice-sheet render at natural size
+  // Find the workspace container (billing-shell or admin-main)
 
-  // The sheet is hidden on screen, only shown in print/PDF
+  const shell=sheet.closest('.billing-shell,.admin-main,.admin-shell');
+
+  if(!shell)return;
+
+  // Get the available width in the right panel
+
+  const shellStyle=window.getComputedStyle(shell);
+
+  const shellCols=shellStyle.gridTemplateColumns;
+
+  // Parse grid columns to find the right panel width
+
+  let rightWidth=0;
+
+  if(shellCols){
+
+    const cols=shellCols.split(/\s+/);
+
+    // Find the last column that's not a fixed pixel value (the right panel)
+
+    for(let i=cols.length-1;i>=0;i--){
+
+      const col=cols[i].trim();
+
+      if(!col.endsWith('px')){rightWidth=Math.min(shell.clientWidth,parseInt(col)||shell.clientWidth);}
+
+    }
+
+  }
+
+  // Fallback: use shell client width minus left panel approx
+
+  if(!rightWidth||rightWidth>shell.clientWidth-300){
+
+    rightWidth=Math.max(shell.clientWidth-300,300);
+
+  }
+
+  // Scale factor: available width / invoice sheet natural width (210mm ≈ 595px at 96dpi)
+
+  // But we use mm in CSS, so compute based on container width in px
+
+  const naturalMm=210;
+
+  const availPx=rightWidth;
+
+  // 1mm ≈ 3.78px at 96dpi
+
+  const availMm=availPx/3.78;
+
+  const scale=Math.min(availMm/naturalMm,1);
+
+  // Apply transform scale
+
+  sheet.style.transform='scale('+scale+')';
+
+  sheet.style.transformOrigin='top left';
+
+  // Adjust the sheet's positioned size so transform scales from natural size
+
+  // The sheet has width:100% and min-height:296mm — transform handles visual scaling
+
+  // Add padding to container to prevent scrollbars from scaled content
+
+  shell.style.overflow='hidden';
 
 }
 
@@ -963,7 +1027,7 @@ $('#invoice-download').onclick=()=>{
     #out-kids-names:empty{display:none!important}
     #out-multi-customers:empty{display:none!important}
     #out-travelers-list:empty{display:none!important}
-    .pro-invoice-spacer{display:none!important}
+    .pro-invoice-spacer{display:block!important;flex:1 0 auto;min-height:0}
     .pro-invoice-head{background:#0d3b2e;color:#fff;padding:38px 50px 36px;display:flex;justify-content:space-between;align-items:flex-start;position:relative}
     .pro-invoice-head .logo-plate{background:#fff;border-radius:10px;padding:8px 12px;display:flex;align-items:center;height:68px}
     .pro-invoice-head .logo-plate img{height:54px}

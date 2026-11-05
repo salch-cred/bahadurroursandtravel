@@ -22,8 +22,7 @@
 
   // Waves: two looping layers along the edge of a coloured band
   function wave(host, side, color) {
-    const period = 'q180 -46 360 0 t360 0'.repeat(1);
-    const d = `M0 50${' ' + period.repeat(4)} V90 H0Z`;
+    const d = `M0 50 ${'q180 -46 360 0 t360 0'.repeat(4)} V90 H0Z`;
     const svg = (c) => `<svg viewBox="0 0 2880 90" preserveAspectRatio="none"><path fill="${c}" d="${d}"/></svg>`;
     const w = document.createElement('div');
     w.className = `wave ${side}`;
@@ -112,7 +111,7 @@
       node.replaceWith(frag);
     });
   }
-  $$('main h2.h2, .page-hero h1, .pd-hero h1:not(.done)').forEach((el) => {
+  $$('main h2.h2, .page-hero h1, .pd-hero h1').forEach((el) => {
     if (el.closest('#hero')) return;
     el.removeAttribute('data-reveal');
     splitWords(el);

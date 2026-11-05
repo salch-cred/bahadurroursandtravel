@@ -24,7 +24,7 @@ addEventListener('scroll', () => {
 }, { passive: true });
 window.addEventListener('pagehide', () => clearInterval(paneTimer));
 
-// Gallery loops seamlessly with a second copy of its images
+// A second copy of the images lets the gallery loop without a jump
 const track = $('#gallery');
 if (track) track.parentElement.append(Object.assign(track.cloneNode(true), { id: '', ariaHidden: 'true' }));
 

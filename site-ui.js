@@ -44,7 +44,7 @@
     ];
     footHost.outerHTML = `<section class="ft-cta" id="plan">
       <img class="ft-art" src="assets/stickers/island.webp" alt="" loading="lazy">
-      <h2 data-reveal>Let’s make this trip yours</h2>
+      <h2 data-reveal>Tell us about your trip</h2>
       <form class="ft-box" id="ft-plan" data-reveal>
         <textarea id="ft-text" rows="3" aria-label="Tell us about your trip" placeholder="I’m planning a 5-day family trip to Lakshadweep in December. We love snorkelling, quiet beaches and good food…"></textarea>
         <div><a class="ft-wa" href="https://wa.me/${WA}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">${ICON_WA}</a><button class="btn btn-sky" type="submit">Plan my trip</button></div>
@@ -52,7 +52,7 @@
     </section>
     <footer class="ft">
       <div class="wrap ft-links">
-        <div class="ft-brand"><a href="index.html"><img src="${LOGO}" alt="Bahadur Tours and Travels" width="170" height="114" loading="lazy"></a><p>Travel planning, made personal.</p><div class="ft-social"><a href="https://wa.me/${WA}" target="_blank" rel="noopener" aria-label="WhatsApp">${ICON_WA}</a><a href="https://www.instagram.com/bahadurtours_travels/" target="_blank" rel="noopener" aria-label="Instagram">${ICON_IG}</a></div></div>
+        <div class="ft-brand"><a href="index.html"><img src="${LOGO}" alt="Bahadur Tours and Travels" width="170" height="114" loading="lazy"></a><p>Trips planned from Vitla, Karnataka.</p><div class="ft-social"><a href="https://wa.me/${WA}" target="_blank" rel="noopener" aria-label="WhatsApp">${ICON_WA}</a><a href="https://www.instagram.com/bahadurtours_travels/" target="_blank" rel="noopener" aria-label="Instagram">${ICON_IG}</a></div></div>
         <div><h4>Explore</h4><a href="booking.html">All packages</a><a href="package.html?slug=island-escape">Lakshadweep</a><a href="umrah.html">Umrah</a><a href="booking.html?filter=international">International</a><a href="booking.html?filter=transport">Force Urbania hire</a></div>
         <div><h4>Company</h4><a href="explore.html">Explore Agatti</a><a href="community.html">Guest stories</a><a href="blog.html">Travel guides</a><a href="https://www.instagram.com/bahadurtours_travels/" target="_blank" rel="noopener">Instagram</a><a href="admin.html">Staff sign in</a></div>
         <div><h4>Contact</h4><a href="tel:+919187440916">+91 91874 40916</a><a href="mailto:bahadurtourstravels@gmail.com">Email us</a><a href="terms.html">Terms</a><a href="terms.html#privacy">Privacy</a></div>

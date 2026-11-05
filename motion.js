@@ -87,7 +87,7 @@
     gsap.fromTo(el, { yPercent: 0 }, { yPercent: -Math.abs(Number(el.dataset.parallax)) / 2, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
   });
 
-  // Plane follows the dashed line on the "Every day, sorted" card
+  // Plane follows the dashed line on the blue day-plan card
   const route = document.getElementById('tile-route');
   if (route) {
     const svg = route.ownerSVGElement;

@@ -1,429 +1,130 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"><meta name="robots" content="noindex,nofollow"><title>Travel Billing — Bahadur Tours</title>
-<link rel="icon" href="assets/bahadur-logo-original.png" type="image/png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css">
-<style>
-/* Workspace form styles */
-.billing-shell{display:grid;grid-template-columns:460px 1fr;gap:30px;align-items:start;background:transparent}
-.billing-shell .invoice-controls{background:#fff;border:1px solid #d8e5e0;border-radius:16px;padding:28px;box-shadow:0 4px 20px #062f2a18;position:sticky;top:100px;max-height:calc(100vh - 120px);overflow-y:auto}
-.billing-shell .invoice-controls .kicker{display:block;font-size:11px;letter-spacing:3px;color:#0b6655;text-transform:uppercase;font-weight:700;margin-bottom:6px}
-.billing-shell .invoice-controls h1{font-size:26px;color:#10231f;margin:0 0 6px;font-weight:700}
-.billing-shell .invoice-controls p{font-size:13px;color:#687570;margin:0 0 18px;line-height:1.5}
-.billing-shell .control-section{border-top:2px solid #e8f0ec;padding-top:18px;margin-top:22px}
-.billing-shell .control-section h3{font-size:14px;color:#10231f;font-weight:700;margin:0 0 12px}
-.billing-shell .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;align-items:end}
-.billing-shell .form-grid .span-2{grid-column:1/-1}
-.billing-shell label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#74807c;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
-.billing-shell input,.billing-shell select,.billing-shell textarea{padding:10px 13px;border:1.5px solid #d8e5e0;border-radius:8px;font-size:13px;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;background:#fff;color:#10231f;transition:border-color .2s,box-shadow .2s}
-.billing-shell input:focus,.billing-shell select:focus,.billing-shell textarea:focus{outline:none;border-color:#0b6655;box-shadow:0 0 0 3px #0b665522;background:#fafcfd}
-.billing-shell textarea{resize:vertical;min-height:65px;font-family:'Poppins',Helvetica Neue,Arial,sans-serif}
-.billing-shell select{appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%230b6655" d="M6 8L1 3h10z"/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-.billing-shell .passenger-table-wrap{border:1.5px solid #d8e5e0;border-radius:10px;background:#fff;overflow:hidden;margin-top:4px}
-.billing-shell .passenger-table{width:100%;border-collapse:collapse;font-size:12px}
-.billing-shell .passenger-table th{background:#f0f5f3;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64716d;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #d8e5e0}
-.billing-shell .passenger-table td{padding:0;border-bottom:1px solid #f0f4f2;vertical-align:middle}
-.billing-shell .passenger-table tr:last-child td{border-bottom:none}
-.billing-shell .passenger-table input,.billing-shell .passenger-table select{padding:8px 10px;border:1px solid #d8e5e0;border-radius:6px;font-size:12px;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;background:#fff;color:#10231f;width:100%}
-.billing-shell .passenger-table input:focus,.billing-shell .passenger-table select:focus{outline:none;border-color:#0b6655;box-shadow:0 0 0 2px #0b665522}
-.billing-shell .mini-btn{width:100%;margin-top:10px;padding:9px;border:1.5px solid #0b6655;border-radius:8px;background:#fff;color:#0b6655;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;transition:all .2s}
-.billing-shell .mini-btn:hover{background:#0b6655;color:#fff;border-color:#0b6655}
-.billing-shell .kids-names-section{background:#f5faf8;border:1px solid #a8d9c2;border-radius:10px;padding:15px;margin-top:14px;display:none}
-.billing-shell .kids-names-section h3{margin:0 0 10px;color:#0b6655;font-size:14px;font-weight:700}
-.billing-shell .kids-names-section textarea{width:100%}
-.billing-shell .section-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
-.billing-shell .section-toggle h3{margin:0}
-.billing-shell .section-toggle input[type=checkbox]{width:18px;height:18px;accent-color:#0b6655}
-.billing-shell .line-editor .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.billing-shell .line-editor .panel-head h3{margin:0;font-size:14px;color:#10231f;font-weight:700}
-.billing-shell .line-input-row{display:grid;grid-template-columns:1fr 70px 110px 36px;gap:8px;align-items:center;margin-bottom:8px}
-.billing-shell .line-input-row input{padding:8px 10px;font-size:12px;border:1px solid #d8e5e0;border-radius:6px;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;background:#fff;color:#10231f}
-.billing-shell .line-input-row input:focus{outline:none;border-color:#0b6655;box-shadow:0 0 0 2px #0b665522}
-.billing-shell .line-input-row button{border:1px solid #a34b43;border-radius:6px;background:#fff;color:#a34b43;font-size:14px;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center}
-.billing-shell .save-state{margin-top:14px;font-size:12px;color:#74807c;padding:8px 12px;background:#f5f8f6;border-radius:6px;border:1px solid #e8f0ec;display:inline-block}
-.billing-shell .admin-actions{display:flex;gap:8px;margin-top:10px}
-.billing-shell .admin-actions .btn-small{padding:9px 16px;font-size:12px;border-radius:8px}
-.billing-shell .btn-small{background:#fff;color:#0b6655;border:1.5px solid #0b6655;font-weight:700;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;cursor:pointer;transition:all .2s}
-.billing-shell .btn-small:hover{background:#0b6655;color:#fff}
-.billing-shell .btn-light{background:#fff;color:#10231f;border:1.5px solid #d8e5e0}
-.billing-shell .btn-light:hover{background:#f0f5f3;border-color:#0b6655;color:#0b6655}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Billing — Bahadur Tours and Travels</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="invoice.css">
+</head>
+<body>
+<main class="ad-main">
+  <div class="tabs bill-mobile-tabs" id="mobile-tabs"><button class="active" data-view="form">Edit</button><button data-view="preview">Preview</button></div>
+  <div class="bill" id="bill">
+    <form class="bill-form" id="bill-form" autocomplete="off">
 
-/* Invoice sheet (workspace preview) */
-.invoice-sheet{font-family:'Poppins',Helvetica Neue,Arial,sans-serif;font-size:13px;color:#26312c;background:#fff;width:100%;min-height:296mm;box-sizing:border-box;position:relative;page-break-after:always;border:1px solid #e8f0ec;border-radius:4px;overflow:hidden}
-.invoice-sheet .no-print{display:none!important}
-.invoice-sheet .pro-invoice-head{background:#0d3b2e;color:#fff;padding:32px 40px 28px;display:flex;justify-content:space-between;align-items:flex-start;position:relative}
-.invoice-sheet .pro-invoice-head .logo-plate{background:#fff;border-radius:4px;padding:4px;display:flex;align-items:center;justify-content:center;width:52px;height:52px;flex-shrink:0}
-.invoice-sheet .pro-invoice-head .logo-plate img{height:44px;width:auto;max-width:100%;object-fit:contain}
-.invoice-sheet .pro-invoice-head .right-side{text-align:right}
-.invoice-sheet .pro-invoice-head .gold-label{font-size:9px;letter-spacing:2.5px;color:#d3a038;text-transform:uppercase;margin-bottom:3px;font-weight:600}
-.invoice-sheet .pro-invoice-head .invoice-number{font-size:22px;font-weight:700;color:#fff;line-height:1.1}
-.invoice-sheet .pro-invoice-head .status-badge{display:inline-block;margin-top:6px;padding:2px 10px;border-radius:16px;border:1.5px solid #d3a038;background:rgba(211,160,56,0.12);color:#d3a038;font-size:10px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
-.invoice-sheet .pro-invoice-head::after{content:'';position:absolute;left:40px;right:40px;bottom:0;height:5px;background:linear-gradient(to right,#d3a038 40%,#7a1f1f 40%)}
-.invoice-sheet .pro-invoice-meta{display:flex;gap:24px;padding:22px 40px 0}
-.invoice-sheet .pro-invoice-meta .col{flex:1;min-width:0}
-.invoice-sheet .pro-invoice-meta .col.right{flex:0 0 auto;text-align:right}
-.invoice-sheet .pro-invoice-meta .col h4{font-size:9px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 5px;padding-bottom:3px;border-bottom:1px solid #d3a038;font-weight:700}
-.invoice-sheet .pro-invoice-meta .col strong{display:block;font-size:14px;font-weight:600;margin-bottom:2px;color:#10231f}
-.invoice-sheet .pro-invoice-meta .col span{display:block;font-size:11px;color:#888;margin-bottom:1px}
-.invoice-sheet .pro-invoice-meta .col.right span strong{display:inline;font-weight:600;color:#26312c}
-.invoice-sheet .pro-invoice-meta .col.right span{display:inline-block;text-align:right;margin-left:14px}
-.invoice-sheet .pro-invoice-meta .col.right span+span{margin-top:4px}
-.invoice-sheet .info-strip{display:flex;gap:12px;padding:20px 40px 0}
-.invoice-sheet .info-strip .panel{flex:1;border:1px solid #ddd;border-radius:8px;padding:12px 14px;background:#fff}
-.invoice-sheet .info-strip .panel.journey{background:#faf7ee}
-.invoice-sheet .info-strip .panel h4{font-size:9px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 10px;padding-bottom:3px;border-bottom:1px solid #d3a038;font-weight:700}
-.invoice-sheet .info-strip .travelers-chips{display:flex;flex-wrap:wrap;gap:6px}
-.invoice-sheet .info-strip .traveler-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:16px;background:#fff;border:1px solid #d8e5e0;font-size:11px;font-weight:600;color:#1a2332}
-.invoice-sheet .info-strip .traveler-chip .role{font-size:9px;font-weight:400;color:#999;text-transform:uppercase;letter-spacing:.03em}
-.invoice-sheet .info-strip .journey-facts{display:flex;flex-wrap:wrap;gap:0}
-.invoice-sheet .info-strip .journey-facts .fact{padding:1px 0}
-.invoice-sheet .info-strip .journey-facts .fact .lbl{display:inline-block;width:70px;font-size:10px;color:#888}
-.invoice-sheet .info-strip .journey-facts .fact .val{display:inline-block;font-size:11px;font-weight:500;color:#26312c;margin-right:20px}
-.invoice-sheet .pro-invoice-table-wrap{padding:20px 40px 0}
-.invoice-sheet .pro-invoice-table{width:100%;border-collapse:collapse;font-size:12px}
-.invoice-sheet .pro-invoice-table thead th{background:#0d3b2e;color:#fff;padding:10px 14px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #0d3b2e}
-.invoice-sheet .pro-invoice-table thead th:last-child,.invoice-sheet .pro-invoice-table thead th:nth-child(3),.invoice-sheet .pro-invoice-table thead th:nth-child(4){text-align:right}
-.invoice-sheet .pro-invoice-table tbody tr:nth-child(odd){background:#fafafa}
-.invoice-sheet .pro-invoice-table tbody tr:nth-child(even){background:#fff}
-.invoice-sheet .pro-invoice-table td{padding:10px 14px;border-bottom:1px solid #ececec;vertical-align:top}
-.invoice-sheet .pro-invoice-table td.desc{font-weight:600;color:#26312c}
-.invoice-sheet .pro-invoice-table td.subdesc{display:block;font-size:10px;color:#999;font-weight:400;margin-top:1px}
-.invoice-sheet .pro-invoice-table td:last-child,.invoice-sheet .pro-invoice-table td:nth-child(3),.invoice-sheet .pro-invoice-table td:nth-child(4){text-align:right}
-.invoice-sheet .pro-invoice-table td.amount{font-weight:600;color:#0d3b2e}
-.invoice-sheet .pro-invoice-bottom{display:flex;gap:20px;padding:20px 40px 0}
-.invoice-sheet .pro-invoice-bottom .left{flex:1;min-width:0}
-.invoice-sheet .pro-invoice-bottom .left .pi-block{margin-bottom:10px}
-.invoice-sheet .pro-invoice-bottom .left .pi-block .lbl{font-size:9px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin-bottom:3px;font-weight:700}
-.invoice-sheet .pro-invoice-bottom .left .pi-block p{margin:0;font-size:11px;color:#555;line-height:1.4}
-.invoice-sheet .pro-invoice-bottom .right{flex:0 0 300px;border:1px solid #ddd;border-radius:6px;padding:12px 14px;background:#fff}
-.invoice-sheet .pro-invoice-bottom .right .total-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
-.invoice-sheet .pro-invoice-bottom .right .total-row:last-child{border-bottom:none}
-.invoice-sheet .pro-invoice-bottom .right .total-row .lbl{font-size:11px;color:#555}
-.invoice-sheet .pro-invoice-bottom .right .total-row .val{font-size:12px;font-weight:600}
-.invoice-sheet .pro-invoice-bottom .right .total-row.grand .lbl{color:#0d3b2e;font-weight:700;font-size:13px}
-.invoice-sheet .pro-invoice-bottom .right .total-row.grand .val{color:#0d3b2e;font-weight:700;font-size:15px}
-.invoice-sheet .pro-invoice-bottom .right .total-row.paid .lbl{color:#16a34a;font-weight:600}
-.invoice-sheet .pro-invoice-bottom .right .total-row.paid .val{color:#16a34a;font-weight:700;font-size:13px}
-.invoice-sheet .pro-invoice-bottom .right .total-row.pending .lbl{color:#a02c22;font-weight:600}
-.invoice-sheet .pro-invoice-bottom .right .total-row.pending .val{color:#a02c22;font-weight:700;font-size:13px}
-.invoice-sheet .alert-bar{margin:12px 40px 0;padding:8px 12px;background:#fee8e8;border:1px solid #a02c22;border-left:3px solid #a02c22;border-radius:4px;display:flex;align-items:center;gap:8px;font-size:11px;color:#a02c22}
-.invoice-sheet .alert-bar .alert-icon{font-size:14px;font-weight:700}
-.invoice-sheet .alert-bar .alert-text strong{font-weight:700}
-.invoice-sheet .alert-bar.paid-alert{background:#e6f7ec;border-color:#16a34a;border-left-color:#16a34a;color:#16a34a}
-.invoice-sheet .signature-row{display:flex;justify-content:space-between;align-items:flex-end;padding:20px 40px 0;gap:16px}
-.invoice-sheet .signature-row .sig-block{flex:1;min-width:0}
-.invoice-sheet .signature-row .sig-line{border-bottom:1.5px solid #26312c;height:32px}
-.invoice-sheet .signature-row .sig-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-top:3px;font-weight:600}
-.invoice-sheet .signature-row .sig-seal{width:60px;height:60px;border:2px dashed #d3a038;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:#d3a038;text-align:center;transform:rotate(-6deg);font-weight:700;letter-spacing:.03em;text-transform:uppercase;line-height:1.3;flex-shrink:0}
-.invoice-sheet .pro-invoice-spacer{flex:1 0 auto;display:block;min-height:0}
-.invoice-sheet .pro-invoice-footer{border-top:1px solid #ddd;padding:10px 40px;display:flex;justify-content:space-between;font-size:10px;color:#888;background:#fff}
-.invoice-sheet .pro-invoice-footer .conditions ol{margin:0;padding:0 0 0 14px;display:inline}
-.invoice-sheet .pro-invoice-footer .conditions li{margin-bottom:1px}
-.invoice-sheet .pro-invoice-footer .contact{text-align:right;line-height:1.5}
-.invoice-sheet .pro-invoice-footer .thank-you{font-size:12px;font-weight:700;color:#0d3b2e;display:block;margin-top:1px}
-@media(max-width:1000px){.billing-shell{grid-template-columns:1fr}.invoice-sheet{min-height:auto;border-radius:0}}
-</style>
-<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" />
-</head><body class="billing-page"><header class="nav-wrap no-print"><nav class="nav glass"><a class="brand" href="admin.html"><img src="assets/bahadur-logo-original.png" alt="Bahadur Real-Estate Tours and Travels"><span>Travel billing</span></a><div class="nav-links"><a href="admin.html">Dashboard</a><a href="packages-admin.html">Packages</a>
-    <a href="customers-admin.html" ><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a></div><div class="nav-actions"><button class="btn btn-small btn-light" id="invoice-save">Save invoice</button><button class="btn btn-small" id="invoice-print">Print / PDF</button><button class="btn btn-small" id="invoice-download">Download PDF</button></div></nav></header><main class="admin-shell"><div class="admin-grid">
-<aside class="admin-side glass">
-  <img src="assets/bahadur-logo-original.png" alt="Bahadur Real-Estate Tours and Travels">
-  <nav>
-    <a href="admin.html"><i class="hgi-stroke hgi-dashboard-square-01"></i> Business overview</a>
-    <a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i> Bookings</a>
-    <a href="invoices-admin.html"><i class="hgi-stroke hgi-receipt-02"></i> Invoices</a>
-    <a href="packages-admin.html"><i class="hgi-stroke hgi-layers-01"></i> Package manager</a>
-    <a href="customers-admin.html"><i class="hgi-stroke hgi-user-multiple-02"></i> Customers</a>
-    <a href="billing.html" class="active"><i class="hgi-stroke hgi-credit-card"></i> Billing</a>
-    <a href="reviews-admin.html"><i class="hgi-stroke hgi-star"></i> Reviews</a>
-    <a href="blog-admin.html"><i class="hgi-stroke hgi-document-validation"></i> Travel Guides</a>
-    <a href="media-manager.html"><i class="hgi-stroke hgi-image-01"></i> Guest media</a>
-    <a href="reels-admin.html"><i class="hgi-stroke hgi-video-01"></i> Reels</a>
-  </nav>
-  <button class="admin-logout-btn" id="admin-logout"
-    onclick="localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html'">
-    <i class="hgi-stroke hgi-logout-03"></i> Logout
-  </button>
-</aside>
-<div class="admin-main glass billing-shell pro-billing">
+      <details class="sec" open><summary><span class="n">1</span>Document<small id="sum-doc"></small></summary><div>
+        <div class="tabs" id="doc-type" style="margin-bottom:10px"><button type="button" data-type="invoice" class="active">Invoice</button><button type="button" data-type="quotation">Quotation</button></div>
+        <div class="form-grid">
+          <label class="field full"><span>Number</span><input name="invoice_number" placeholder="Created when you save"></label>
+          <label class="field"><span>Date</span><input type="date" name="invoice_date" required></label>
+          <label class="field"><span id="due-label">Due date</span><input type="date" name="due_date"></label>
+          <label class="field"><span>Status</span><select name="status"><option>Draft</option><option>Sent</option></select></label>
+          <label class="field"><span>Booking reference</span><input name="booking_ref" list="booking-refs" placeholder="BT12345678"></label>
+        </div>
+      </div></details>
 
-<!-- ═══════════════ FORM CONTROLS (all IDs preserved for billing.js) ═══════════════ -->
-<section class="invoice-controls glass no-print">
-  <span class="kicker">Billing workspace</span>
-  <h1>Issue a travel invoice.</h1>
-  <p>Fill in the details below. The invoice preview updates live — download or print when ready.</p>
+      <details class="sec" open><summary><span class="n">2</span>Customer<small id="sum-customer"></small></summary><div>
+        <div class="form-grid">
+          <label class="field full"><span>Customer name <em>*</em></span><input name="customer_name" list="customer-list" required placeholder="Start typing to pick a saved customer"></label>
+          <label class="field"><span>Phone</span><input name="phone" placeholder="+91"></label>
+          <label class="field"><span>Email</span><input name="email" type="email"></label>
+          <label class="field full"><span>Billing address</span><textarea name="customer_address" rows="2"></textarea></label>
+          <label class="field"><span>Customer GSTIN</span><input name="customer_gstin" placeholder="Optional"></label>
+          <label class="field"><span>Place of supply</span><input name="place_of_supply" placeholder="Karnataka"></label>
+        </div>
+      </div></details>
 
-  <div class="control-section">
-    <h3>Invoice &amp; Customer</h3>
-    <div class="form-grid">
-      <label>Invoice number<input id="invoice-number" required></label>
-      <label>Invoice date<input id="invoice-date" type="date" required></label>
-      <label>Due date<input id="invoice-due" type="date"></label>
-      <label>Booking reference<input id="invoice-booking"></label>
-      <label class="span-2">Customer name
-        <select id="invoice-customer" required>
-          <option value="">Select a customer or enter manually</option>
-          <option value="__manual__">+ Enter new customer name</option>
-        </select>
-      </label>
-      <label class="span-2" id="new-customer-field" style="display:none">
-        Or enter new name
-        <input id="invoice-customer-new" placeholder="Customer full name">
-      </label>
-      <label class="span-2">Billing address<textarea id="invoice-address" rows="2" placeholder="Full billing address"></textarea></label>
-      <label>Phone<input id="invoice-phone" placeholder="+91 ..."></label>
-      <label>Email<input id="invoice-email" type="email" placeholder="email@example.com"></label>
-    </div>
+      <details class="sec" open><summary><span class="n">3</span>Journey<small id="sum-trip"></small></summary><div>
+        <div class="form-grid">
+          <label class="field full"><span>Package</span><input name="td.package_name" list="package-list" placeholder="Pick a package or type a custom journey"></label>
+          <label class="field"><span>Trip type</span><select name="td.package_type"><option value="domestic">Domestic</option><option value="international">International</option><option value="pilgrimage">Pilgrimage</option><option value="transport">Vehicle hire</option></select></label>
+          <label class="field"><span>Destination</span><input name="td.destination"></label>
+          <label class="field"><span>Travel date</span><input type="date" name="td.travel_date"></label>
+          <label class="field"><span>Return date</span><input type="date" name="td.return_date"></label>
+        </div>
+      </div></details>
+
+      <details class="sec"><summary><span class="n">4</span>Travellers<small id="sum-pax">None added</small></summary><div>
+        <div class="row-line row-pax row-head"><span>Name</span><span>Type</span><span>Age</span><span class="pp">Passport / ID</span><span></span></div>
+        <div class="rows" id="pax-rows"></div>
+        <div class="chips"><button type="button" id="add-pax">+ Add traveller</button><button type="button" id="same-as-customer">Use customer name</button></div>
+        <label class="field" style="margin-top:10px"><span>Or paste a list (one per line: Name - Age)</span><textarea id="pax-paste" rows="2" placeholder="Rahul Sharma - 35&#10;Aarav Sharma - 8"></textarea></label>
+        <button type="button" class="btn sm" id="pax-apply" style="margin-top:6px">Add these names</button>
+      </div></details>
+
+      <details class="sec"><summary><span class="n">5</span>Flight &amp; stay<small id="sum-extra">Not included</small></summary><div>
+        <label class="check"><input type="checkbox" name="td.flight.included"> Show flight on the invoice</label>
+        <div class="form-grid" id="flight-fields" style="margin-top:8px" hidden>
+          <label class="field"><span>Airline</span><input name="td.flight.airline"></label>
+          <label class="field"><span>Flight no.</span><input name="td.flight.number"></label>
+          <label class="field"><span>From</span><input name="td.flight.from"></label>
+          <label class="field"><span>To</span><input name="td.flight.to"></label>
+          <label class="field"><span>Departure</span><input type="datetime-local" name="td.flight.departure"></label>
+          <label class="field"><span>Arrival</span><input type="datetime-local" name="td.flight.arrival"></label>
+          <label class="field"><span>PNR</span><input name="td.flight.pnr"></label>
+          <label class="field"><span>Cabin</span><select name="td.flight.cabin"><option>Economy</option><option>Premium economy</option><option>Business</option><option>First</option></select></label>
+          <label class="field full"><span>Baggage</span><input name="td.flight.baggage" placeholder="20 kg checked + 7 kg cabin"></label>
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" name="td.hotel.included"> Show hotel on the invoice</label>
+        <div class="form-grid" id="hotel-fields" style="margin-top:8px" hidden>
+          <label class="field full"><span>Hotel</span><input name="td.hotel.name"></label>
+          <label class="field"><span>City</span><input name="td.hotel.city"></label>
+          <label class="field"><span>Category</span><input name="td.hotel.category" placeholder="4 star"></label>
+          <label class="field"><span>Check-in</span><input type="date" name="td.hotel.checkin"></label>
+          <label class="field"><span>Check-out</span><input type="date" name="td.hotel.checkout"></label>
+          <label class="field"><span>Room type</span><input name="td.hotel.room_type"></label>
+          <label class="field"><span>Rooms</span><input type="number" min="1" name="td.hotel.rooms"></label>
+          <label class="field"><span>Meal plan</span><input name="td.hotel.meals"></label>
+          <label class="field"><span>Confirmation no.</span><input name="td.hotel.confirmation"></label>
+        </div>
+      </div></details>
+
+      <details class="sec" open><summary><span class="n">6</span>Charges &amp; tax<small id="sum-total"></small></summary><div>
+        <div class="row-line row-charge row-head"><span>Description</span><span class="sac">SAC</span><span>Qty</span><span>Rate ₹</span><span></span></div>
+        <div class="rows" id="line-rows"></div>
+        <div class="chips" id="quick-lines"><button type="button" data-line="">+ Add charge</button><button type="button" data-line="Package cost – adult">Adult</button><button type="button" data-line="Package cost – child">Child</button><button type="button" data-line="Flight tickets">Flight</button><button type="button" data-line="Hotel accommodation">Hotel</button><button type="button" data-line="Visa charges">Visa</button><button type="button" data-line="Ground transfers">Transfers</button><button type="button" data-line="Service fee">Service fee</button></div>
+        <div class="form-grid" style="margin-top:12px">
+          <label class="field"><span>Discount ₹</span><input type="number" min="0" step="0.01" name="discount"></label>
+          <label class="field"><span>Tax</span><select name="tax_mode"><option value="none">No tax</option><option value="cgst_sgst">CGST + SGST (in state)</option><option value="igst">IGST (other state)</option></select></label>
+          <label class="field" id="tax-rate-field"><span>GST rate %</span><input type="number" min="0" step="0.01" name="tax_rate"></label>
+        </div>
+        <div class="sum" id="sum-box"></div>
+      </div></details>
+
+      <details class="sec" id="payment-sec" open><summary><span class="n">7</span>Payment<small id="sum-paid"></small></summary><div>
+        <div id="advance-box" class="form-grid">
+          <label class="field"><span>Advance received ₹</span><input type="number" min="0" step="0.01" id="advance-amount" placeholder="0"></label>
+          <label class="field"><span>Paid by</span><select id="advance-mode"><option>UPI</option><option>Bank transfer</option><option>Cash</option><option>Card</option><option>Cheque</option></select></label>
+          <label class="field full"><span>Payment reference</span><input id="advance-ref" placeholder="UTR or transaction number"></label>
+        </div>
+        <div id="ledger-box" hidden>
+          <table class="ledger" id="ledger"></table>
+          <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap"><button type="button" class="btn sm primary" id="add-payment"><i class="hgi-stroke hgi-add-01"></i>Record payment</button><button type="button" class="btn sm" id="add-refund">Record refund</button></div>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <label class="field full"><span>Payment instructions</span><textarea name="payment_details" rows="2" placeholder="Bank and UPI details come from Business settings. Add anything extra here."></textarea></label>
+          <label class="field full"><span>Invoice note</span><textarea name="notes" rows="2"></textarea></label>
+          <label class="field full"><span>Remarks</span><textarea name="payment_remarks" rows="2"></textarea></label>
+        </div>
+      </div></details>
+    </form>
+
+    <section class="bill-preview" aria-label="Invoice preview">
+      <div class="stage" id="stage"><div class="stage-inner" id="sheet"></div></div>
+    </section>
   </div>
+</main>
 
-  <div class="control-section">
-    <h3>Passenger Names <span style="font-weight:400;font-size:11px;color:#74807c">(add multiple — each entry feeds the PDF traveler list)</span></h3>
-    <div class="passenger-table-wrap" style="margin-top:12px">
-      <table class="passenger-table" id="passenger-table">
-        <thead><tr><th style="width:44px">No.</th><th>Passenger Name</th><th style="width:90px">Type</th><th style="width:80px">Age</th></tr></thead>
-        <tbody>
-          <tr id="main-passenger-row">
-            <td>1</td>
-            <td><input type="text" id="passenger-1-name" placeholder="Main customer / lead traveler"></td>
-            <td><select id="passenger-1-type"><option value="adult">Adult</option><option value="kid">Kid</option></select></td>
-            <td><input type="number" id="passenger-1-age" min="0" max="120" placeholder="Age"></td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="mini-btn" id="add-passenger-btn" style="margin-top:10px">＋ Add Passenger</button>
-    </div>
-    <label style="margin-top:14px;font-size:11px;color:#74807c;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Or paste all names (one per line — format: Name - Age)</label>
-    <textarea id="invoice-names-plain" rows="3" placeholder="Rahul Sharma - 35&#10;Priya Sharma - 32&#10;Aarav Sharma - 8" style="margin-top:6px;width:100%"></textarea>
-    <label style="margin-top:10px;font-size:11px;color:#74807c;text-transform:uppercase;letter-spacing:.04em;font-weight:600">All customer names (for multi-customer invoices)</label>
-    <textarea id="invoice-multi-customers" rows="2" placeholder="All customer names, one per line" style="margin-top:6px;width:100%"></textarea>
-  </div>
-
-  <div class="kids-names-section" id="kids-names-section">
-    <h3>Kids Names</h3>
-    <textarea id="invoice-kids-names-display" rows="2" placeholder="Enter kids names"></textarea>
-  </div>
-
-  <div class="control-section">
-    <h3>Payment Tracking</h3>
-    <div class="form-grid">
-      <label>Payment status
-        <select id="payment-status">
-          <option value="Draft">Draft</option>
-          <option value="Sent">Sent</option>
-          <option value="Part paid">Part paid</option>
-          <option value="Paid">Paid</option>
-        </select>
-      </label>
-      <label class="span-2">Pending amount to collect<input id="invoice-pending-amount" type="number" min="0" step="0.01" placeholder="₹0" value="0"></label>
-      <label class="span-2">Paid amount<input id="invoice-paid-amount" type="number" min="0" step="0.01" placeholder="₹0" value="0"></label>
-    </div>
-  </div>
-
-  <div class="control-section">
-    <h3>Travel Booking</h3>
-    <div class="form-grid">
-      <label class="span-2">Package / journey name<input id="invoice-trip" required placeholder="e.g. Weekend Goa Package"></label>
-      <label>Package type
-        <select id="invoice-type">
-          <option value="domestic">Domestic</option>
-          <option value="international">International</option>
-        </select>
-      </label>
-      <label>Travel date<input id="invoice-travel-date" type="date"></label>
-      <label>Travellers<input id="invoice-travellers" type="number" min="1" value="2"></label>
-      <label>Kids<input id="invoice-kids" type="number" min="0" value="0"></label>
-      <label class="span-2">Kids names<textarea id="invoice-kids-names" rows="2" placeholder="Raju, Rani"></textarea></label>
-      <label>Kids offer price<input id="invoice-kids-price" type="number" min="0" step="0.01" value="0" placeholder="₹0 per kid"></label>
-      <label class="span-2">Destination<input id="invoice-destination" placeholder="Goa, Kerala, etc."></label>
-    </div>
-  </div>
-
-  <div class="control-section international-controls" id="international-controls" style="display:none">
-    <div class="section-toggle"><h3>International arrangements</h3><label><input type="checkbox" id="flight-included"> Flight booked</label></div>
-    <div class="form-grid flight-fields">
-      <label>Airline<input id="flight-airline"></label>
-      <label>Flight number<input id="flight-number"></label>
-      <label>PNR / ticket reference<input id="flight-pnr"></label>
-      <label>Cabin class<select id="flight-cabin"><option>Economy</option><option>Premium economy</option><option>Business</option><option>First</option></select></label>
-      <label>Departure airport<input id="flight-from"></label>
-      <label>Arrival airport<input id="flight-to"></label>
-      <label>Departure date &amp; time<input id="flight-departure" type="datetime-local"></label>
-      <label>Arrival date &amp; time<input id="flight-arrival" type="datetime-local"></label>
-      <label class="span-2">Baggage allowance<input id="flight-baggage" placeholder="20 kg checked + 7 kg cabin"></label>
-    </div>
-  </div>
-
-  <div class="control-section">
-    <div class="section-toggle"><h3>Accommodation</h3><label><input type="checkbox" id="hotel-included"> Hotel booked</label></div>
-    <div class="form-grid hotel-fields">
-      <label class="span-2">Hotel / property<input id="hotel-name"></label>
-      <label>City<input id="hotel-city"></label>
-      <label>Category<input id="hotel-category" placeholder="4 star"></label>
-      <label>Check-in<input id="hotel-checkin" type="date"></label>
-      <label>Check-out<input id="hotel-checkout" type="date"></label>
-      <label>Room type<input id="hotel-room-type"></label>
-      <label>Number of rooms<input id="hotel-rooms" type="number" min="1" value="1"></label>
-      <label>Meal plan<input id="hotel-meals" placeholder="Breakfast included"></label>
-      <label class="span-2">Confirmation number<input id="hotel-confirmation"></label>
-    </div>
-  </div>
-
-  <div class="control-section line-editor">
-    <div class="panel-head"><h3>Charges <span style="font-weight:400;font-size:11px;color:#74807c">(each line feeds the PDF items table)</span></h3><button class="mini-btn" id="add-line">＋ Add charge</button></div>
-    <div id="line-inputs"></div>
-  </div>
-
-  <div class="control-section">
-    <h3>Totals &amp; Payment</h3>
-    <div class="form-grid">
-      <label>Tax label<input id="tax-label" value="GST"></label>
-      <label>Tax rate %<input id="tax-rate" type="number" min="0" step="0.01" value="0"></label>
-      <label>Discount ₹<input id="discount" type="number" min="0" step="0.01" value="0"></label>
-      <label>Status<select id="payment-status2"><option>Draft</option><option>Sent</option><option>Part paid</option><option>Paid</option><option>Cancelled</option></select></label>
-      <label class="span-2">Payment instructions<textarea id="payment-details" rows="3" placeholder="Bank details, UPI ID, cash terms..."></textarea></label>
-      <label class="span-2">Invoice note<textarea id="invoice-notes" rows="2">Services are subject to the confirmed itinerary and supplier terms.</textarea></label>
-      <label>Remarks / Payment note<textarea id="invoice-payment-remarks" rows="2" placeholder="Add payment remarks, pending amount notes, etc."></textarea></label>
-    </div>
-  </div>
-
-  <div class="save-state" id="invoice-state" style="margin-top:12px;font-size:12px;color:#74807c">Not saved.</div>
-  <input type="hidden" id="invoice-db-id">
-  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <button class="btn btn-small" id="load-invoice-btn">Load invoice</button>
-    <span style="color:#74807c;font-size:12px">Invoice ID:</span>
-    <input id="load-invoice-id" placeholder="e.g. 87ff78c1" style="width:140px;padding:7px;border:1px solid var(--line);border-radius:6px;font-size:12px">
-  </div>
-  <div id="admin-actions" style="margin-top:10px;display:none">
-    <button class="btn btn-small" id="invoice-mark-paid">Mark as Paid</button>
-    <button class="btn btn-small" id="invoice-view-bill">View receipt</button>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════ PROFESSIONAL INVOICE SHEET (A4 — captured by PDF download) ═══════════════════════════════════════════════════ -->
-<section class="invoice-sheet pro-invoice" id="invoice-sheet">
-
-  <!-- HEADER BAND -->
-  <header class="pro-invoice-head">
-    <div class="logo-plate"><img src="assets/bahadur-logo-original.png" alt="Bahadur Tours"></div>
-    <div class="right-side">
-      <div class="gold-label">Travel Invoice</div>
-      <div class="invoice-number" id="out-number">—</div>
-      <span class="status-badge" id="out-status">DRAFT</span>
-    </div>
-  </header>
-
-  <!-- THREE-COLUMN META ROW -->
-  <div class="pro-invoice-meta">
-    <div class="col">
-      <h4>From</h4>
-      <strong>Bahadur Tours &amp; Travels</strong>
-      <span>Smart City Building, Puttur Road</span>
-      <span>1358BA, Vitla, Karnataka 574243</span>
-      <span>bahadurtourstravels@gmail.com</span>
-      <span>+91 91874 40916</span>
-    </div>
-    <div class="col">
-      <h4>Bill To</h4>
-      <strong id="out-customer">Customer name</strong>
-      <span id="out-address">Billing address</span>
-      <span id="out-contact"></span>
-    </div>
-    <div class="col right">
-      <h4>Reference</h4>
-      <span>Invoice date: <strong><span id="out-date">—</span></strong></span>
-      <span>Due date: <strong><span id="out-due">—</span></strong></span>
-      <span>Booking ref: <strong><span id="out-booking">—</span></strong></span>
-    </div>
-  </div>
-
-  <!-- TWO-PANEL INFO STRIP: TRAVELERS + JOURNEY -->
-  <div class="info-strip">
-    <div class="panel">
-      <h4>Travelers</h4>
-      <div class="travelers-chips" id="out-travelers-list"></div>
-    </div>
-    <div class="panel journey">
-      <h4>Journey</h4>
-      <div class="journey-facts">
-        <div class="fact"><span class="lbl">Package</span><span class="val" id="out-trip">Travel package</span></div>
-        <div class="fact"><span class="lbl">Destination</span><span class="val" id="out-destination">Destination</span></div>
-        <div class="fact"><span class="lbl">Travel date</span><span class="val" id="out-travel-date">—</span></div>
-        <div class="fact"><span class="lbl">Type</span><span class="val" id="out-type">Domestic</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ITEMS TABLE -->
-  <div class="pro-invoice-table-wrap">
-    <table class="pro-invoice-table">
-      <thead><tr><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Amount</th></tr></thead>
-      <tbody id="out-lines"></tbody>
-    </table>
-  </div>
-
-  <!-- BOTTOM ROW: PAYMENT INFO + TOTALS BOX -->
-  <div class="pro-invoice-bottom">
-    <div class="left">
-      <div class="pi-block">
-        <div class="lbl">Payment Instructions</div>
-        <p id="out-payment">Payment details will appear here.</p>
-      </div>
-      <div class="pi-block">
-        <div class="lbl">Note</div>
-        <p id="out-notes"></p>
-      </div>
-      <div id="out-payment-remarks" style="margin-top:12px;padding:10px;background:#fff3d9;border-radius:6px;border:1px solid #f5d9a0;font-size:12px;display:none"></div>
-    </div>
-    <div class="right">
-      <div class="total-row"><span class="lbl">Subtotal</span><span class="val" id="out-subtotal">₹0.00</span></div>
-      <div class="total-row"><span class="lbl">Discount</span><span class="val" id="out-discount">− ₹0.00</span></div>
-      <div class="total-row"><span class="lbl" id="out-tax-label">GST (0%)</span><span class="val" id="out-tax">₹0.00</span></div>
-      <div class="total-row grand"><span class="lbl">Total</span><span class="val" id="out-total">₹0.00</span></div>
-      <div class="total-row paid"><span class="lbl">Paid</span><span class="val" id="out-paid">₹0.00</span></div>
-      <div class="total-row pending"><span class="lbl">Pending</span><span class="val" id="out-pending">₹0.00</span></div>
-    </div>
-  </div>
-
-  <!-- FULL-WIDTH RED ALERT BAR -->
-  <div class="alert-bar" id="out-pending-alert-box" style="display:none">
-    <span class="alert-icon">⚠</span>
-    <span class="alert-text"><strong>Pending Payment:</strong> <span id="out-pending-alert">₹0.00</span> still to be collected</span>
-  </div>
-  <div class="alert-bar" id="out-paid-success-box" style="display:none;background:#e6f7ec;border-color:#16a34a;border-left-color:#16a34a;color:#16a34a">
-    <span class="alert-icon">✓</span>
-    <span class="alert-text"><strong>Payment Received:</strong> <span id="out-paid-alert">₹0.00</span> paid</span>
-  </div>
-
-  <!-- SIGNATURE ROW -->
-  <div class="signature-row">
-    <div class="sig-block">
-      <div class="sig-line"></div>
-      <div class="sig-label">Customer Signature</div>
-    </div>
-    <div class="sig-seal">Auth.<br>Signatory</div>
-    <div class="sig-block">
-      <div class="sig-line"></div>
-      <div class="sig-label">For Bahadur Tours &amp; Travels</div>
-    </div>
-  </div>
-
-  <div class="pro-invoice-spacer"></div>
-
-  <!-- FOOTER -->
-  <footer class="pro-invoice-footer">
-    <div class="conditions">
-      <strong>Booking Conditions</strong>
-      <ol>
-        <li>Services are confirmed only as stated in the final itinerary.</li>
-        <li>Airline, hotel and cancellation rules apply to their respective services.</li>
-        <li>Quote the invoice and booking references with every payment.</li>
-      </ol>
-    </div>
-    <div class="contact">
-      <span>bahadurtourstravels@gmail.com · +91 91874 40916</span>
-      <span class="thank-you">Thank you for travelling with Bahadur.</span>
-    </div>
-  </footer>
-
-</section>
-
-</div></div></main><script type="module" src="billing.js"></script></body></html>
+<datalist id="customer-list"></datalist>
+<datalist id="package-list"></datalist>
+<datalist id="booking-refs"></datalist>
+<script src="assets/vendor/qrcode.js"></script>
+<script type="module" src="billing.js"></script>
+</body>
+</html>

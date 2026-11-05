@@ -1,0 +1,80 @@
+/* The one invoice stylesheet: live preview, print and PDF all render from this. */
+.inv{--i-sky:#0ea5e9;--i-deep:#0369a1;--i-tint:#eff8ff;--i-tint2:#e0f2fe;--i-line:#cfe6f7;--i-ink:#0c2740;--i-mute:#577087;--i-gold:#d9a84e;
+  position:relative;width:794px;min-height:1123px;background:#fff;color:var(--i-ink);font:400 12px/1.45 'Instrument Sans','Segoe UI',Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.inv *{box-sizing:border-box}
+.inv h4{font:600 10px/1.2 'Instrument Sans','Segoe UI',Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--i-deep);margin:0 0 5px}
+.inv p{margin:0}
+.inv-top{height:9px;background:linear-gradient(90deg,#7dd3fc 0%,#0ea5e9 45%,#0369a1 100%)}
+.inv-head{display:flex;justify-content:space-between;align-items:stretch;gap:24px;padding:15px 36px 12px}
+.inv-brand{display:flex;gap:16px;align-items:center;min-width:0}
+.inv-brand img{width:128px;height:auto;display:block;flex:none}
+.inv-co{font-size:11px;color:var(--i-mute);line-height:1.5;border-left:1px solid var(--i-line);padding-left:14px}
+.inv-co strong{display:block;color:var(--i-ink);font:600 14px/1.25 'Bricolage Grotesque','Instrument Sans',Arial,sans-serif;margin-bottom:3px}
+.inv-title{flex:none;width:226px;background:linear-gradient(150deg,#0ea5e9,#0369a1);color:#fff;border-radius:14px;padding:13px 16px;display:flex;flex-direction:column;justify-content:center}
+.inv-title span{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#dbf1ff}
+.inv-title strong{font:600 18px/1.25 'Bricolage Grotesque','Instrument Sans',Arial,sans-serif;margin-top:3px;word-break:break-word}
+.inv-title em{font-style:normal;align-self:flex-start;margin-top:7px;background:#fff;color:var(--i-deep);font-size:10.5px;font-weight:600;border-radius:99px;padding:1px 9px}
+.inv-title em.paid{color:#0a7d55}.inv-title em.due{color:#c2342c}
+.inv-body{padding:0 36px;flex:1;display:flex;flex-direction:column;gap:8px}
+.inv-grid3{display:grid;grid-template-columns:1.25fr 1.15fr .95fr;gap:8px}
+.inv-box{background:var(--i-tint);border:1px solid var(--i-line);border-radius:10px;padding:8px 12px;min-width:0}
+.inv-box strong.big{display:block;font:600 14px/1.25 'Bricolage Grotesque','Instrument Sans',Arial,sans-serif;margin-bottom:2px}
+.inv-box p{color:var(--i-mute);font-size:11px;word-break:break-word}
+.inv-kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px}
+.inv-kv dt{color:var(--i-mute)}.inv-kv dd{margin:0;text-align:right;font-weight:600;word-break:break-word}
+.inv-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.inv-box.line{background:#fff}
+.inv-pax{width:100%;border-collapse:collapse;font-size:11px}
+.inv-pax td{padding:2.5px 0;border-bottom:1px dashed var(--i-line)}
+.inv-pax tr:last-child td{border-bottom:0}
+.inv-pax td:first-child{width:18px;color:var(--i-mute)}
+.inv-pax td:nth-child(2){font-weight:600}
+.inv-pax td:last-child{text-align:right;color:var(--i-mute);white-space:nowrap}
+.inv-paxcols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.inv-table{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px}
+.inv-table th{background:#0284c7;color:#fff;font-weight:600;font-size:10.5px;letter-spacing:.03em;text-align:left;padding:6.5px 10px}
+.inv-table th:first-child{border-radius:9px 0 0 9px}.inv-table th:last-child{border-radius:0 9px 9px 0}
+.inv-table td{padding:5.5px 10px;border-bottom:1px solid var(--i-line);vertical-align:top}
+.inv-table tbody tr:nth-child(even) td{background:#f8fcff}
+.inv-table .r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.inv-table .c{text-align:center}
+.inv-table td.d{font-weight:600}
+.inv-low{display:grid;grid-template-columns:1fr 268px;gap:12px;align-items:start}
+.inv-left{display:flex;flex-direction:column;gap:6px;min-width:0}
+.inv-words{background:var(--i-tint);border-left:3px solid var(--i-sky);border-radius:0 9px 9px 0;padding:5px 11px;font-size:11px}
+.inv-words b{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--i-deep);font-weight:600}
+.inv-pay{display:flex;gap:12px;align-items:center}
+.inv-pay .kv{flex:1;min-width:0;font-size:11px}
+.inv-pay .kv div{display:flex;gap:6px}.inv-pay .kv span{color:var(--i-mute);width:64px;flex:none}.inv-pay .kv b{font-weight:600;word-break:break-all}
+.inv-qr{flex:none;text-align:center;font-size:9px;color:var(--i-mute)}
+.inv-qr img{width:70px;height:70px;display:block;margin-bottom:2px}
+.inv-totals{border:1px solid var(--i-line);border-radius:11px;overflow:hidden}
+.inv-totals div{display:flex;justify-content:space-between;gap:10px;padding:3.5px 12px;font-size:11.5px;font-variant-numeric:tabular-nums}
+.inv-totals div span{color:var(--i-mute)}.inv-totals div b{font-weight:600;white-space:nowrap}
+.inv-totals .grand{background:var(--i-tint2);padding:6px 12px}
+.inv-totals .grand span{color:var(--i-ink);font-weight:600}.inv-totals .grand b{font:600 15px 'Bricolage Grotesque','Instrument Sans',Arial,sans-serif}
+.inv-totals .paid b{color:#0a7d55}
+.inv-totals .bal{background:linear-gradient(150deg,#0ea5e9,#0369a1);padding:7px 12px}
+.inv-totals .bal span,.inv-totals .bal b{color:#fff}.inv-totals .bal span{font-weight:600}.inv-totals .bal b{font:600 16px 'Bricolage Grotesque','Instrument Sans',Arial,sans-serif}
+.inv-totals .bal.settled{background:#0a7d55}
+.inv-ledger{width:100%;font-size:10.5px;border-collapse:collapse}
+.inv-ledger th{text-align:left;color:var(--i-mute);font-weight:600;padding:2px 0;border-bottom:1px solid var(--i-line)}
+.inv-ledger td{padding:2.5px 0;border-bottom:1px dashed var(--i-line)}
+.inv-ledger .r{text-align:right}
+.inv-notes{font-size:10.5px;color:var(--i-mute);white-space:pre-line}
+.inv-sign{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:18px;align-items:end;margin-top:auto;padding-top:6px}
+.inv-sign .terms{grid-column:1/3;font-size:9.8px;color:var(--i-mute)}
+.inv-sign ol{margin:0;padding-left:14px}
+.inv-sign .s{text-align:center;font-size:10.5px;color:var(--i-mute)}
+.inv-sign .s .gap{height:32px;border-bottom:1.2px solid var(--i-ink);margin-bottom:4px}
+.inv-sign .s strong{display:block;color:var(--i-ink);font-weight:600}
+.inv-foot{margin-top:9px;background:linear-gradient(90deg,#0369a1,#0ea5e9);color:#fff;padding:9px 36px;display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:10.5px}
+.inv-foot strong{font:600 12.5px 'Bricolage Grotesque','Instrument Sans',Arial,sans-serif}
+.inv-stamp{position:absolute;top:330px;right:64px;transform:rotate(-14deg);border:3px solid #0a7d55;color:#0a7d55;border-radius:12px;padding:5px 16px;font:700 30px 'Bricolage Grotesque',Arial,sans-serif;letter-spacing:.06em;opacity:.16;pointer-events:none}
+.inv-stamp.void{border-color:#c2342c;color:#c2342c;opacity:.22}
+.inv-receipt{min-height:560px}
+.inv-receipt .inv-rcpt-amt{background:linear-gradient(150deg,#0ea5e9,#0369a1);color:#fff;border-radius:13px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.inv-receipt .inv-rcpt-amt span{font-size:11px;color:#dbf1ff}
+.inv-receipt .inv-rcpt-amt strong{font:600 26px 'Bricolage Grotesque',Arial,sans-serif;display:block}
+@page{size:A4;margin:0}
+@media print{.inv{width:210mm;min-height:296.5mm;page-break-after:auto}.inv-table tr,.inv-box,.inv-low{break-inside:avoid}.inv-receipt{min-height:auto}}

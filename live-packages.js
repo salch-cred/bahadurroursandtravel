@@ -1,119 +1,102 @@
-const slug=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+// Package cards and the full catalogue page. Combines packages from the admin with the destination list.
+import { destinations, loadCommonsPhoto } from './destinations.js';
 
-function getTypeLabel(p) {
-  const cat = String(p.category||'').toLowerCase();
-  const type = String(p.package_type||'domestic').toLowerCase();
-  if(type==='transport' || p.slug?.startsWith('force-urbania') || cat.includes('vehicle')) return 'Vehicle Hire';
-  if(type==='pilgrimage' || cat.includes('umrah') || cat.includes('pilgrim')) return 'Pilgrimage';
-  if(type==='international') return 'International';
-  if(cat.includes('lakshadweep') || cat.includes('island')) return 'Island';
-  return 'Domestic';
-}
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const slugify = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-function filterCategory(p){
-  const type = String(p.package_type||'').toLowerCase();
-  const cat = `${p.category||''} ${p.name||''} ${p.slug||''}`.toLowerCase();
-  if(type==='pilgrimage' || cat.includes('umrah') || cat.includes('ziyarat') || cat.includes('tirupati') || cat.includes('ajmer')) return 'pilgrimage';
-  if(type==='international') return 'international';
-  if(type==='transport' || cat.includes('urbania') || cat.includes('vehicle')) return 'local';
-  if(cat.includes('lakshadweep') || cat.includes('island') || cat.includes('goa') || cat.includes('andaman')) return 'local';
-  if(cat.includes('family')) return 'family';
+export const FALLBACK_PACKAGES = [
+  { name: 'Lakshadweep Island Escape', slug: 'lakshadweep', region: 'Agatti Island, Lakshadweep', duration: '4 days · 3 nights', price: 'Custom quote', summary: 'An Agatti island escape with permit guidance, stay, meals, transfers and water activities.', image_url: 'assets/images/island-beach.jpg', category: 'Lakshadweep' },
+  { name: 'Umrah Package', slug: 'umrah', region: 'Makkah & Madinah', duration: '15 days', price: 'Custom quote', summary: 'A guided spiritual journey with accommodation, coordinated travel and support.', image_url: 'assets/images/umrah/kaaba-sunset.jpg', package_type: 'pilgrimage' },
+  { name: 'Kashmir', slug: 'kashmir', region: 'Srinagar · Gulmarg · Pahalgam', duration: '5 days · 4 nights', price: 'Custom quote', summary: 'A scenic circuit of lakes, gardens and mountain valleys.', image_url: 'assets/images/packages/kashmir.jpg' },
+  { name: 'Manali', slug: 'manali', region: 'Himachal Pradesh, India', duration: '5 days · 4 nights', price: 'Custom quote', summary: 'Snow valleys, seasonal adventure sports and Himalayan scenery.', image_url: 'assets/images/package-posters/manali.jpg' },
+];
+
+export function groupOf(p) {
+  const type = String(p.package_type || '').toLowerCase();
+  const text = `${p.category || ''} ${p.name || ''} ${p.slug || ''}`.toLowerCase();
+  if (type === 'transport' || /urbania|vehicle/.test(text)) return 'transport';
+  if (type === 'pilgrimage' || /umrah|ziyarat|pilgrim|tirupati|ajmer/.test(text)) return 'pilgrimage';
+  if (type === 'international') return 'international';
   return 'domestic';
 }
 
-function getIncChips(p) {
-  const isVehicle = p.slug?.startsWith('force-urbania') || String(p.category||'').toLowerCase().includes('vehicle');
-  if(isVehicle) return ['<i class="hgi-stroke hgi-car-01"></i> AC Vehicle','👨‍✈️ Driver','🛣 All routes'];
-  const isPilgrimage = p.package_type==='pilgrimage' || String(p.category||'').toLowerCase().includes('umrah');
-  if(isPilgrimage) return ['<i class="hgi-stroke hgi-airplane-01"></i> Flights','<i class="hgi-stroke hgi-building-05"></i> Hotel','<i class="hgi-stroke hgi-maps"></i> Guided'];
-  const isIsland = String(p.category||'').toLowerCase().includes('lakshadweep') || String(p.category||'').toLowerCase().includes('island');
-  if(isIsland) return ['<i class="hgi-stroke hgi-document-attachment"></i> Permit','<i class="hgi-stroke hgi-building-05"></i> Stay','<i class="hgi-stroke hgi-restaurant-02"></i> Meals'];
-  const inc = Array.isArray(p.included) ? p.included.join(' ').toLowerCase() : (p.summary||'').toLowerCase();
-  const chips = [];
-  if(/hotel|resort|stay|houseboat|villa|accommodation/.test(inc)) chips.push('<i class="hgi-stroke hgi-building-05"></i> Hotel');
-  if(/flight|flights/.test(inc)) chips.push('<i class="hgi-stroke hgi-airplane-01"></i> Flights');
-  if(/transfer|airport|pickup|vehicle|transport/.test(inc)) chips.push('<i class="hgi-stroke hgi-car-01"></i> Transfers');
-  if(/meal|breakfast|dinner|lunch|food|board/.test(inc)) chips.push('<i class="hgi-stroke hgi-restaurant-02"></i> Meals');
-  if(/guide|coordinator|mutawwif|support/.test(inc)) chips.push('<i class="hgi-stroke hgi-maps"></i> Guide');
-  if(/permit/.test(inc)) chips.push('<i class="hgi-stroke hgi-document-attachment"></i> Permit');
-  if(!chips.length) { chips.push('<i class="hgi-stroke hgi-building-05"></i> Hotel'); chips.push('<i class="hgi-stroke hgi-car-01"></i> Transfers'); }
-  return chips.slice(0,3);
+const LABELS = { transport: 'Vehicle hire', pilgrimage: 'Pilgrimage', international: 'International', domestic: 'India' };
+
+function chips(p) {
+  const text = [...(Array.isArray(p.included) ? p.included : []), p.summary || ''].join(' ').toLowerCase();
+  const out = [];
+  if (/hotel|resort|stay|houseboat|villa|accommodation/.test(text)) out.push(['building-05', 'Stay']);
+  if (/flight/.test(text)) out.push(['airplane-01', 'Flights']);
+  if (/transfer|airport|pickup|vehicle|transport/.test(text)) out.push(['car-01', 'Transfers']);
+  if (/meal|breakfast|dinner|lunch/.test(text)) out.push(['restaurant-02', 'Meals']);
+  if (/guide|support/.test(text)) out.push(['maps', 'Guide']);
+  if (/permit/.test(text)) out.push(['passport', 'Permit']);
+  return out.slice(0, 3);
 }
 
-function cardHTML(p) {
-  const typeLabel = getTypeLabel(p);
-  const chips = getIncChips(p);
-  const inc = chips.map(c=>`<span class="inc-chip">${c}</span>`).join('');
-  const dur = p.duration ? p.duration.split('/')[0].trim() : 'Flexible';
-  const region = p.region ? p.region.split('·')[0].split(',')[0].trim() : '';
-  const meta = [region, dur].filter(Boolean).join(' · ');
-  const price = p.price && p.price!=='Custom quote' ? p.price : 'Custom quote';
-  const img = p.image_url||'assets/images/island-beach.jpg';
-  return `<article class="package-card" data-category="${filterCategory(p)}" data-type="${p.package_type||'domestic'}" data-name="${p.name} ${p.region}" data-slug="${p.slug}">
-    <div class="package-image">
-      <img src="${img}" alt="${p.name}" loading="lazy" onerror="this.classList.add('img-error');this.src='assets/bahadur-logo.png';this.style.objectFit='contain';this.style.padding='20px'">
-      <span class="pkg-cat-badge">${typeLabel}</span>
-      <span class="pkg-rating-badge"><i class="hgi-stroke hgi-star-01"></i> 4.9</span>
-    </div>
-    <div class="package-body">
-      <div class="pkg-meta">${meta}</div>
-      <h3>${p.name}</h3>
-      <p style="font-size:13px;color:#6e7b76;margin:0 0 4px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${p.summary||''}</p>
-      <div class="pkg-inclusions">${inc}</div>
-      <div class="pkg-price-row">
-        <div><div class="pkg-price-label">Starts at</div><div class="pkg-price-val">${price}</div></div>
-      </div>
-      <div class="package-footer">
-        <a class="pkg-details-btn" href="package.html?slug=${p.slug}"><i class="hgi-stroke hgi-information-circle"></i> View Details</a>
-        <button class="pkg-book-btn" data-book data-trip="${p.name}"><i class="hgi-stroke hgi-checkmark-circle-02"></i> Book Now</button>
-      </div>
+export function cardHTML(p) {
+  const group = groupOf(p);
+  const href = group === 'pilgrimage' && /^umrah$/i.test(p.slug || '') ? 'umrah.html' : `package.html?slug=${encodeURIComponent(p.slug)}`;
+  const meta = [String(p.region || '').split('·')[0].split(',')[0].trim(), String(p.duration || '').split('/')[0].trim()].filter(Boolean).join(' · ');
+  const inc = chips(p);
+  const price = p.price && p.price !== 'Custom quote' ? p.price : 'Custom quote';
+  return `<article class="pk">
+    <a class="pk-img" href="${href}" tabindex="-1" aria-hidden="true"><img src="${esc(p.image_url || 'assets/images/island-beach.jpg')}" alt="" loading="lazy" onerror="this.onerror=null;this.src='assets/images/explorer/island-sunset-beach.jpg'" ${p.commons ? `data-commons-query="${esc(p.commons)}"` : ''}></a>
+    <span class="pk-badge">${LABELS[group]}</span>
+    <div class="pk-body">
+      <div class="pk-meta">${esc(meta)}</div>
+      <h3><a href="${href}">${esc(p.name)}</a></h3>
+      <p class="pk-sum">${esc(p.summary || '')}</p>
+      ${inc.length ? `<div class="pk-inc">${inc.map(([icon, label]) => `<span><i class="hgi-stroke hgi-${icon}"></i>${label}</span>`).join('')}</div>` : ''}
+      <div class="pk-foot"><div class="pk-price">${/\d/.test(price) ? '<small>Starts at</small>' : ''}<b>${esc(price)}</b></div><button class="btn btn-dark small" data-book data-trip="${esc(p.name)}">Book</button></div>
     </div>
   </article>`;
 }
 
-async function load(){
-  const grid=document.querySelector('#managed-package-grid');
-  if(!grid)return;
-  try{
-    // Show skeleton while loading
-    const grids = ['#managed-package-grid','#more-package-grid'].map(s=>document.querySelector(s)).filter(Boolean);
-    grids.forEach(g=>{
-      g.innerHTML = Array(6).fill('<div class="package-card skel-card"><div class="pkg-img skel-img"></div><div class="pkg-body"><div class="skel-line" style="width:60%;height:18px;margin-bottom:10px"></div><div class="skel-line" style="width:90%;height:12px;margin-bottom:6px"></div><div class="skel-line" style="width:70%;height:12px"></div></div></div>').join('');
-    });
-    const res=await fetch('/api/packages');
-    if(!res.ok)throw 0;
-    const d=await res.json();
-    if(!d.packages.length){
-      grid.closest('.managed-packages')?.remove();
-      return;
-    }
-    grid.innerHTML=d.packages.map(cardHTML).join('');
-    const moreGrid = document.querySelector('#more-package-grid');
-    if(moreGrid){
-      // Show all packages in the expanded grid too
-      moreGrid.innerHTML = document.querySelector('#managed-package-grid')?.innerHTML || '';
-    }
-    
-    const select = document.querySelector('#trip-select');
-    if(select) {
-      const groups = {};
-      d.packages.forEach(p => {
-        const cat = p.category || 'Other';
-        if(!groups[cat]) groups[cat] = [];
-        groups[cat].push(p.name);
-      });
-      let html = '<option>Custom journey</option>';
-      for(const [cat, names] of Object.entries(groups)) {
-        html += `<optgroup label="${cat}">`;
-        names.forEach(n => html += `<option>${n}</option>`);
-        html += `</optgroup>`;
-      }
-      select.innerHTML = html;
-    }
+// Only runs on the catalogue page
+async function catalogue() {
+  const grid = document.getElementById('catalogue');
+  if (!grid) return;
+  const search = document.getElementById('package-search'), sort = document.getElementById('sort'), count = document.getElementById('result-count');
+  let filter = new URLSearchParams(location.search).get('filter') || 'all';
+  if (filter === 'local') filter = 'domestic';
+  let managed = [];
+  try {
+    const res = await fetch('/api/packages');
+    if (res.ok) managed = (await res.json()).packages || [];
+  } catch {}
+  if (!managed.length) managed = FALLBACK_PACKAGES;
+  const known = new Set(managed.flatMap((p) => [p.slug, slugify(p.name)]));
+  const places = destinations.filter((d) => !known.has(slugify(d.name))).map((d) => ({
+    name: d.name, slug: slugify(d.name), region: d.region, duration: d.days, price: 'Custom quote', summary: d.blurb, image_url: d.fallback, commons: d.photoQuery,
+    package_type: d.category === 'pilgrimage' ? 'pilgrimage' : d.category === 'international' ? 'international' : 'domestic',
+  }));
+  const all = [...managed, ...places];
+  const amount = (p) => Number(p.package_price) || Number(String(p.price || '').replace(/[^\d]/g, '')) || Infinity;
 
-    window.dispatchEvent(new CustomEvent('bahadur:destinations-ready'));
-  }catch{
-    grid.closest('.managed-packages')?.remove();
+  function render() {
+    const q = search.value.trim().toLowerCase();
+    let list = all.filter((p) => (filter === 'all' || groupOf(p) === filter) && (!q || `${p.name} ${p.region} ${p.category} ${p.summary}`.toLowerCase().includes(q)));
+    if (sort.value === 'low') list = [...list].sort((a, b) => amount(a) - amount(b));
+    if (sort.value === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    grid.innerHTML = list.length ? list.map(cardHTML).join('') : '<div class="empty-state"><h3>No journeys match that search</h3><p>Tell us where you want to go and we’ll build it for you.</p><button class="btn btn-sky" data-book style="margin-top:14px">Request a custom trip</button></div>';
+    count.textContent = `${list.length} ${list.length === 1 ? 'journey' : 'journeys'}`;
+    document.querySelectorAll('#filter-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.filter === filter));
+    grid.querySelectorAll('[data-commons-query]').forEach((img) => photoWatch.observe(img));
   }
+
+  const photoWatch = new IntersectionObserver((entries) => entries.forEach((en) => {
+    if (en.isIntersecting) { photoWatch.unobserve(en.target); loadCommonsPhoto(en.target); }
+  }), { rootMargin: '200px' });
+
+  document.getElementById('filter-tabs').addEventListener('click', (e) => {
+    if (!e.target.dataset.filter) return;
+    filter = e.target.dataset.filter;
+    history.replaceState(null, '', filter === 'all' ? 'booking.html' : `booking.html?filter=${filter}`);
+    render();
+  });
+  search.addEventListener('input', render);
+  sort.addEventListener('change', render);
+  render();
 }
-load();
+catalogue();

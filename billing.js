@@ -1,1335 +1,500 @@
-const $=s=>document.querySelector(s);
+// Invoice and quotation editor. The form edits one `doc` object; the sheet re-renders from it on every change.
+import { boot, api, esc, $, $$, money, toast, confirmBox, dialog, today, addDays, isoDay, niceDate, waNumber, debounce } from './admin-ui.js';
+import { renderInvoice, computeTotals, savePdf, pdfName } from './invoice-render.js';
 
-const money=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',minimumFractionDigits:2}).format(Number(n||0));
+const blankTravel = () => ({ package_name: '', package_type: 'domestic', destination: '', travel_date: '', return_date: '', passenger_names: [], flight: { included: false, cabin: 'Economy' }, hotel: { included: false, rooms: 1 } });
+let settings = {};
+let doc = null;
+let payments = [];
+let customers = [];
+let catalogue = [];
+let numberEdited = false;
+let dirty = false;
 
-let lines=[{description:'Travel package',qty:1,rate:0}],packages=[];
+const params = new URLSearchParams(location.search);
+const actions = `
+  <div class="tabs" hidden id="saved-state"></div>
+  <button class="btn" id="btn-print"><i class="hgi-stroke hgi-printer"></i>Print</button>
+  <button class="btn" id="btn-pdf"><i class="hgi-stroke hgi-download-04"></i>Download PDF</button>
+  <button class="btn" id="btn-wa"><i class="hgi-stroke hgi-whatsapp"></i>WhatsApp</button>
+  <button class="btn" id="btn-more" aria-label="More actions"><i class="hgi-stroke hgi-more-horizontal"></i></button>
+  <button class="btn primary" id="btn-save"><i class="hgi-stroke hgi-tick-02"></i>Save</button>`;
 
-let currentInvoiceId=null;
-
-let customers=[];
-
-
-
-const iso=d=>d.toISOString().slice(0,10),today=new Date();
-
-$('#invoice-date').value=iso(today);
-
-$('#invoice-due').value=iso(new Date(today.getTime()+7*86400000));
-
-$('#invoice-number').value=`BT-${today.getFullYear()}-${String(Date.now()).slice(-6)}`;
-
-
-
-const value=(id,fallback='')=>$(id)?.value?.trim()||fallback;
-
-
-
-function readLines(){lines=[...document.querySelectorAll('.line-input-row')].map(r=>({description:r.querySelector('[data-description]').value,qty:Number(r.querySelector('[data-qty]').value||0),rate:Number(r.querySelector('[data-rate]').value||0)}))}
-
-
-
-function renderLineInputs(){
-
-  const h=$('#line-inputs');
-
-  h.innerHTML=lines.map((x,i)=>`<div class="line-input-row"><input data-description value="${x.description}" placeholder="Package, flight, hotel or service"><input data-qty type="number" min="0" value="${x.qty}"><input data-rate type="number" min="0" step="0.01" value="${x.rate}"><button type="button" data-remove="${i}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="hgi-stroke hgi-cancel-01" style="font-size:14px"></i></button></div>`).join('');
-
-  h.querySelectorAll('input').forEach(x=>x.oninput=()=>{readLines();update();setTimeout(scalePreview,80);});
-
-  h.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{readLines();lines.splice(Number(b.dataset.remove),1);if(!lines.length)lines=[{description:'Travel service',qty:1,rate:0}];renderLineInputs();update();setTimeout(scalePreview,80);});
-
+function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj); }
+function setPath(obj, path, value) {
+  const keys = path.split('.');
+  const last = keys.pop();
+  const target = keys.reduce((o, k) => (o[k] ??= {}), obj);
+  target[last] = value;
 }
-
-
-
-const dl=rows=>rows.filter(x=>x[1]).map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('');
-
-
-
-function esc(s){return String(s).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));}
-
-
-
-function getPassengers(){
-
-  const passengers=[];
-
-  // Read from plain text input (paste names)
-
-  const plain=value('#invoice-names-plain');
-
-  if(plain){
-
-    plain.split('\n').filter(l=>l.trim()).forEach(line=>{
-
-      const parts=line.split('-').map(p=>p.trim());
-
-      if(parts.length>=1){
-
-        let type='adult';
-
-        if(parts[0].toLowerCase().includes('kid')||parts[0].toLowerCase().includes('child')||parts[0].toLowerCase().includes('baby'))type='kid';
-
-        passengers.push({name:parts[0],type,age:parts[1]?Number(parts[1]):null});
-
-      }
-
-    });
-
-  }
-
-  // Read from ALL passenger table rows (including first row = main customer)
-
-  const tbody=$('#passenger-table tbody');
-
-  if(tbody){
-
-    const rows=tbody.querySelectorAll('tr');
-
-    rows.forEach((row)=>{
-
-      const nameInput=row.querySelector('input[type="text"]');
-
-      const typeSelect=row.querySelector('select');
-
-      const ageInput=row.querySelector('input[type="number"]');
-
-      if(nameInput && nameInput.value.trim()){
-
-        let type='adult';
-
-        if(typeSelect && typeSelect.value==='kid')type='kid';
-
-        const age=ageInput?Number(ageInput.value):null;
-
-        passengers.push({name:nameInput.value.trim(),type,age});
-
-      }
-
-    });
-
-  }
-
-  // If no passengers from table, use dropdown customer as fallback
-
-  if(!passengers.length){
-
-    const mainName=value('#invoice-customer');
-
-    if(mainName && mainName!=='')passengers.push({name:mainName,type:'adult',age:null});
-
-  }
-
-  // Add kids from invoice-kids-names field to travelers list
-
-  const kidsNames=value('#invoice-kids-names','');
-
-  if(kidsNames){
-
-    const kidList=kidsNames.split(',').map(n=>n.trim()).filter(n=>n);
-
-    kidList.forEach((name,i)=>{
-
-      // Avoid duplicate if kid already in passenger table
-
-      const exists=passengers.some(p=>p.name.toLowerCase()===name.toLowerCase());
-
-      if(!exists){
-
-        passengers.push({name,type:'kid',age:null});
-
-      }
-
-    });
-
-  }
-
-  return passengers;
-
-}
-
-
-
-function travelDetails(){
-
-  return{
-
-    package_name:value('#invoice-trip'),
-
-    package_type:value('#invoice-type'),
-
-    travel_date:value('#invoice-travel-date'),
-
-    travellers:Number(value('#invoice-travellers','1')),
-
-    kids:Number(value('#invoice-kids','0')),
-
-    kids_price:Number(value('#invoice-kids-price','0')),
-
-    destination:value('#invoice-destination'),
-
-    passenger_names:getPassengers(),
-
-    kids_names:value('#invoice-kids-names'),
-
-    multi_customers:value('#invoice-multi-customers'),
-
-    payment_remarks:value('#invoice-payment-remarks'),
-
-    flight:{
-
-      included:$('#flight-included').checked,
-
-      airline:value('#flight-airline'),
-
-      number:value('#flight-number'),
-
-      pnr:value('#flight-pnr'),
-
-      cabin:value('#flight-cabin'),
-
-      from:value('#flight-from'),
-
-      to:value('#flight-to'),
-
-      departure:value('#flight-departure'),
-
-      arrival:value('#flight-arrival'),
-
-      baggage:value('#flight-baggage')
-
-    },
-
-    hotel:{
-
-      included:$('#hotel-included').checked,
-
-      name:value('#hotel-name'),
-
-      city:value('#hotel-city'),
-
-      category:value('#hotel-category'),
-
-      checkin:value('#hotel-checkin'),
-
-      checkout:value('#hotel-checkout'),
-
-      room_type:value('#hotel-room-type'),
-
-      rooms:Number(value('#hotel-rooms','1')),
-
-      meals:value('#hotel-meals'),
-
-      confirmation:value('#hotel-confirmation')
-
-    }
-
-  }
-
-}
-
-
-
-function update(){
-
-  readLines();
-
-  const t=travelDetails(),international=t.package_type==='international';
-
-  $('#international-controls').classList.toggle('show',international);
-
-  $('#out-number').textContent=value('#invoice-number','\u2014');
-
-  $('#out-status').textContent=value('#payment-status','Draft');
-
-  // Customer display - handle both dropdown and manual mode
-
-  const customerVal=value('#invoice-customer');
-
-  $('#out-customer').textContent=customerVal==='__manual__'?value('#invoice-customer-new','Customer name'):customerVal||'Customer name';
-
-  $('#out-address').textContent=value('#invoice-address','Billing address');
-
-  $('#out-contact').textContent=[value('#invoice-phone'),value('#invoice-email')].filter(Boolean).join(' \u00b7 ');
-
-  $('#out-date').textContent=value('#invoice-date','\u2014');
-
-  $('#out-due').textContent=value('#invoice-due','\u2014');
-
-  $('#out-booking').textContent=value('#invoice-booking','\u2014');
-
-  $('#out-trip').textContent=t.package_name||'Travel package';
-
-  $('#out-destination').textContent=t.destination||'Destination';
-
-  $('#out-travel-date').textContent=t.travel_date||'\u2014';
-
-  $('#out-travellers').textContent=t.travellers;
-
-  $('#out-kids').textContent=t.kids>0?t.kids+' kids':'\u2014';
-
-  $('#out-kids-price').textContent=t.kids_price>0?'₹'+t.kids_price.toLocaleString()+' per kid':'\u2014';
-
-  $('#out-kids-names').textContent=t.kids_names||(t.kids>0?'Kids names required':'—');
-
-  $('#out-multi-customers').innerHTML=t.passenger_names&&t.passenger_names.length?t.passenger_names.map((p,i)=>'<div style="padding:5px 0;border-bottom:1px solid #e8efec"><strong style="color:#1a2332">'+(i+1)+'. '+esc(p.name)+'</strong> <span style="color:#74807c;font-size:11px">'+p.type.toUpperCase()+(p.age!=null?'  ·  Age '+p.age:'')+'</span></div>').join(''):(t.multi_customers?t.multi_customers.split('\n').filter(l=>l.trim()).map(n=>'<div>'+n.trim()+'</div>').join(''):'');
-
-
-
-  // MakeMyTrip-style bold traveler list
-
-  const travelersList=$('#out-travelers-list');
-
-  const travelerCount=$('#traveler-count');
-
-  if(travelersList && t.passenger_names&&t.passenger_names.length){
-
-    travelersList.innerHTML=t.passenger_names.map((p,i)=>
-      '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e8efec">'+
-        '<strong style="color:#1a2332;font-size:14px;min-width:22px">'+(i+1)+'.</strong>'+
-        '<span style="color:#1a2332;font-size:14px;flex:1;font-weight:600">'+esc(p.name)+'</span>'+
-        '<span style="color:#74807c;font-size:11px;text-transform:uppercase;letter-spacing:.04em">'+p.type.toUpperCase()+(p.age!=null?'  ·  Age '+p.age:'')+'</span>'+
-      '</div>').join('');
-
-    travelerCount.textContent='('+t.passenger_names.length+')';
-
-  }else if(travelersList){ travelersList.innerHTML=''; travelerCount.textContent=''; }
-
-
-
-  $('#out-payment-remarks').textContent=t.payment_remarks||'';
-
-    // Hide empty remark box
-
-    const remarksBox=$('#out-payment-remarks');
-
-    if(remarksBox){
-
-      remarksBox.style.display=t.payment_remarks?'':'none';
-
-    }
-
-    $('#out-type').textContent=international?'International':'Domestic';
-
-  
-
-  const f=$('#out-flight-card'),h=$('#out-hotel-card');
-
-  f.hidden=!(international&&t.flight.included);
-
-  h.hidden=!t.hotel.included;
-
-  
-
-  if(!f.hidden){
-
-    $('#out-flight-title').textContent=[t.flight.airline,t.flight.number].filter(Boolean).join(' \u00b7 ')||'Flight booking';
-
-    $('#out-flight-list').innerHTML=dl([
-
-      ['Route',[t.flight.from,t.flight.to].filter(Boolean).join(' \u2192 ')],
-
-      ['Departure',t.flight.departure?.replace('T',' ')],
-
-      ['Arrival',t.flight.arrival?.replace('T',' ')],
-
-      ['Cabin',t.flight.cabin],
-
-      ['PNR',t.flight.pnr],
-
-      ['Baggage',t.flight.baggage]
-
-    ]);
-
-  }
-
-  if(!h.hidden){
-
-    $('#out-hotel-title').textContent=t.hotel.name||'Accommodation';
-
-    $('#out-hotel-list').innerHTML=dl([
-
-      ['City',t.hotel.city],
-
-      ['Stay',[t.hotel.checkin,t.hotel.checkout].filter(Boolean).join(' \u2192 ')],
-
-      ['Room',`${t.hotel.rooms||1} \u00d7 ${t.hotel.room_type||'Room'}`],
-
-      ['Category',t.hotel.category],
-
-      ['Meals',t.hotel.meals],
-
-      ['Confirmation',t.hotel.confirmation]
-
-    ]);
-
-  }
-
-  
-
-  $('#out-lines').innerHTML=lines.map(x=>`<tr>
-
-    <td style="padding:10px 28px">${x.description||'Travel service'}</td>
-
-    <td style="padding:10px 12px;text-align:center">${x.qty}</td>
-
-    <td style="padding:10px 12px;text-align:right">${money(x.rate)}</td>
-
-    <td style="padding:10px 28px;text-align:right;font-weight:600">${money(x.qty*x.rate)}</td>
-
-  </tr>`).join('');
-
-  
-
-  // Calculate totals including kids price
-
-  const baseSubtotal=lines.reduce((s,x)=>s+x.qty*x.rate,0);
-
-  const kidsCost=t.kids*t.kids_price;
-
-  const subtotal=baseSubtotal+kidsCost;
-
-  const discount=Number(value('#discount','0'));
-
-  const rate=Number(value('#tax-rate','0'));
-
-  const tax=Math.max(0,subtotal-discount)*rate/100;
-
-  const total=Math.max(0,subtotal-discount)+tax;
-
-  
-
-  $('#out-subtotal').textContent=money(subtotal);
-
-  $('#out-discount').textContent=`\u2212 ${money(discount)}`;
-
-  $('#out-tax-label').textContent=`${value('#tax-label','Tax')} (${rate}%)`;
-
-  $('#out-tax').textContent=money(tax);
-
-  $('#out-total').textContent=money(total);
-
-  $('#out-payment').textContent=value('#payment-details','Payment details will be provided separately.');
-
-  $('#out-pending').textContent=value('#invoice-pending-amount','0');
-  $('#out-paid').textContent=value('#invoice-paid-amount','0');
-
-  const paidVal=Number(value('#invoice-paid-amount',0));
-  // Show paid status in green if fully paid
-  if(paidVal>0){
-    const paidRow=document.querySelector('dl pro-invoice-bottom dl')?.querySelector('#out-paid')?.parentElement;
-    // just update text - styling is in HTML
-  }
-
-  // Show paid success box if amount paid
-  const paidBox=$('#out-paid-success-box');
-  if(paidBox){
-    if(paidVal>0){ paidBox.style.display=''; $('#out-paid-alert').textContent=money(paidVal); }
-    else { paidBox.style.display='none'; }
-  }
-
-  // Show pending alert box if there's a pending amount
-
-  const pendingVal=Number(value('#invoice-pending-amount',0));
-
-  const alertBox=$('#out-pending-alert-box');
-
-  if(alertBox){
-
-    alertBox.style.display=pendingVal>0?'':'none';
-
-    $('#out-pending-alert').textContent=money(pendingVal);
-
-  }
-
-  $('#out-notes').textContent=value('#invoice-notes','');
-
-  
-
-  const status=value('#payment-status','Draft');
-
-  const isPaid=status==='Paid';
-
-  if(currentInvoiceId){
-
-    $('#invoice-mark-paid').style.display=isPaid?'none':'';
-
-    $('#invoice-view-bill').style.display=isPaid?'':'none';
-
-  }
-
-  return{
-
-    subtotal,discount,tax,total,
-
-    travel_details:t,
-
-    pending_amount:Number(value('#invoice-pending-amount',0)),
-    paid_amount:Number(value('#invoice-paid-amount',0))
-
+const fieldPath = (el) => el.name.replace(/^td\./, 'travel_details.');
+
+function newDoc() {
+  const date = today();
+  return {
+    id: null, doc_type: 'invoice', invoice_number: '', invoice_date: date, due_date: addDays(date, settings.due_days ?? 7),
+    status: 'Draft', booking_ref: '', customer_name: '', phone: '', email: '', customer_address: '', customer_gstin: '', place_of_supply: settings.state || '',
+    items: [{ description: '', sac: settings.default_sac, qty: 1, rate: 0 }],
+    discount: 0, tax_mode: settings.default_tax_mode || 'none', tax_rate: settings.default_tax_rate || 5,
+    notes: settings.default_note || '', payment_details: '', payment_remarks: '', travel_details: blankTravel(),
   };
-
 }
 
-
-
-function payload(){
-
-  const x=update();
-
-  return{
-
-    invoice_number:value('#invoice-number'),
-
-    invoice_date:value('#invoice-date'),
-
-    due_date:value('#invoice-due'),
-
-    booking_ref:value('#invoice-booking'),
-
-    customer_name:value('#invoice-customer')==='__manual__'?value('#invoice-customer-new'):value('#invoice-customer'),
-
-    customer_address:value('#invoice-address'),
-
-    phone:value('#invoice-phone'),
-
-    email:value('#invoice-email'),
-
-    items:lines,
-
-    tax_label:value('#tax-label','GST'),
-
-    tax_rate:Number(value('#tax-rate','0')),
-
-    discount:x.discount,
-
-    subtotal:x.subtotal,
-
-    tax:x.tax,
-
-    total:x.total,
-
-    status:value('#payment-status','Draft'),
-
-    notes:value('#invoice-notes'),
-
-    payment_details:value('#payment-details'),
-
-    pending_amount:x.pending_amount,
-
-    paid_amount:x.paid_amount,
-
-    payment_remarks:value('#invoice-payment-remarks'),
-
-    passenger_names:x.travel_details.passenger_names,
-
-    kids_names:x.travel_details.kids_names,
-
-    travel_details:x.travel_details
-
+// Older invoices stored different shapes: rate as unit_price, kids priced outside the lines, flat GST.
+function fromServer(inv) {
+  const td = { ...blankTravel(), ...(inv.travel_details || {}) };
+  td.flight = { ...blankTravel().flight, ...(td.flight || {}) };
+  td.hotel = { ...blankTravel().hotel, ...(td.hotel || {}) };
+  td.passenger_names = (td.passenger_names || []).map((p) => (typeof p === 'string' ? { name: p, type: 'adult' } : p));
+  const items = (inv.items || []).map((l) => ({ description: l.description || '', sac: l.sac || '', qty: Number(l.qty ?? 1), rate: Number(l.rate ?? l.unit_price ?? 0) }));
+  const kidsCost = Number(td.kids || 0) * Number(td.kids_price || 0);
+  if (kidsCost > 0 && !items.some((l) => /kid|child/i.test(l.description))) items.push({ description: 'Package cost – child', sac: '', qty: Number(td.kids), rate: Number(td.kids_price) });
+  const taxMode = inv.tax_mode && inv.tax_mode !== 'none' ? inv.tax_mode : Number(inv.tax_rate) > 0 ? 'cgst_sgst' : 'none';
+  return {
+    ...inv, items: items.length ? items : [{ description: '', sac: settings.default_sac, qty: 1, rate: 0 }], tax_mode: taxMode, tax_rate: Number(inv.tax_rate) || settings.default_tax_rate || 5,
+    invoice_date: isoDay(inv.invoice_date), due_date: isoDay(inv.due_date), discount: Number(inv.discount || 0), travel_details: td,
   };
-
 }
 
-
-
-function getToken(){
-
-  try{
-
-    const t=localStorage.getItem('bahadur-admin-token')||'';
-
-    if(!t)alert('Please log in as admin first.');
-
-    return t;
-
-  }catch(e){
-
-    alert('Storage unavailable. Please use standard browser mode.');
-
-    return '';
-
-  }
-
+function fillForm() {
+  $$('#bill-form [name]').forEach((el) => {
+    const v = getPath(doc, fieldPath(el));
+    if (el.type === 'checkbox') el.checked = Boolean(v);
+    else el.value = v ?? '';
+  });
+  const statusEl = $('[name=status]');
+  statusEl.innerHTML = (doc.doc_type === 'quotation' ? ['Draft', 'Sent', 'Accepted', 'Cancelled'] : ['Draft', 'Sent', 'Cancelled', ...(['Paid', 'Part paid'].includes(doc.status) ? [doc.status] : [])]).map((s) => `<option>${s}</option>`).join('');
+  statusEl.value = doc.status;
+  statusEl.disabled = ['Paid', 'Part paid'].includes(doc.status);
+  $$('#doc-type button').forEach((b) => b.classList.toggle('active', b.dataset.type === doc.doc_type));
+  $('#doc-type').style.pointerEvents = doc.id ? 'none' : '';
+  $('#doc-type').style.opacity = doc.id ? '.6' : '';
+  $('#due-label').textContent = doc.doc_type === 'quotation' ? 'Valid until' : 'Due date';
+  renderPax();
+  renderLines();
+  renderLedger();
+  syncVisibility();
 }
 
-
-
-function populateForm(inv){
-
-  const set=(id,val)=>{if($(id)&&val!=null)$(id).value=val};
-
-  
-
-  set('#invoice-number',inv.invoice_number);
-
-  set('#invoice-date',inv.invoice_date);
-
-  set('#invoice-due',inv.due_date);
-
-  set('#invoice-booking',inv.booking_ref);
-
-  
-
-  // Customer: try to find in dropdown, else use manual mode
-
-  const customerSel=$('#invoice-customer');
-
-  if(customerSel && customers.length){
-
-    const match=customers.find(c=>c.name===inv.customer_name);
-
-    if(match){
-
-      customerSel.value=match.name;
-
-      $('#new-customer-field').style.display='none';
-
-    }else{
-
-      customerSel.value='__manual__';
-
-      $('#invoice-customer-new').value=inv.customer_name;
-
-      $('#new-customer-field').style.display='';
-
-    }
-
- }else{
-
-    set('#invoice-customer',inv.customer_name);
-
-  }
-
-  
-
-  set('#invoice-address',inv.customer_address);
-
-  set('#invoice-phone',inv.phone);
-
-  set('#invoice-email',inv.email);
-
-  set('#tax-label',inv.tax_label||'GST');
-
-  set('#tax-rate',inv.tax_rate||0);
-
-  set('#discount',inv.discount||0);
-
-  set('#payment-status',inv.status||'Draft');
-
-  set('#payment-details',inv.payment_details);
-
-  set('#invoice-notes',inv.notes);
-
-  set('#invoice-paid-amount',inv.paid_amount||0);
-
-  set('#invoice-pending-amount',inv.pending_amount||0);
-
-  set('#invoice-multi-customers',inv.multi_customers||'');
-
-    set('#invoice-kids-names',inv.kids_names||'');
-
-    set('#invoice-names-plain',inv.multi_customers||'');
-
-    set('#invoice-payment-remarks',inv.payment_remarks||inv.payment_details||'');
-
-    // Show kids names section if kids > 0
-
-    if(Number(value('#invoice-kids','0'))>0){$('#kids-names-section').style.display='';}
-
-  
-
-  const td=inv.travel_details||{};
-
-  set('#invoice-trip',td.package_name);
-
-  set('#invoice-type',td.package_type||'domestic');
-
-  set('#invoice-travel-date',td.travel_date);
-
-  set('#invoice-travellers',td.travellers||2);
-
-  set('#invoice-kids',td.kids||0);
-
-  set('#invoice-kids-price',td.kids_price||0);
-
-  set('#invoice-destination',td.destination);
-
-  
-
-  if(td.flight){
-
-    if($('#flight-included'))$('#flight-included').checked=Boolean(td.flight.included);
-
-    set('#flight-airline',td.flight.airline);
-
-    set('#flight-number',td.flight.number);
-
-    set('#flight-pnr',td.flight.pnr);
-
-    set('#flight-cabin',td.flight.cabin);
-
-    set('#flight-from',td.flight.from);
-
-    set('#flight-to',td.flight.to);
-
-    set('#flight-departure',td.flight.departure);
-
-    set('#flight-arrival',td.flight.arrival);
-
-    set('#flight-baggage',td.flight.baggage);
-
-  }
-
-  if(td.hotel){
-
-    if($('#hotel-included'))$('#hotel-included').checked=Boolean(td.hotel.included);
-
-    set('#hotel-name',td.hotel.name);
-
-    set('#hotel-city',td.hotel.city);
-
-    set('#hotel-category',td.hotel.category);
-
-    set('#hotel-checkin',td.hotel.checkin);
-
-    set('#hotel-checkout',td.hotel.checkout);
-
-    set('#hotel-room-type',td.hotel.room_type);
-
-    set('#hotel-rooms',td.hotel.rooms||1);
-
-    set('#hotel-meals',td.hotel.meals);
-
-    set('#hotel-confirmation',td.hotel.confirmation);
-
-  }
-
-  
-
-  if(Array.isArray(inv.items)&&inv.items.length){
-
-    lines=inv.items;
-
-    renderLineInputs();
-
-  }
-
-  update();
-
-  setTimeout(scalePreview,150);
-
+function syncVisibility() {
+  $('#flight-fields').hidden = !doc.travel_details.flight.included;
+  $('#hotel-fields').hidden = !doc.travel_details.hotel.included;
+  $('#tax-rate-field').hidden = doc.tax_mode === 'none';
+  $('#payment-sec').hidden = false;
+  const isQuote = doc.doc_type === 'quotation';
+  $('#advance-box').hidden = Boolean(doc.id) || isQuote;
+  $('#ledger-box').hidden = !doc.id || isQuote;
 }
 
-
-
-async function loadPackages(){
-
-  const t=localStorage.getItem('bahadur-admin-token')||'';
-
-  if(!t)return;
-
-  try{
-
-    const r=await fetch('/api/packages?admin=1',{headers:{Authorization:'Bearer '+t}});
-
-    if(!r.ok)return;
-
-    const d=await r.json();
-
-    packages=(d.packages||d||[]);
-
-    const dl=$('#package-list');
-
-    if(dl)dl.innerHTML=packages.map(p=>`<option value="${p.name}">`).join('');
-
-  }catch(e){console.warn('Package load failed:',e.message);}
-
+function renderPax() {
+  $('#pax-rows').innerHTML = doc.travel_details.passenger_names.map((p, i) => `<div class="row-line row-pax" data-i="${i}">
+    <input data-k="name" value="${esc(p.name)}" placeholder="Full name" aria-label="Traveller name">
+    <select data-k="type" aria-label="Traveller type"><option value="adult"${p.type !== 'kid' ? ' selected' : ''}>Adult</option><option value="kid"${p.type === 'kid' ? ' selected' : ''}>Child</option></select>
+    <input data-k="age" type="number" min="0" max="120" value="${esc(p.age ?? '')}" aria-label="Age">
+    <input data-k="passport" class="pp" value="${esc(p.passport ?? '')}" aria-label="Passport or ID">
+    <button type="button" class="rm" data-rm aria-label="Remove traveller"><i class="hgi-stroke hgi-cancel-01"></i></button></div>`).join('');
 }
 
-
-
-async function loadCustomers(){
-
-  const t=localStorage.getItem('bahadur-admin-token')||'';
-
-  if(!t)return;
-
-  try{
-
-    const r=await fetch('/api/admin?type=customers&limit=200',{headers:{Authorization:'Bearer '+t}});
-
-    if(!r.ok)return;
-
-    const d=await r.json();
-
-    customers=d.customers||[];
-
-    const sel=$('#invoice-customer');
-
-    if(sel && customers.length){
-
-      const currentVal=sel.value;
-
-      sel.innerHTML='<option value="">Select a customer</option>'+
-
-        customers.map(c=>`<option value="${c.name}" ${c.name===currentVal?'selected':''}>${c.name} — ${c.phone} — ${c.city||'—'}</option>`).join('')+
-
-        '<option value="__manual__">+ Enter new customer name</option>';
-
-    }
-
-  }catch(e){console.warn('Customer load failed:',e.message);}
-
+function renderLines() {
+  $('#line-rows').innerHTML = doc.items.map((l, i) => `<div class="row-line row-charge" data-i="${i}">
+    <input data-k="description" value="${esc(l.description)}" placeholder="Package, flight, hotel or service" aria-label="Description">
+    <input data-k="sac" class="sac" value="${esc(l.sac ?? '')}" aria-label="SAC code">
+    <input data-k="qty" type="number" min="0" step="any" value="${esc(l.qty)}" aria-label="Quantity">
+    <input data-k="rate" type="number" min="0" step="0.01" value="${esc(l.rate)}" aria-label="Rate">
+    <button type="button" class="rm" data-rm aria-label="Remove charge"><i class="hgi-stroke hgi-cancel-01"></i></button></div>`).join('');
 }
 
+function renderLedger() {
+  const rows = payments.map((p) => `<tr><td>${niceDate(p.paid_on)}<br><small style="color:var(--faint)">${esc(p.receipt_no)} · ${esc(p.mode)}</small></td><td>${money(p.amount)}<br><a href="paid-bill.html?receipt=${p.id}" target="_blank" style="color:var(--sky-700);font-size:12px">Receipt</a> · <a href="#" data-del-pay="${p.id}" style="color:var(--red);font-size:12px">Remove</a></td></tr>`);
+  $('#ledger').innerHTML = rows.join('') || '<tr><td colspan="2" style="color:var(--muted)">No payments recorded yet.</td></tr>';
+}
 
-
-$('#add-line').onclick=()=>{
-
-  readLines();
-
-  lines.push({description:'',qty:1,rate:0});
-
-  renderLineInputs();
-
-  update();
-
-  setTimeout(scalePreview,80);
-
+const summaries = () => {
+  const t = computeTotals(doc);
+  const paid = doc.id ? payments.reduce((s, p) => s + Number(p.amount), 0) : Number($('#advance-amount').value || 0);
+  const pax = doc.travel_details.passenger_names.filter((p) => p.name);
+  $('#sum-doc').textContent = doc.invoice_number || 'New';
+  $('#sum-customer').textContent = doc.customer_name;
+  $('#sum-trip').textContent = doc.travel_details.package_name;
+  $('#sum-pax').textContent = pax.length ? `${pax.length} added` : 'None added';
+  $('#sum-extra').textContent = [doc.travel_details.flight.included && 'Flight', doc.travel_details.hotel.included && 'Hotel'].filter(Boolean).join(' + ') || 'Not included';
+  $('#sum-total').textContent = money(t.total);
+  $('#sum-paid').textContent = doc.doc_type === 'quotation' ? '' : `${money(paid)} paid`;
+  $('#sum-box').innerHTML = `<div><span>Subtotal</span><b>${money(t.subtotal)}</b></div>${t.discount ? `<div><span>Discount</span><b>− ${money(t.discount)}</b></div>` : ''}${t.tax ? `<div><span>Tax @ ${t.rate}%</span><b>${money(t.tax)}</b></div>` : ''}<div class="tot"><span>Total</span><b>${money(t.total)}</b></div>`;
 };
 
+const renderSheet = () => {
+  const advance = doc.id ? 0 : Number($('#advance-amount').value || 0);
+  $('#sheet').innerHTML = renderInvoice({ ...doc, advance_preview: advance }, settings, payments);
+  fitStage();
+};
+function refresh() { summaries(); renderSheet(); }
+const refreshSoon = debounce(refresh, 60);
 
-
-document.querySelectorAll('.invoice-controls input,.invoice-controls textarea,.invoice-controls select,#passenger-table input,#passenger-table select').forEach(x=>{
-
-  x.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
-
-});
-
-
-
-// Customer dropdown handler
-
-const customerSel=$('#invoice-customer');
-
-if(customerSel){
-
-  customerSel.onchange=()=>{
-
-    const field=$('#new-customer-field');
-
-    if(customerSel.value==='__manual__'){
-
-      field.style.display='';
-
-      $('#invoice-customer-new').focus();
-
-    }else{
-
-      field.style.display='none';
-
-      $('#invoice-customer-new').value='';
-
-    }
-
-    update();
-
-  };
-
+function fitStage() {
+  const stage = $('#stage'), inner = $('#sheet');
+  if (!stage.clientWidth) return;
+  const scale = Math.min(1, (stage.clientWidth - 32) / 794);
+  inner.style.transform = `scale(${scale})`;
+  stage.style.height = Math.ceil(inner.offsetHeight * scale + 34) + 'px';
 }
 
+function markDirty() { dirty = true; }
 
+function onField(e) {
+  const el = e.target;
+  if (!el.name) return;
+  const value = el.type === 'checkbox' ? el.checked : el.value;
+  setPath(doc, fieldPath(el), value);
+  if (el.name === 'invoice_number') numberEdited = true;
+  if (el.name === 'customer_name') pickCustomer(value);
+  if (el.name === 'td.package_name') pickPackage(value);
+  if (el.name === 'booking_ref') pickBooking(value);
+  syncVisibility();
+  markDirty();
+  refreshSoon();
+}
 
-// Kids field handlers
+function pickCustomer(name) {
+  const c = customers.find((x) => x.name === name);
+  if (!c) return;
+  const fill = [['phone', c.phone], ['email', c.email], ['customer_address', c.address]];
+  fill.forEach(([key, v]) => { if (v && !doc[key]) { doc[key] = v; $(`[name=${key}]`).value = v; } });
+  if (!doc.travel_details.passenger_names.length) { doc.travel_details.passenger_names = [{ name, type: 'adult' }]; renderPax(); }
+}
 
-$('#invoice-kids')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
+function pickPackage(name) {
+  const p = catalogue.find((x) => x.name === name);
+  if (!p) return;
+  const td = doc.travel_details;
+  td.destination = td.destination || (p.region || '').split(/[·,]/)[0].trim();
+  td.package_type = ['international', 'pilgrimage', 'transport'].includes(p.package_type) ? p.package_type : 'domestic';
+  $('[name="td.destination"]').value = td.destination;
+  $('[name="td.package_type"]').value = td.package_type;
+  const first = doc.items[0];
+  if (doc.items.length === 1 && !first.description) {
+    first.description = p.name + (p.duration ? ` (${p.duration})` : '');
+    first.rate = Number(p.package_price || 0);
+    first.qty = Math.max(1, td.passenger_names.filter((x) => x.type !== 'kid').length);
+    renderLines();
+  }
+}
 
-$('#invoice-kids-price')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
+const pickBooking = debounce(async (ref) => {
+  ref = String(ref).trim();
+  if (!/^BT\d{6,}/i.test(ref) || doc.id) return;
+  try {
+    const { booking, invoice } = await api(`admin?type=booking&ref=${encodeURIComponent(ref)}`);
+    applyBooking(booking);
+    if (invoice) toast(`This booking already has ${invoice.invoice_number}. Open it from Invoices to avoid a duplicate.`);
+  } catch {}
+}, 400);
 
-$('#invoice-paid-amount')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
+function applyBooking(b) {
+  doc.booking_ref = b.booking_ref;
+  doc.customer_name = doc.customer_name || b.name;
+  doc.phone = doc.phone || b.phone;
+  doc.email = doc.email || b.email || '';
+  const td = doc.travel_details;
+  td.package_name = td.package_name || b.trip;
+  td.travel_date = td.travel_date || (/^\d{4}-\d{2}-\d{2}/.test(b.travel_date || '') ? isoDay(b.travel_date) : '');
+  const guests = Math.max(1, parseInt(b.guests, 10) || 1);
+  if (!td.passenger_names.length) td.passenger_names = [{ name: b.name, type: 'adult' }];
+  const first = doc.items[0];
+  if (doc.items.length === 1 && !first.description) { first.description = b.trip; first.qty = guests; }
+  fillForm();
+  pickPackage(td.package_name);
+  renderLines();
+  refresh();
+}
 
+function toPayload() {
+  const t = computeTotals(doc);
+  return { ...doc, auto_number: !doc.id && !numberEdited, items: t.lines };
+}
 
+async function save() {
+  if (!doc.customer_name.trim()) { toast('Add the customer name first', 'bad'); $('[name=customer_name]').focus(); return null; }
+  if (!computeTotals(doc).lines.some((l) => l.description || l.amount)) { toast('Add at least one charge', 'bad'); return null; }
+  const btn = $('#btn-save');
+  btn.disabled = true;
+  try {
+    const advanceAmount = Number($('#advance-amount').value || 0);
+    const body = doc.id
+      ? { type: 'invoice', id: doc.id, invoice: toPayload() }
+      : { type: 'invoice', invoice: toPayload(), advance: advanceAmount > 0 ? { amount: advanceAmount, mode: $('#advance-mode').value, reference: $('#advance-ref').value, paid_on: doc.invoice_date } : null };
+    const res = await api('admin', { method: doc.id ? 'PUT' : 'POST', body });
+    payments = res.payments || [];
+    doc = fromServer(res.invoice);
+    numberEdited = true;
+    dirty = false;
+    $('#advance-amount').value = '';
+    fillForm();
+    refresh();
+    history.replaceState(null, '', `billing.html?id=${doc.id}`);
+    toast(`${doc.invoice_number} saved`, 'good');
+    return doc;
+  } catch (e) {
+    toast(e.message, 'bad');
+    return null;
+  } finally {
+    btn.disabled = false;
+  }
+}
 
-// Add Passenger button handler
+async function ensureSaved() {
+  if (doc.id && !dirty) return true;
+  return Boolean(await save());
+}
 
-$('#add-passenger-btn')?.addEventListener('click',()=>{
+function paymentDialog(kind) {
+  const t = computeTotals(doc);
+  const paid = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const balance = Math.max(0, t.total - paid);
+  const isRefund = kind === 'refund';
+  const dlg = dialog({
+    title: isRefund ? 'Record a refund' : 'Record a payment',
+    body: `<form id="pay-form" class="form-grid">
+      <label class="field"><span>Amount ₹</span><input name="amount" type="number" min="0.01" step="0.01" required value="${isRefund ? '' : balance || ''}"></label>
+      <label class="field"><span>Date</span><input name="paid_on" type="date" required value="${today()}"></label>
+      <label class="field"><span>Mode</span><select name="mode"><option>UPI</option><option>Bank transfer</option><option>Cash</option><option>Card</option><option>Cheque</option></select></label>
+      <label class="field"><span>Reference</span><input name="reference" placeholder="UTR or cheque no."></label>
+      <label class="field full"><span>Note</span><input name="note"></label>
+    </form><p style="margin:10px 0 0;color:var(--muted);font-size:13px">Invoice total ${money(t.total)} · Paid ${money(paid)} · Balance ${money(balance)}</p>`,
+    footer: `<button class="btn" data-cancel>Cancel</button><button class="btn primary" data-ok>${isRefund ? 'Save refund' : 'Save payment'}</button>`,
+  });
+  $('[data-cancel]', dlg.el).onclick = dlg.close;
+  $('[data-ok]', dlg.el).onclick = async () => {
+    const form = $('#pay-form', dlg.el);
+    if (!form.reportValidity()) return;
+    const payment = { ...Object.fromEntries(new FormData(form)), invoice_id: doc.id, kind: isRefund ? 'refund' : 'receipt' };
+    if (!isRefund && Number(payment.amount) > balance + 0.001) {
+      const ok = await confirmBox('More than the balance', `This is ${money(Number(payment.amount) - balance)} more than the balance due. Save it anyway?`, 'Save anyway');
+      if (!ok) return;
+    }
+    try {
+      const res = await api('admin', { method: 'POST', body: { type: 'payments', payment } });
+      dlg.close();
+      await loadDoc(doc.id);
+      toast(`${res.payment.receipt_no} recorded`, 'good');
+    } catch (e) { toast(e.message, 'bad'); }
+  };
+}
 
-  const tbody=$('#passenger-table tbody');
+async function loadDoc(id) {
+  const res = await api(`admin?type=invoice&id=${encodeURIComponent(id)}`);
+  settings = res.settings;
+  payments = res.payments || [];
+  doc = fromServer(res.invoice);
+  numberEdited = true;
+  dirty = false;
+  // A draft from a website booking has no price yet, so take it from the package
+  const first = doc.items[0], match = catalogue.find((p) => p.name === first.description);
+  if (/^INV-BT/.test(doc.invoice_number) && match && !Number(first.rate)) first.rate = Number(match.package_price || 0);
+  fillForm();
+  refresh();
+}
 
-  if(!tbody)return;
+function whatsappText() {
+  const t = computeTotals(doc);
+  const paid = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const isQuote = doc.doc_type === 'quotation';
+  return [`Hello ${doc.customer_name},`, '', `Here are your ${isQuote ? 'quotation' : 'invoice'} details from ${settings.company_name}.`, '', `${isQuote ? 'Quotation' : 'Invoice'}: ${doc.invoice_number}`, doc.travel_details.package_name ? `Journey: ${doc.travel_details.package_name}` : '', doc.travel_details.travel_date ? `Travel date: ${niceDate(doc.travel_details.travel_date)}` : '', `Total: ${money(t.total)}`, isQuote ? '' : `Paid: ${money(paid)}`, isQuote ? '' : `Balance due: ${money(Math.max(0, t.total - paid))}`, !isQuote && doc.due_date ? `Due by: ${niceDate(doc.due_date)}` : '', settings.upi_id && !isQuote ? `UPI: ${settings.upi_id}` : '', '', 'Thank you for travelling with Bahadur.'].filter((x, i, a) => x !== '' || a[i - 1] !== '').join('\n');
+}
 
-  const rowCount=tbody.querySelectorAll('tr').length;
+function moreMenu() {
+  const isQuote = doc.doc_type === 'quotation';
+  const dlg = dialog({
+    title: 'More actions',
+    body: `<div style="display:grid;gap:8px">
+      ${doc.status === 'Draft' && doc.id ? '<button class="btn" data-act="sent"><i class="hgi-stroke hgi-sent"></i>Mark as sent</button>' : ''}
+      ${isQuote && doc.id && doc.status !== 'Accepted' ? '<button class="btn" data-act="convert"><i class="hgi-stroke hgi-exchange-01"></i>Convert to invoice</button>' : ''}
+      <button class="btn" data-act="duplicate"><i class="hgi-stroke hgi-copy-01"></i>Duplicate as a new document</button>
+      <button class="btn" data-act="new"><i class="hgi-stroke hgi-add-01"></i>Start a blank document</button>
+      ${doc.email ? '<button class="btn" data-act="email"><i class="hgi-stroke hgi-mail-01"></i>Email the customer</button>' : ''}
+      ${doc.id && doc.status !== 'Cancelled' ? '<button class="btn danger" data-act="cancel"><i class="hgi-stroke hgi-cancel-circle"></i>Cancel this document</button>' : ''}
+    </div>`,
+  });
+  $$('[data-act]', dlg.el).forEach((b) => { b.onclick = async () => { dlg.close(); await runAction(b.dataset.act); }; });
+}
 
-  const newRow=document.createElement('tr');
+async function runAction(act) {
+  if (act === 'sent') {
+    await api('admin', { method: 'PATCH', body: { type: 'invoice_status', id: doc.id, status: 'Sent' } });
+    await loadDoc(doc.id);
+    toast('Marked as sent', 'good');
+  } else if (act === 'convert') {
+    if (!(await ensureSaved())) return;
+    const { invoice } = await api('admin', { method: 'POST', body: { type: 'convert_quotation', id: doc.id } });
+    toast(`Created ${invoice.invoice_number}`, 'good');
+    location.href = `billing.html?id=${invoice.id}`;
+  } else if (act === 'duplicate') {
+    Object.assign(doc, { id: null, invoice_number: '', status: 'Draft', invoice_date: today(), due_date: addDays(today(), settings.due_days ?? 7), paid_amount: 0 });
+    payments = [];
+    numberEdited = false;
+    history.replaceState(null, '', 'billing.html');
+    fillForm(); refresh(); nextNumberHint();
+    toast('Copied. Save to create the new document.');
+  } else if (act === 'new') {
+    location.href = 'billing.html';
+  } else if (act === 'email') {
+    location.href = `mailto:${encodeURIComponent(doc.email)}?subject=${encodeURIComponent(`${doc.doc_type === 'quotation' ? 'Quotation' : 'Invoice'} ${doc.invoice_number} from ${settings.company_name}`)}&body=${encodeURIComponent(whatsappText())}`;
+  } else if (act === 'cancel') {
+    if (!(await confirmBox('Cancel this document?', 'It stays in your records as cancelled and leaves your totals.', 'Cancel document', true))) return;
+    await api('admin', { method: 'PATCH', body: { type: 'invoice_status', id: doc.id, status: 'Cancelled' } });
+    await loadDoc(doc.id);
+    toast('Cancelled');
+  }
+}
 
-  newRow.innerHTML=`<td>${rowCount+1}</td>
+async function nextNumberHint() {
+  try {
+    const { number } = await api(`admin?type=next_number&doc_type=${doc.doc_type}&date=${doc.invoice_date}`);
+    if (!doc.id && !numberEdited) { doc.invoice_number = number; $('[name=invoice_number]').value = number; refresh(); }
+  } catch {}
+}
 
-    <td><input type="text" id="passenger-${rowCount+1}-name" placeholder="Passenger ${rowCount+1}" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px"></td>
+function bind() {
+  const form = $('#bill-form');
+  form.addEventListener('input', onField);
+  form.addEventListener('change', onField);
+  form.addEventListener('submit', (e) => e.preventDefault());
+  $('#advance-amount').addEventListener('input', refreshSoon);
 
-    <td><select id="passenger-${rowCount+1}-type" style="padding:6px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff"><option value="adult">Adult</option><option value="kid">Kid</option></select></td>
-
-    <td><input type="number" id="passenger-${rowCount+1}-age" min="0" max="120" placeholder="Age" style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px"></td>`;
-
-  tbody.appendChild(newRow);
-
-  // Bind input events for new row
-
-  newRow.querySelectorAll('input,select').forEach(el=>{
-
-    el.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
-
+  $('#doc-type').addEventListener('click', (e) => {
+    const type = e.target.dataset.type;
+    if (!type || doc.id) return;
+    doc.doc_type = type;
+    doc.status = 'Draft';
+    numberEdited = false;
+    fillForm(); refresh(); nextNumberHint();
   });
 
-  update();
-
-});
-
-
-
-// Bind input events for ORIGINAL passenger table row (main-passenger-row)
-
-const origRow=document.querySelector('#main-passenger-row');
-
-if(origRow){
-
-  origRow.querySelectorAll('input,select').forEach(el=>{
-
-    el.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
-
+  $('#line-rows').addEventListener('input', (e) => {
+    const row = e.target.closest('[data-i]');
+    if (!row || !e.target.dataset.k) return;
+    doc.items[row.dataset.i][e.target.dataset.k] = e.target.value;
+    markDirty(); refreshSoon();
+  });
+  $('#line-rows').addEventListener('click', (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (!rm) return;
+    doc.items.splice(rm.closest('[data-i]').dataset.i, 1);
+    if (!doc.items.length) doc.items.push({ description: '', sac: settings.default_sac, qty: 1, rate: 0 });
+    renderLines(); markDirty(); refresh();
+  });
+  $('#quick-lines').addEventListener('click', (e) => {
+    if (e.target.dataset.line === undefined) return;
+    doc.items.push({ description: e.target.dataset.line, sac: settings.default_sac, qty: 1, rate: 0 });
+    renderLines(); markDirty(); refresh();
+    $$('#line-rows [data-k=rate]').pop()?.focus();
   });
 
-}
-
-
-
-// Bind listeners for other name-related fields
-
-$('#invoice-names-plain')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
-
-$('#invoice-kids-names')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
-
-$('#invoice-customer')?.addEventListener('change',()=>{update();setTimeout(scalePreview,80);});
-
-$('#invoice-customer-new')?.addEventListener('input',()=>{update();setTimeout(scalePreview,80);});
-
-
-
-/* ── Auto-scale preview to fit the narrow pane ── */
-
-function scalePreview(){
-
-  const sheet=document.getElementById('invoice-sheet');
-
-  if(!sheet)return;
-
-  // Find the workspace container (billing-shell or admin-main)
-
-  const shell=sheet.closest('.billing-shell,.admin-main,.admin-shell');
-
-  if(!shell)return;
-
-  // Get the available width in the right panel
-
-  const shellStyle=window.getComputedStyle(shell);
-
-  const shellCols=shellStyle.gridTemplateColumns;
-
-  // Parse grid columns to find the right panel width
-
-  let rightWidth=0;
-
-  if(shellCols){
-
-    const cols=shellCols.split(/\s+/);
-
-    // Find the last column that's not a fixed pixel value (the right panel)
-
-    for(let i=cols.length-1;i>=0;i--){
-
-      const col=cols[i].trim();
-
-      if(!col.endsWith('px')){rightWidth=Math.min(shell.clientWidth,parseInt(col)||shell.clientWidth);}
-
-    }
-
-  }
-
-  // Fallback: use shell client width minus left panel approx
-
-  if(!rightWidth||rightWidth>shell.clientWidth-300){
-
-    rightWidth=Math.max(shell.clientWidth-300,300);
-
-  }
-
-  // Scale factor: available width / invoice sheet natural width (210mm ≈ 595px at 96dpi)
-
-  // But we use mm in CSS, so compute based on container width in px
-
-  const naturalMm=210;
-
-  const availPx=rightWidth;
-
-  // 1mm ≈ 3.78px at 96dpi
-
-  const availMm=availPx/3.78;
-
-  const scale=Math.min(availMm/naturalMm,1);
-
-  // Apply transform scale
-
-  sheet.style.transform='scale('+scale+')';
-
-  sheet.style.transformOrigin='top left';
-
-  // Adjust the sheet's positioned size so transform scales from natural size
-
-  // The sheet has width:100% and min-height:296mm — transform handles visual scaling
-
-  // Add padding to container to prevent scrollbars from scaled content
-
-  shell.style.overflow='hidden';
-
-}
-
-window.addEventListener('resize',scalePreview);
-
-
-
-/* ── Print ── */
-
-$('#invoice-print').onclick=()=>{
-
-  update();
-
-  document.title=`${value('#invoice-number')} \u00b7 Bahadur Tours`;
-
-  window.print();
-
-};
-
-
-
-/* ── Download PDF ── */
-
-$('#invoice-download').onclick=()=>{
-
-  update();
-
-  const sheet=document.getElementById('invoice-sheet');
-
-  if(!sheet){alert('Invoice not ready.');return;}
-
-  const num=value('#invoice-number','Invoice');
-
-  // Resolve relative asset paths for popup context
-  const baseUrl=window.location.href.substring(0,window.location.href.lastIndexOf('/')+1);
-  let popupSheetHTML=sheet.outerHTML;
-  popupSheetHTML=popupSheetHTML.replace(/src="assets\//g,'src="'+baseUrl+'assets/').replace(/href="assets\//g,'href="'+baseUrl+'assets/');
-
-  const linkTags=[...document.querySelectorAll('link[rel="stylesheet"]')]
-    .map(l=>`<link rel="stylesheet" href="${l.href}">`).join('\n');
-
-  const pw=window.open('','_blank','width=870,height=1120,scrollbars=yes');
-
-  if(!pw){alert('Pop-up blocked. Please allow pop-ups and try again.');return;}
-
-  pw.document.write(`<!doctype html>\n
-<html lang="en"><head>\n
-  <meta charset="UTF-8">\n
-  <title>${num} \u00b7 Bahadur Tours</title>\n
-  ${linkTags}\n
-  <style>\n
-    @page{size:A4;margin:0}\n
-    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}\n
-    html,body{margin:0;padding:0;background:#fff!important;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;min-height:296mm;display:flex;flex-direction:column}\n
-    .invoice-sheet{max-width:none!important;width:210mm!important;min-height:296mm!important;box-shadow:none!important;border-radius:0!important;transform:none!important;font-family:'Poppins',Helvetica Neue,Arial,sans-serif;font-size:13px;color:#26312c;background:#fff;position:relative;page-break-after:always}\n
-    .no-print,.live-badge{display:none!important}\n
-    #out-payment-remarks:empty{display:none!important}\n
-    #out-kids-names:empty{display:none!important}\n
-    #out-multi-customers:empty{display:none!important}\n
-    #out-travelers-list:empty{display:none!important}\n
-    .pro-invoice-spacer{display:block!important;flex:1 0 auto;min-height:0}\n
-    .pro-invoice-head{background:#0d3b2e;color:#fff;padding:38px 50px 36px;display:flex;justify-content:space-between;align-items:flex-start;position:relative}\n
-    .invoice-sheet .pro-invoice-head .logo-plate{background:#fff;border-radius:4px;padding:4px;display:flex;align-items:center;justify-content:center;width:52px;height:52px;flex-shrink:0}
-    .invoice-sheet .pro-invoice-head .logo-plate img{height:44px;width:auto;max-width:100%;object-fit:contain}
-    .pro-invoice-head .right-side{text-align:right}\n
-    .pro-invoice-head .gold-label{font-size:10px;letter-spacing:3px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}\n
-    .pro-invoice-head .invoice-number{font-size:26px;font-weight:700;color:#fff;line-height:1.1}\n
-    .pro-invoice-head .status-badge{display:inline-block;margin-top:8px;padding:3px 12px;border-radius:20px;border:1.5px solid #d3a038;background:rgba(211,160,56,0.12);color:#d3a038;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}\n
-    .pro-invoice-head::after{content:'';position:absolute;left:50px;right:50px;bottom:0;height:6px;background:linear-gradient(to right,#d3a038 40%,#7a1f1f 40%)}\n
-    .pro-invoice-meta{display:flex;gap:30px;padding:30px 50px 0}\n
-    .pro-invoice-meta .col{flex:1;min-width:0}\n
-    .pro-invoice-meta .col.right{flex:0 0 auto;text-align:right}\n
-    .pro-invoice-meta .col h4{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid #d3a038}\n
-    .pro-invoice-meta .col strong{display:block;font-size:15px;font-weight:600;margin-bottom:3px}\n
-    .pro-invoice-meta .col span{display:block;font-size:12px;color:#888;margin-bottom:1px}\n
-    .pro-invoice-meta .col.right span strong{display:inline;font-weight:600;color:#26312c}\n
-    .pro-invoice-meta .col.right span{display:inline-block;text-align:right;margin-left:18px}\n
-    .pro-invoice-meta .col.right span+span{margin-top:6px}\n
-    .info-strip{display:flex;gap:14px;padding:28px 50px 0}\n
-    .info-strip .panel{flex:1;border:1px solid #ddd;border-radius:10px;padding:16px 18px;background:#fff}\n
-    .info-strip .panel.journey{background:#faf7ee}\n
-    .info-strip .panel h4{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin:0 0 12px;padding-bottom:4px;border-bottom:1px solid #d3a038}\n
-    .info-strip .travelers-chips{display:flex;flex-wrap:wrap;gap:8px}\n
-    .info-strip .traveler-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #d8e5e0;font-size:12px;font-weight:600;color:#1a2332}\n
-    .info-strip .traveler-chip .role{font-size:10px;font-weight:400;color:#999;text-transform:uppercase;letter-spacing:.04em}\n
-    .info-strip .journey-facts{display:flex;flex-wrap:wrap;gap:0}\n
-    .info-strip .journey-facts .fact{padding:2px 0}\n
-    .info-strip .journey-facts .fact .lbl{display:inline-block;width:80px;font-size:11px;color:#888}\n
-    .info-strip .journey-facts .fact .val{display:inline-block;font-size:12px;font-weight:500;color:#26312c;margin-right:24px}\n
-    .pro-invoice-table-wrap{padding:28px 50px 0}\n
-    .pro-invoice-table{width:100%;border-collapse:collapse;font-size:13px}\n
-    .pro-invoice-table thead th{background:#0d3b2e;color:#fff;padding:12px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #0d3b2e}\n
-    .pro-invoice-table thead th:last-child,.pro-invoice-table thead th:nth-child(3),.pro-invoice-table thead th:nth-child(4){text-align:right}\n
-    .pro-invoice-table tbody tr:nth-child(odd){background:#fafafa}\n
-    .pro-invoice-table tbody tr:nth-child(even){background:#fff}\n
-    .pro-invoice-table td{padding:14px 16px;border-bottom:1px solid #ececec;vertical-align:top}\n
-    .pro-invoice-table td.desc{font-weight:600;color:#26312c}\n
-    .pro-invoice-table td.subdesc{display:block;font-size:11px;color:#999;font-weight:400;margin-top:2px}\n
-    .pro-invoice-table td:last-child,.pro-invoice-table td:nth-child(3),.pro-invoice-table td:nth-child(4){text-align:right}\n
-    .pro-invoice-table td.amount{font-weight:600;color:#0d3b2e}\n
-    .pro-invoice-bottom{display:flex;gap:24px;padding:26px 50px 0}\n
-    .pro-invoice-bottom .left{flex:1;min-width:0}\n
-    .pro-invoice-bottom .left .pi-block{margin-bottom:14px}\n
-    .pro-invoice-bottom .left .pi-block .lbl{font-size:10px;letter-spacing:2px;color:#d3a038;text-transform:uppercase;margin-bottom:4px}\n
-    .pro-invoice-bottom .left .pi-block p{margin:0;font-size:12px;color:#555;line-height:1.5}\n
-    .pro-invoice-bottom .right{flex:0 0 340px;border:1px solid #ddd;border-radius:8px;padding:16px 18px;background:#fff}\n
-    .pro-invoice-bottom .right .total-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee}\n
-    .pro-invoice-bottom .right .total-row:last-child{border-bottom:none}\n
-    .pro-invoice-bottom .right .total-row .lbl{font-size:12px;color:#555}\n
-    .pro-invoice-bottom .right .total-row .val{font-size:13px;font-weight:600}\n
-    .pro-invoice-bottom .right .total-row.grand .lbl{color:#0d3b2e;font-weight:700;font-size:14px}\n
-    .pro-invoice-bottom .right .total-row.grand .val{color:#0d3b2e;font-weight:700;font-size:16px}\n
-    .pro-invoice-bottom .right .total-row.paid .lbl{color:#16a34a;font-weight:600}\n
-    .pro-invoice-bottom .right .total-row.paid .val{color:#16a34a;font-weight:700;font-size:14px}\n
-    .pro-invoice-bottom .right .total-row.pending .lbl{color:#a02c22;font-weight:600}\n
-    .pro-invoice-bottom .right .total-row.pending .val{color:#a02c22;font-weight:700;font-size:14px}\n
-    .alert-bar{margin:16px 50px 0;padding:10px 14px;background:#fee8e8;border:1px solid #a02c22;border-left:4px solid #a02c22;border-radius:4px;display:flex;align-items:center;gap:10px;font-size:12px;color:#a02c22}\n
-    .alert-bar .alert-icon{font-size:16px;font-weight:700}\n
-    .alert-bar .alert-text strong{font-weight:700}\n
-    .signature-row{display:flex;justify-content:space-between;align-items:flex-end;padding:28px 50px 0;gap:20px}\n
-    .signature-row .sig-block{flex:1;min-width:0}\n
-    .signature-row .sig-line{border-bottom:1.5px solid #26312c;height:40px}\n
-    .signature-row .sig-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:4px}\n
-    .signature-row .sig-seal{width:72px;height:72px;border:2px dashed #d3a038;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#d3a038;text-align:center;transform:rotate(-6deg);font-weight:600;letter-spacing:.04em;text-transform:uppercase;line-height:1.3;flex-shrink:0}\n
-    .pro-invoice-footer{border-top:1px solid #ddd;padding:14px 50px;display:flex;justify-content:space-between;font-size:11px;color:#888;background:#fff}\n
-    .pro-invoice-footer .conditions ol{margin:0;padding:0 0 0 16px;display:inline}\n
-    .pro-invoice-footer .conditions li{margin-bottom:2px}\n
-    .pro-invoice-footer .contact{text-align:right;line-height:1.6}\n
-    .pro-invoice-footer .thank-you{font-size:13px;font-weight:700;color:#0d3b2e;display:block;margin-top:2px}\n
-  </style>\n
-</head><body>\n
-    ${popupSheetHTML}\n
-    <script>window.onload=function(){setTimeout(function(){window.document.title='${num} \u00b7 Bahadur Tours';window.print();setTimeout(function(){window.close();},2000);},400);};<\/script>\n
-  </body></html>`);
-
-  pw.document.close();
-
-};
-
-
-
-$('#invoice-save').onclick=async()=>{
-
-  const t=getToken();
-
-  if(!t)return;
-
-  $('#invoice-state').textContent='Saving\u2026';
-
-  try{
-
-    let r,d;
-
-    if(currentInvoiceId){
-
-      r=await fetch('/api/admin',{
-
-        method:'PUT',
-
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-
-        body:JSON.stringify({type:'invoice',id:currentInvoiceId,...payload()})
-
-      });
-
-    }else{
-
-      r=await fetch('/api/admin',{
-
-        method:'POST',
-
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-
-        body:JSON.stringify({type:'invoice',...payload()})
-
-      });
-
-    }
-
-    d=await r.json();
-
-    if(!r.ok)throw new Error(d.error);
-
-    if(!currentInvoiceId&&d.invoice?.id){
-
-      currentInvoiceId=d.invoice.id;
-
-      $('#invoice-db-id').value=currentInvoiceId;
-
-      $('#invoice-mark-paid').style.display='';
-
-    }
-
-    const status=value('#payment-status','Draft');
-
-    if(status==='Paid'){
-
-      $('#invoice-view-bill').style.display='';
-
-      $('#invoice-mark-paid').style.display='none';
-
-    }
-
-    $('#invoice-state').textContent=`Saved \u00b7 ${new Date().toLocaleString('en-IN')}`;
-
-  }catch(e){$('#invoice-state').textContent=`Not saved: ${e.message}`}
-
-};
-
-
-
-$('#invoice-mark-paid').onclick=async()=>{
-
-  if(!currentInvoiceId){alert('Save the invoice first before marking as paid.');return;}
-
-  if(!confirm('Mark this invoice as Paid?'))return;
-
-  const t=getToken();
-
-  if(!t)return;
-
-  $('#invoice-state').textContent='Updating\u2026';
-
-  try{
-
-    const r=await fetch('/api/admin',{
-
-      method:'PATCH',
-
-      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-
-      body:JSON.stringify({type:'invoice',id:currentInvoiceId,status:'Paid'})
-
+  $('#pax-rows').addEventListener('input', (e) => {
+    const row = e.target.closest('[data-i]');
+    if (!row || !e.target.dataset.k) return;
+    doc.travel_details.passenger_names[row.dataset.i][e.target.dataset.k] = e.target.value;
+    markDirty(); refreshSoon();
+  });
+  $('#pax-rows').addEventListener('click', (e) => {
+    const rm = e.target.closest('[data-rm]');
+    if (!rm) return;
+    doc.travel_details.passenger_names.splice(rm.closest('[data-i]').dataset.i, 1);
+    renderPax(); markDirty(); refresh();
+  });
+  $('#add-pax').onclick = () => { doc.travel_details.passenger_names.push({ name: '', type: 'adult' }); renderPax(); $$('#pax-rows [data-k=name]').pop()?.focus(); };
+  $('#same-as-customer').onclick = () => {
+    if (!doc.customer_name) return toast('Add the customer name first');
+    if (!doc.travel_details.passenger_names.some((p) => p.name === doc.customer_name)) doc.travel_details.passenger_names.unshift({ name: doc.customer_name, type: 'adult' });
+    renderPax(); markDirty(); refresh();
+  };
+  $('#pax-apply').onclick = () => {
+    const rows = $('#pax-paste').value.split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
+      const [name, age] = line.split(/\s+-\s+|\s*,\s*/);
+      const n = Number(age);
+      return { name, age: age || '', type: age && n < 12 ? 'kid' : 'adult' };
     });
+    doc.travel_details.passenger_names.push(...rows);
+    $('#pax-paste').value = '';
+    renderPax(); markDirty(); refresh();
+  };
 
-    const d=await r.json();
+  $('#add-payment').onclick = () => paymentDialog('receipt');
+  $('#add-refund').onclick = () => paymentDialog('refund');
+  $('#ledger').addEventListener('click', async (e) => {
+    const link = e.target.closest('[data-del-pay]');
+    if (!link) return;
+    e.preventDefault();
+    if (!(await confirmBox('Remove this payment?', 'The invoice balance will go back up.', 'Remove', true))) return;
+    try { await api(`admin?type=payments&id=${link.dataset.delPay}`, { method: 'DELETE' }); await loadDoc(doc.id); toast('Payment removed'); } catch (err) { toast(err.message, 'bad'); }
+  });
 
-    if(!r.ok)throw new Error(d.error);
+  $('#btn-save').onclick = save;
+  $('#btn-more').onclick = moreMenu;
+  $('#btn-print').onclick = async () => {
+    if (!(await ensureSaved())) return;
+    document.title = doc.invoice_number;
+    window.print();
+  };
+  $('#btn-pdf').onclick = async () => {
+    if (!(await ensureSaved())) return;
+    const btn = $('#btn-pdf');
+    btn.disabled = true;
+    try {
+      const pages = await savePdf($('#sheet .inv'), pdfName(doc));
+      toast(`PDF saved (${pages} page${pages > 1 ? 's' : ''})`, 'good');
+    } catch (e) { toast(e.message, 'bad'); } finally { btn.disabled = false; }
+  };
+  $('#btn-wa').onclick = async () => {
+    if (!(await ensureSaved())) return;
+    window.open(`https://wa.me/${waNumber(doc.phone)}?text=${encodeURIComponent(whatsappText())}`, '_blank', 'noopener');
+  };
 
-    $('#payment-status').value='Paid';
+  window.addEventListener('resize', debounce(fitStage, 80));
+  window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } });
+}
 
-    $('#invoice-mark-paid').style.display='none';
+await boot({ page: 'billing', title: 'Billing studio', subtitle: 'The preview updates as you type', actions });
+// Connected before the data loads, so the phone tabs respond on a slow connection
+$('#mobile-tabs').addEventListener('click', (e) => {
+  if (!e.target.dataset.view) return;
+  $$('#mobile-tabs button').forEach((b) => b.classList.toggle('active', b === e.target));
+  $('#bill').classList.toggle('show-preview', e.target.dataset.view === 'preview');
+  fitStage();
+});
+await document.fonts?.ready;
 
-    $('#invoice-view-bill').style.display='';
+async function init() {
+  const [settingsRes, customerRes, packageRes, bookingRes] = await Promise.all([
+    api('admin?type=settings'),
+    api('admin?type=customers&limit=500').catch(() => ({ customers: [] })),
+    api('packages?admin=1').catch(() => ({ packages: [] })),
+    api('bookings').catch(() => ({ bookings: [] })),
+  ]);
+  settings = settingsRes.settings;
+  customers = customerRes.customers;
+  catalogue = packageRes.packages;
+  $('#customer-list').innerHTML = customers.map((c) => `<option value="${esc(c.name)}">${esc(c.phone)}</option>`).join('');
+  $('#package-list').innerHTML = catalogue.map((p) => `<option value="${esc(p.name)}">${esc(p.region || '')}</option>`).join('');
+  $('#booking-refs').innerHTML = bookingRes.bookings.slice(0, 100).map((b) => `<option value="${esc(b.booking_ref)}">${esc(b.name)} · ${esc(b.trip)}</option>`).join('');
+  bind();
+  const id = params.get('id') || params.get('invoice_id');
+  if (id) { await loadDoc(id); return; }
+  doc = newDoc();
+  if (params.get('type') === 'quotation') doc.doc_type = 'quotation';
+  fillForm();
+  refresh();
+  const ref = params.get('booking_ref');
+  if (ref) {
+    try {
+      const { booking, invoice } = await api(`admin?type=booking&ref=${encodeURIComponent(ref)}`);
+      if (invoice) { location.replace(`billing.html?id=${invoice.id}`); return; }
+      applyBooking(booking);
+    } catch (e) { toast(e.message, 'bad'); }
+  }
+  dirty = false;
+  await nextNumberHint();
+}
 
-    update();
-
-    $('#invoice-state').textContent=`Marked as Paid \u00b7 ${new Date().toLocaleString('en-IN')}`;
-
-  }catch(e){$('#invoice-state').textContent=`Error: ${e.message}`}
-
-};
-
-
-
-$('#invoice-view-bill').onclick=()=>{
-
-  if(currentInvoiceId)window.open(`paid-bill.html?id=${currentInvoiceId}`,'_blank');
-
-};
-
-
-
-$('#load-invoice-btn').onclick=async()=>{
-
-  const id=$('#load-invoice-id').value.trim();
-
-  if(!id){alert('Enter an invoice ID first');return;}
-
-  const t=getToken();
-
-  if(!t)return;
-
-  $('#invoice-state').textContent='Loading\u2026';
-
-  try{
-
-    const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:'Bearer '+t}});
-
-    const d=await r.json();
-
-    if(!r.ok)throw new Error(d.error||'Not found');
-
-    currentInvoiceId=d.invoice.id;
-
-    $('#invoice-db-id').value=currentInvoiceId;
-
-    populateForm(d.invoice);
-
-    $('#invoice-state').textContent='Invoice loaded.';
-
-  }catch(e){$('#invoice-state').textContent=`Load failed: ${e.message}`}
-
-};
-
-
-
-renderLineInputs();
-
-loadPackages();
-
-loadCustomers();
-
-update();
-
-setTimeout(scalePreview,150);
-
-
-
-(async function autoLoadFromUrl(){
-
-  const params=new URLSearchParams(window.location.search);
-
-  const id=params.get('id')||params.get('invoice_id');
-
-  if(!id)return;
-
-  const t=localStorage.getItem('bahadur-admin-token')||'';
-
-  if(!t)return;
-
-  $('#invoice-state').textContent='Loading invoice\u2026';
-
-  try{
-
-    const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{headers:{Authorization:'Bearer '+t}});
-
-    const d=await r.json();
-
-    if(!r.ok)throw new Error(d.error||'Not found');
-
-    currentInvoiceId=d.invoice.id;
-
-    $('#invoice-db-id').value=currentInvoiceId;
-
-    populateForm(d.invoice);
-
-    $('#invoice-state').textContent='Invoice loaded.';
-
-  }catch(e){$('#invoice-state').textContent=`Auto-load failed: ${e.message}`}
-
-})();
-
+init().catch((e) => toast(e.message, 'bad'));

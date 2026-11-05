@@ -1,168 +1,124 @@
-const $=s=>document.querySelector(s);
-let allInvoices=[];
-const money=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(v||0));
-const token=()=>localStorage.getItem('bahadur-admin-token')||'';
-const auth=()=>({Authorization:`Bearer ${token()}`});
+import { boot, api, esc, money, $, $$, niceDate, statusOf, pill, toast, confirmBox, debounce, csvDownload, today, dialog } from './admin-ui.js';
 
-function invBadge(status){
-  const s=String(status||'').toLowerCase();
-  if(s==='paid')      return 'paid';
-  if(s==='part paid') return 'partpaid';
-  if(s==='sent')      return 'sent';
-  if(s==='overdue')   return 'overdue';
-  return 'draft';
-}
+let rows = [];
+let docType = new URLSearchParams(location.search).get('type') === 'quotation' ? 'quotation' : 'invoice';
+let statusFilter = 'all';
 
-async function safeJson(res){
-  const ct=res.headers.get('content-type')||'';
-  if(!ct.includes('application/json')){const text=await res.text();throw new Error('Server error ('+res.status+'): '+text.slice(0,120).replace(/<[^>]+>/g,''));}
-  return res.json();
-}
-
-function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function fmtDate(v){if(!v)return '\u2014';try{return new Intl.DateTimeFormat('en-IN',{day:'numeric',month:'short',year:'numeric'}).format(new Date(v));}catch{return v;}}
-
-function renderInvoices(rows){
-  const countEl=$('#invoice-count');
-  if(countEl)countEl.textContent=`Showing ${rows.length} of ${allInvoices.length} invoices`;
-  const body=$('#invoice-rows');if(!body)return;
-  if(!rows.length){
-    body.innerHTML=`<tr><td colspan="8"><div class="inv-empty"><i class="hgi-stroke hgi-receipt-02"></i>No invoices found.</div></td></tr>`;
-    return;
-  }
-  const isPaidStatus=s=>s==='Paid'||s==='Part paid';
-  body.innerHTML=rows.map(x=>`
-    <tr>
-      <td><span class="cell-main">${esc(x.invoice_number||'\u2014')}</span><span class="cell-sub">${esc(x.booking_ref||'')}</span></td>
-            <td><span style="font-weight:600">${esc(x.customer_name||'\u2014')}</span><span class="cell-sub">${esc(x.phone||'')}</span><span class="cell-sub">${esc(x.email||'')}</span><span class="cell-sub" style="color:#c97c1a">Kids: ${x.travel_details&&x.travel_details.kids?x.travel_details.kids:'—'}</span></td>
-          <td>${x.kids_names?esc(x.kids_names):'—'}</td>
-          <td>${x.payment_remarks?esc(x.payment_remarks):'—'}</td>
-      <td>${esc(x.booking_ref||'\u2014')}</td>
-      <td>${esc(fmtDate(x.invoice_date))}</td>
-      <td>${esc(fmtDate(x.due_date))}</td>
-      <td><span class="inv-badge ${invBadge(x.status)}">${esc(x.status||'Draft')}</span></td>
-      <td><span class="cell-amount">${money(x.total||0)}</span></td>
-            <td><span class="cell-amount" style="color:#c97c1a;font-size:.85rem">${x.pending_amount?money(x.pending_amount):'—'}</span></td>
-            <td><div class="inv-actions">
-        <a href="billing.html?id=${esc(x.id)}" class="inv-action-btn" title="Edit"><i class="hgi-stroke hgi-edit-01"></i></a>
-        ${isPaidStatus(x.status)
-          ?`<a href="paid-bill.html?id=${esc(x.id)}" class="inv-action-btn paid-btn" title="Receipt" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`
-          :`<button class="inv-action-btn" title="Mark Paid" data-mark-paid="${esc(x.id)}"><i class="hgi-stroke hgi-money-receive-02"></i></button>`
-        }
-        <button class="inv-action-btn danger" title="Delete" data-del-inv="${esc(x.id)}" data-inv-num="${esc(x.invoice_number||'this invoice')}"><i class="hgi-stroke hgi-delete-02"></i></button>
-      </div></td>
-    </tr>`).join('');
-
-  body.querySelectorAll('[data-mark-paid]').forEach(btn=>{
-    btn.onclick=async()=>{
-      const id=btn.dataset.markPaid;if(!confirm('Mark as Paid?'))return;btn.disabled=true;
-      try{
-        const r=await fetch('/api/admin',{method:'PATCH',headers:{'Content-Type':'application/json',...auth()},body:JSON.stringify({type:'invoice_status',id,status:'Paid'})});
-        if(!r.ok)throw new Error('Update failed');
-        const inv=allInvoices.find(i=>i.id===id);if(inv)inv.status='Paid';
-        renderInvoices(allInvoices);updateMetrics();
-      }catch(e){alert('Could not update: '+e.message);btn.disabled=false;}
-    };
-  });
-
-  body.querySelectorAll('[data-del-inv]').forEach(btn=>{
-    btn.onclick=async()=>{
-      const id=btn.dataset.delInv,num=btn.dataset.invNum;
-      if(!confirm(`Delete invoice ${num}?\n\nThis cannot be undone.`))return;
-      btn.disabled=true;
-      const row=btn.closest('tr');if(row){row.style.opacity='.4';row.style.pointerEvents='none';}
-      try{
-        const r=await fetch(`/api/admin?id=${encodeURIComponent(id)}`,{method:'DELETE',headers:auth()});
-        if(!r.ok){const err=await r.json().catch(()=>({}));throw new Error(err.error||'Delete failed ('+r.status+')');}
-        allInvoices=allInvoices.filter(i=>i.id!==id);renderInvoices(allInvoices);updateMetrics();
-      }catch(e){
-        alert('Delete failed: '+e.message);btn.disabled=false;
-        if(row){row.style.opacity='1';row.style.pointerEvents='';}
-      }
-    };
-  });
-}
-
-function updateMetrics(){
-  const total=allInvoices.reduce((a,x)=>a+Number(x.total||0),0);
-  const paid=allInvoices.filter(x=>x.status==='Paid').reduce((a,x)=>a+Number(x.total||0),0);
-  const part=allInvoices.filter(x=>x.status==='Part paid').reduce((a,x)=>a+Number(x.total||0),0);
-  const unpaid=allInvoices.filter(x=>x.status!=='Paid'&&x.status!=='Part paid').reduce((a,x)=>a+Number(x.total||0),0);
-  const set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
-  set('#metric-total',money(total));set('#metric-paid',money(paid));set('#metric-unpaid',money(unpaid));set('#metric-partpaid',money(part));
-}
-
-function applyFilter(){
-  const q=($('#invoice-search')?.value||'').toLowerCase();
-  const sf=($('#invoice-status-filter')?.value||'').toLowerCase();
-  renderInvoices(allInvoices.filter(x=>{
-    const text=`${x.invoice_number||''} ${x.customer_name||''} ${x.booking_ref||''} ${x.phone||''} ${x.email||''}`.toLowerCase();
-    return(!q||text.includes(q))&&(!sf||String(x.status||'').toLowerCase().includes(sf));
-  }));
-}
-
-function exportCSV(){
-  const cols=['invoice_number','customer_name','phone','email','booking_ref','invoice_date','due_date','status','subtotal','discount','tax','total','pending_amount','multi_customers','kids_names','payment_remarks','notes'];
-  const rows=allInvoices.map(x=>cols.map(c=>`"${String(x[c]??'').replace(/"/g,'""')}"`).join(','));
-  const blob=new Blob([cols.join(',')+"\n"+rows.join("\n")],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`invoices-${new Date().toISOString().slice(0,10)}.csv`;a.click();
-}
-
-function login(message=''){
-  const d=$('#admin-login'),err=$('#login-error');
-  if(err)err.textContent=message;
-  if(d&&!d.open)d.showModal();
-  setTimeout(()=>$('#admin-token')?.focus(),50);
-}
-
-function setSyncState(state,text){
-  const pill=$('#admin-state');if(!pill)return;
-  pill.classList.remove('is-live','is-busy','is-error');
-  if(state)pill.classList.add(state);
-  const t=pill.querySelector('.sync-text');
-  if(t)t.textContent=text;else pill.textContent=text;
-}
-
-async function load(){
-  if(!token()){setSyncState('is-error','Sign-in required');login();return;}
-  const btn=$('#admin-refresh');
-  if(btn){btn.classList.add('is-loading');btn.setAttribute('disabled','');}
-  setSyncState('is-busy','Loading invoices\u2026');
-  try{
-    const res=await fetch('/api/admin',{headers:auth()});
-    const d=await safeJson(res);
-    if(res.status===401){localStorage.removeItem('bahadur-admin-token');setSyncState('is-error','Sign-in required');login('Incorrect or expired token.');return;}
-    if(!res.ok)throw new Error(d.error||'Unknown error');
-    allInvoices=d.invoices||[];
-    updateMetrics();applyFilter();
-    setSyncState('is-live','Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){
-    setSyncState('is-error','Error: '+e.message);
-    const body=$('#invoice-rows');
-    if(body)body.innerHTML=`<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--muted)">${esc(e.message)}<br><small>Check DATABASE_URL and ADMIN_API_TOKEN in Vercel.</small></td></tr>`;
-  }finally{
-    if(btn){btn.classList.remove('is-loading');btn.removeAttribute('disabled');}
-  }
-}
-
-$('#admin-login-form')?.addEventListener('submit',e=>{
-  e.preventDefault();
-  const val=($('#admin-token')?.value||'').trim();
-  if(!val){login('Enter the admin token.');return;}
-  localStorage.setItem('bahadur-admin-token',val);
-  $('#admin-login')?.close();load();
+await boot({
+  page: 'invoices', title: 'Invoices & quotes', subtitle: 'Every document, its balance and what to do next',
+  actions: '<button class="btn" id="export"><i class="hgi-stroke hgi-download-04"></i>Export CSV</button><a class="btn primary" href="billing.html"><i class="hgi-stroke hgi-add-01"></i>New invoice</a>',
 });
-$('#admin-token-toggle')?.addEventListener('click',()=>{
-  const i=$('#admin-token');if(!i)return;
-  i.type=i.type==='text'?'password':'text';i.focus();
-});
-$('#admin-refresh')?.addEventListener('click',load);
-$('#admin-lock')?.addEventListener('click',()=>{localStorage.removeItem('bahadur-admin-token');window.location.href='admin.html';});
-$('#invoice-search')?.addEventListener('input',applyFilter);
-$('#invoice-status-filter')?.addEventListener('change',applyFilter);
-$('#export-inv-csv')?.addEventListener('click',exportCSV);
 
-const dateEl=$('#admin-date');
-if(dateEl)dateEl.textContent=new Intl.DateTimeFormat('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());
-load();
+$('main.ad-main').innerHTML = `
+  <div class="grid g-4" id="stats"></div>
+  <section class="card mt">
+    <div class="card-head">
+      <div class="tabs" id="doc-tabs"><button data-t="invoice">Invoices</button><button data-t="quotation">Quotations</button></div>
+      <div class="tabs" id="status-tabs"></div>
+      <span class="sp"></span>
+      <label class="search"><i class="hgi-stroke hgi-search-01"></i><input id="q" placeholder="Number, customer, phone" aria-label="Search"></label>
+    </div>
+    <div class="table-wrap"><table class="t"><thead><tr><th>Number</th><th>Customer</th><th>Journey</th><th>Date</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">Balance</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+  </section>`;
+
+const balance = (x) => Math.max(0, Number(x.total || 0) - Number(x.paid_amount || 0));
+const FILTERS = { invoice: ['all', 'Draft', 'Sent', 'Part paid', 'Paid', 'Overdue', 'Cancelled'], quotation: ['all', 'Draft', 'Sent', 'Accepted', 'Cancelled'] };
+
+function render() {
+  $$('#doc-tabs button').forEach((b) => b.classList.toggle('active', b.dataset.t === docType));
+  $('#status-tabs').innerHTML = FILTERS[docType].map((s) => `<button data-s="${s}" class="${s === statusFilter ? 'active' : ''}">${s === 'all' ? 'All' : s}</button>`).join('');
+  const live = rows.filter((x) => x.status !== 'Cancelled');
+  const billed = live.reduce((s, x) => s + Number(x.total || 0), 0);
+  const open = live.reduce((s, x) => s + balance(x), 0);
+  const overdue = live.filter((x) => statusOf(x) === 'Overdue');
+  $('#stats').innerHTML = docType === 'invoice' ? `
+    <div class="stat hero"><small>Total billed</small><strong>${money(billed, 0)}</strong><span>${live.length} invoices</span></div>
+    <div class="stat good"><small>Collected</small><strong>${money(billed - open, 0)}</strong><span>Across all invoices</span></div>
+    <div class="stat warn"><small>Balance to collect</small><strong>${money(open, 0)}</strong><span>${live.filter((x) => balance(x) > 0).length} open</span></div>
+    <div class="stat"><small>Overdue</small><strong>${overdue.length}</strong><span>${money(overdue.reduce((s, x) => s + balance(x), 0), 0)}</span></div>` : `
+    <div class="stat hero"><small>Quoted value</small><strong>${money(billed, 0)}</strong><span>${live.length} quotations</span></div>
+    <div class="stat good"><small>Accepted</small><strong>${live.filter((x) => x.status === 'Accepted').length}</strong><span>Converted to invoices</span></div>
+    <div class="stat"><small>Awaiting reply</small><strong>${live.filter((x) => x.status === 'Sent').length}</strong><span>Sent to customers</span></div>
+    <div class="stat"><small>Drafts</small><strong>${live.filter((x) => x.status === 'Draft').length}</strong><span>Not sent</span></div>`;
+  const list = rows.filter((x) => statusFilter === 'all' || statusOf(x) === statusFilter);
+  $('#rows').innerHTML = list.length ? list.map((x) => {
+    const st = statusOf(x);
+    return `<tr>
+      <td class="nowrap"><a href="billing.html?id=${x.id}"><strong>${esc(x.invoice_number)}</strong></a><small>${esc(x.booking_ref || '')}</small></td>
+      <td><strong>${esc(x.customer_name)}</strong><small>${esc(x.phone || '')}</small></td>
+      <td>${esc(x.package_name || '—')}</td>
+      <td class="nowrap">${niceDate(x.invoice_date)}</td>
+      <td class="nowrap">${x.due_date ? niceDate(x.due_date) : '—'}</td>
+      <td>${pill(st)}</td>
+      <td class="num">${money(x.total)}</td>
+      <td class="num">${x.status === 'Cancelled' || docType === 'quotation' ? '—' : money(balance(x))}</td>
+      <td><div class="actions">
+        <a class="btn sm icon" href="paid-bill.html?id=${x.id}" title="View and print" target="_blank" rel="noopener"><i class="hgi-stroke hgi-view"></i></a>
+        <a class="btn sm icon" href="billing.html?id=${x.id}" title="Edit"><i class="hgi-stroke hgi-edit-02"></i></a>
+        ${docType === 'invoice' && balance(x) > 0 && x.status !== 'Cancelled' ? `<button class="btn sm icon" data-pay="${x.id}" title="Record payment"><i class="hgi-stroke hgi-credit-card"></i></button>` : ''}
+        ${docType === 'quotation' && x.status !== 'Accepted' && x.status !== 'Cancelled' ? `<button class="btn sm" data-convert="${x.id}">To invoice</button>` : ''}
+        <button class="btn sm icon danger" data-del="${x.id}" title="Delete"><i class="hgi-stroke hgi-delete-02"></i></button>
+      </div></td></tr>`;
+  }).join('') : `<tr><td colspan="9"><div class="empty"><i class="hgi-stroke hgi-invoice-03"></i>Nothing here yet.</div></td></tr>`;
+}
+
+async function load() {
+  const q = $('#q').value.trim();
+  const d = await api(`admin?type=invoices&doc_type=${docType}&q=${encodeURIComponent(q)}`);
+  rows = d.invoices;
+  render();
+}
+
+function payDialog(inv) {
+  const bal = balance(inv);
+  const dlg = dialog({
+    title: `Record payment · ${inv.invoice_number}`,
+    body: `<form id="pf" class="form-grid">
+      <label class="field"><span>Amount ₹</span><input name="amount" type="number" min="0.01" step="0.01" value="${bal}" required></label>
+      <label class="field"><span>Date</span><input name="paid_on" type="date" value="${today()}" required></label>
+      <label class="field"><span>Mode</span><select name="mode"><option>UPI</option><option>Bank transfer</option><option>Cash</option><option>Card</option><option>Cheque</option></select></label>
+      <label class="field"><span>Reference</span><input name="reference" placeholder="UTR or cheque no."></label></form>
+      <p style="margin:10px 0 0;color:var(--muted);font-size:13px">${esc(inv.customer_name)} · Balance ${money(bal)}</p>`,
+    footer: '<button class="btn" data-c>Cancel</button><button class="btn primary" data-ok>Save payment</button>',
+  });
+  $('[data-c]', dlg.el).onclick = dlg.close;
+  $('[data-ok]', dlg.el).onclick = async () => {
+    const f = $('#pf', dlg.el);
+    if (!f.reportValidity()) return;
+    try {
+      const { payment } = await api('admin', { method: 'POST', body: { type: 'payments', payment: { ...Object.fromEntries(new FormData(f)), invoice_id: inv.id } } });
+      dlg.close();
+      toast(`${payment.receipt_no} recorded`, 'good');
+      load();
+    } catch (e) { toast(e.message, 'bad'); }
+  };
+}
+
+$('main.ad-main').addEventListener('click', async (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  try {
+    if (t.dataset.t) { docType = t.dataset.t; statusFilter = 'all'; await load(); }
+    if (t.dataset.s) { statusFilter = t.dataset.s; render(); }
+    if (t.dataset.pay) payDialog(rows.find((x) => x.id === t.dataset.pay));
+    if (t.dataset.convert) {
+      const { invoice } = await api('admin', { method: 'POST', body: { type: 'convert_quotation', id: t.dataset.convert } });
+      toast(`Created ${invoice.invoice_number}`, 'good');
+      location.href = `billing.html?id=${invoice.id}`;
+    }
+    if (t.dataset.del) {
+      const inv = rows.find((x) => x.id === t.dataset.del);
+      if (!(await confirmBox('Delete this document?', `${inv.invoice_number} will be removed permanently.`, 'Delete', true))) return;
+      await api(`admin?id=${t.dataset.del}`, { method: 'DELETE' });
+      toast('Deleted');
+      await load();
+    }
+  } catch (err) { toast(err.message, 'bad'); }
+});
+
+$('#q').addEventListener('input', debounce(() => load().catch((e) => toast(e.message, 'bad')), 250));
+$('#export').onclick = () => csvDownload(`bahadur-${docType}s-${today()}.csv`, [
+  ['Number', 'Date', 'Due', 'Customer', 'Phone', 'Booking ref', 'Journey', 'Status', 'Subtotal', 'Discount', 'Tax', 'Total', 'Paid', 'Balance'],
+  ...rows.map((x) => [x.invoice_number, String(x.invoice_date).slice(0, 10), String(x.due_date || '').slice(0, 10), x.customer_name, x.phone, x.booking_ref, x.package_name, statusOf(x), x.subtotal, x.discount, x.tax, x.total, x.paid_amount, balance(x)]),
+]);
+load().catch((e) => toast(e.message, 'bad'));

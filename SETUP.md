@@ -20,9 +20,9 @@ The booking API uses Resend.
 2. Create an API key and add `RESEND_API_KEY`.
 3. Set `RESEND_FROM_EMAIL` to an address on the verified domain.
 4. Set `BOOKING_EMAIL=bahadurtourstravels@gmail.com`.
-5. Set `SEND_CUSTOMER_EMAIL=true` to email a receipt to the traveller as well.
+5. Set `SEND_CUSTOMER_EMAIL=true` to also email the traveller a confirmation that their request was received.
 
-Every successful booking submission calls `/api/bookings` and sends the owner a structured booking email.
+Every booking sends the owner an email with all the details. Press reply to answer the guest directly. Email is skipped until `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set.
 
 ## 4. Automatic WhatsApp notifications
 The booking API uses Meta WhatsApp Cloud API.
@@ -34,7 +34,11 @@ The booking API uses Meta WhatsApp Cloud API.
 6. Set `WHATSAPP_BOOKING_TEMPLATE=booking_confirmation` and the approved language code.
 7. Redeploy.
 
-Meta requires an approved template for business-initiated customer messages outside the 24-hour support window. The API always attempts the admin notification and sends the customer template when configured.
+With the template set, both the owner number and the guest receive it. The guest's number must include a country code, or be a 10-digit Indian number.
+
+Without a template the owner gets a plain text alert and the guest gets nothing. Meta only delivers plain text if the owner has messaged the business number in the last 24 hours, so it can fail without any error. Set up the template for reliable alerts, and note that the owner's template message shows only the name, reference and trip. The full details are in the owner email.
+
+A failed alert never stops a booking. Failures appear in Vercel Function Logs as `Booking alert failed`.
 
 ## 5. Test
 - Submit a booking using your own email and WhatsApp number.

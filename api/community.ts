@@ -1,4 +1,4 @@
-import {db,clean} from './_db.js';
+import {db,clean,ensureSchema} from './_db.js';
 import {createHash} from 'node:crypto';
 
 export default async function handler(req:any,res:any){
@@ -12,9 +12,10 @@ export default async function handler(req:any,res:any){
       const b=req.body||{};
       const raw=clean(b.visitorId,160);
       if(!raw)return res.status(400).json({error:'Visitor id required'});
+      await ensureSchema(sql);
       const salt=process.env.ANALYTICS_SALT||process.env.ADMIN_API_TOKEN||'bahadur';
       const visitorHash=createHash('sha256').update(raw+salt).digest('hex');
-      await sql`insert into page_views(visitor_hash,path,referrer,user_agent) values(${visitorHash},${clean(b.path,300)||'/'}${clean(b.referrer,500)||null},${clean(req.headers['user-agent'],500)||null})`;
+      await sql`insert into page_views(visitor_hash,path,referrer,user_agent) values(${visitorHash},${clean(b.path,300)||'/'},${clean(b.referrer,500)||null},${clean(req.headers['user-agent'],500)||null})`;
       return res.status(204).end();
     }catch{return res.status(204).end();}
   }

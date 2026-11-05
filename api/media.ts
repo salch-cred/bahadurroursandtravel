@@ -1,5 +1,7 @@
 import { db, requireAdmin, clean } from './_db.js';
 
+const MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'];
+
 function parseBase64(data: string) {
   return Buffer.from(data, 'base64');
 }
@@ -91,6 +93,7 @@ export default async function handler(req: any, res: any) {
         const buffer = parseBase64(String(f.data || ''));
         if (!buffer.length) { errors.push(`${f.fileName}: empty file`); continue; }
         const mimeType  = String(f.mimeType || 'image/jpeg');
+        if (!MEDIA_TYPES.includes(mimeType)) { errors.push(`${f.fileName}: unsupported file type`); continue; }
         const isVideo   = mimeType.startsWith('video/');
         const dataUrl   = `data:${mimeType};base64,${f.data}`;
         const status    = isAdmin ? (b.status === 'approved' ? 'approved' : 'pending') : 'pending';

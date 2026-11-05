@@ -1,25 +1,5 @@
-import { db, requireAdmin, clean } from './_db.js';
-
-async function ensureTable(sql: any) {
-  await sql`
-    CREATE TABLE IF NOT EXISTS bookings (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      booking_ref TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      email TEXT DEFAULT '',
-      trip TEXT DEFAULT 'Custom journey',
-      travel_date TEXT DEFAULT '',
-      guests TEXT DEFAULT '2 guests',
-      city TEXT DEFAULT '',
-      note TEXT DEFAULT '',
-      status TEXT DEFAULT 'pending',
-      source TEXT DEFAULT 'website',
-      created_at TIMESTAMPTZ DEFAULT now(),
-      updated_at TIMESTAMPTZ DEFAULT now()
-    )
-  `;
-}
+import { db, requireAdmin, clean, ensureSchema } from './_db.js';
+import { notifyBooking } from './_notify.js';
 
 export default async function handler(req: any, res: any) {
   // Allow CORS for same origin
@@ -30,7 +10,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const sql = db();
-    await ensureTable(sql);
+    await ensureSchema(sql);
 
     // ── POST /api/bookings — save a new customer booking ──────────────────
     if (req.method === 'POST') {
@@ -64,12 +44,13 @@ export default async function handler(req: any, res: any) {
       // ── Auto-create a matching draft invoice ──────────────────────────────
       try {
         const invoiceNumber = 'INV-' + ref;
+        const guestCount = Math.max(1, parseInt(String(b.guests || '1'), 10) || 1);
         await sql`
           INSERT INTO invoices (
             invoice_number, invoice_date, booking_ref,
             customer_name, phone, email,
             items, subtotal, tax_rate, tax, total,
-            status, notes
+            status, notes, doc_type, paid_amount, pending_amount, travel_details
           ) VALUES (
             ${invoiceNumber},
             ${new Date().toISOString().slice(0, 10)},
@@ -77,14 +58,18 @@ export default async function handler(req: any, res: any) {
             ${name},
             ${clean(b.phone, 30)},
             ${clean(b.email, 200)},
-            ${JSON.stringify([{ description: clean(b.trip || 'Custom journey', 300), qty: Number(String(b.guests || '2').replace(/\D.*/,'')), unit_price: 0, total: 0 }])}::jsonb,
+            ${JSON.stringify([{ description: clean(b.trip || 'Custom journey', 300), sac: '998555', qty: guestCount, rate: 0, amount: 0 }])}::jsonb,
             0, 0, 0, 0,
             'Draft',
-            ${clean(b.note, 2000)}
+            ${clean(b.note, 2000)},
+            'invoice', 0, 0,
+            ${JSON.stringify({ package_name: clean(b.trip || 'Custom journey', 300), travel_date: clean(b.date, 30), travellers: guestCount, kids: 0, passenger_names: [{ name, type: 'adult', age: null }] })}::jsonb
           )
           ON CONFLICT (invoice_number) DO NOTHING
         `;
       } catch (_) { /* invoice auto-save is best-effort */ }
+
+      await notifyBooking(booking);
 
       return res.status(201).json({
         ok: true,

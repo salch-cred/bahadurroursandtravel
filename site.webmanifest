@@ -1,12 +1,17 @@
 {
-  "name": "Bahadur Real-Estate Tours and Travels",
+  "name": "Bahadur Tours and Travels",
   "short_name": "Bahadur",
-  "description": "Real-estate, tours and travels — planned end to end.",
+  "description": "Lakshadweep, Umrah and journeys worldwide, planned end to end.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f4f7f4",
-  "theme_color": "#062f2a",
+  "background_color": "#f0f9ff",
+  "theme_color": "#0f6fc4",
   "icons": [
+    {
+      "src": "/assets/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
     {
       "src": "/assets/favicon-192x192.png",
       "sizes": "192x192",

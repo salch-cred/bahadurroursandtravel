@@ -1,46 +1,45 @@
-# Bahadur Tours & Travels
+# Bahadur Tours and Travels
 
-A responsive liquid-glass travel booking experience built with semantic HTML, CSS and TypeScript, ready for Vercel.
+Travel website and business panel: a static site on Vercel with TypeScript API functions and a Neon PostgreSQL database.
 
-## Included
-- Premium homepage using supplied logo and photography
-- Dedicated package discovery and booking page
-- 41 searchable packages with India, pilgrimage, international, coastal/local and family filters
-- Booking request flow with automatic owner email and Meta WhatsApp Cloud API notifications
-- Review submission and verification-ready UX
-- Mistral-powered AI concierge with server-side key protection
-- Exact OpenStreetMap coordinates for every added destination and a 3D pitched MapLibre map
-- Force Urbania service section
-- Admin operations dashboard
-- Terms, cancellation, safety and privacy page
+## Website
+- Home page with scroll motion (`index.html`, `motion.js`, `home.js`)
+- Package catalogue and full package pages (`booking.html`, `live-packages.js`, `package.html`, `package-detail.js`)
+- Umrah, Explore Agatti, Guest stories, Travel guides and Terms
+- Booking request window and AI concierge on every page (`site-ui.js`, `app.js`)
 
-## Run
-`python3 -m http.server 4173` then open `http://localhost:4173`.
+The shared look lives in `styles.css`. The navigation, footer and booking window are added by `site-ui.js`, so a change there updates every page.
 
-## Build TypeScript
-`tsc app.ts --target ES2020 --module ES2020 --lib ES2020,DOM --outDir .`
+## Business panel
+Sign in at `admin.html` with `ADMIN_API_TOKEN`.
 
-## Production integrations
-The included Vercel Functions connect Mistral, Resend email and Meta WhatsApp Cloud API without exposing keys in the browser. Follow `SETUP.md` and copy every required value from `.env.example` into Vercel Environment Variables. Add a database and authenticated admin access before treating the demo dashboard as a live operations system.
+| Page | Purpose |
+| --- | --- |
+| `admin.html` | Dashboard: money, overdue payments, bookings, visitors |
+| `bookings-admin.html` | Booking requests, status, WhatsApp, bill from a booking |
+| `billing.html` | Invoice and quotation editor with live A4 preview, print and PDF |
+| `invoices-admin.html` | All invoices and quotations, balances, record payment |
+| `customers-admin.html` | Customer book and statements |
+| `finance-admin.html` | Payments received and expenses |
+| `reports-admin.html` | Profit and loss, GST summary, receivables by age |
+| `packages-admin.html` | Everything shown on the package pages |
+| `settings-admin.html` | Company, GSTIN, bank and UPI details, numbering, conditions |
 
-Map data is © OpenStreetMap contributors. The interface uses a Hugeicons-compatible 24px outline icon language; install `@hugeicons/react` when migrating the static shell to React.
+Fill in **Business settings** first: GSTIN, bank and UPI details print on every invoice.
 
+### How billing works
+- Totals are always recalculated on the server, so a saved invoice cannot disagree with its lines.
+- Paid amount, balance and status come from the payment ledger. Record a payment and they update on their own.
+- Numbers run per Indian financial year, for example `BT/2026-27/0001`. Quotations and receipts have their own series.
+- `invoice-render.js` and `invoice.css` are the single template for the preview, print and PDF.
 
-## Destination media
-Added destination photos are requested from Wikimedia Commons at runtime and link to the source licence. Google Image Search results are not copied because appearing in Google does not make an image copyright-free.
+## Run locally
+`npm install`, then `npm run dev` (uses `vercel dev`, and needs the variables in `.env.example`).
 
+## Database
+Every table is created and upgraded automatically on the first API request after a deploy (`ensureSchema` in `api/_db.ts`). Older databases are upgraded in place and existing paid amounts are carried over into the payment ledger.
 
+## Production setup
+See `SETUP.md` for Vercel, AI chat and messaging, and `NEON-SETUP.md` for the database and media storage.
 
-## Operations upgrade
-- Live Neon-backed admin metrics with no hardcoded figures
-- Real booking persistence from the public booking API
-- A4 billing studio with automatic totals, invoice storage, print and Save-as-PDF layout
-- Dedicated guest stories page for approved reviews, explorer photos and visitor videos
-- Secure admin media manager with consent, moderation and 8 MB upload validation
-- Improved scannable terms page covering refunds, privacy and guest-media permission
-
-Run `supabase-schema.sql` and follow the Neon section in `SETUP.md` before using the dashboard with customer data.
-
-
-## Version 4 visitor platform
-The active backend is Neon PostgreSQL. Package CRUD, booking persistence, verified review publishing, billing records and media metadata use Neon. Visitor media files use Vercel Blob with their URLs stored in Neon.
+Map data is © OpenStreetMap contributors.

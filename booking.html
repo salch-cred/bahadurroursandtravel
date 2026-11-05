@@ -1,184 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Book a Journey — Bahadur Tours & Travels</title>
-<link rel="icon" href="assets/bahadur-logo.png" type="image/png">
-<meta name="description" content="Book Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives and more with Bahadur Tours & Travels. Instant WhatsApp confirmation."/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"/>
-<link href="styles.css" rel="stylesheet"/>
-<link href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css" rel="stylesheet"/>
-<style>
-.package-footer{border-top:1px solid var(--line);padding-top:14px;display:flex;gap:8px;align-items:center}
-.pkg-details-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:9px;background:#f4f7f4;color:var(--ink);font-size:13px;font-weight:700;text-decoration:none;border:1px solid var(--line);transition:.2s;flex-shrink:0}
-.pkg-details-btn:hover{background:var(--ink);color:#fff}
-.pkg-book-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:9px;background:var(--green);color:#fff;font-size:13px;font-weight:800;border:0;cursor:pointer;transition:.2s;white-space:nowrap}
-.pkg-book-btn:hover{background:#073f37;transform:translateY(-1px)}
-@media(max-width:400px){.pkg-details-btn span{display:none}}
-</style>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"/>
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"/>
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
-  <link rel="manifest" href="/site.webmanifest"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f6fc4">
+<title>Packages — Bahadur Tours and Travels</title>
+<meta name="description" content="Browse Lakshadweep, Umrah, Kashmir, Kerala, Dubai, Maldives and more. Tailored journeys from Bahadur Tours and Travels.">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<link rel="stylesheet" href="styles.css">
 </head>
-<body class="booking-page">
-<header class="nav-wrap">
-  <nav class="nav glass">
-    <a class="brand" href="index.html"><img alt="Bahadur Real-Estate Tours and Travels" src="assets/bahadur-logo.png"/></a>
-    <div class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="#packages">Packages</a>
-      <a href="umrah.html">Umrah</a>
-      <a href="community.html">Guest stories</a>
-      <a href="terms.html">Terms</a>
-    </div>
-    <button class="btn btn-small" data-book="">Custom trip <i class="hgi-stroke hgi-arrow-up-right-01"></i></button>
-  </nav>
-</header>
-
+<body class="catalogue">
 <main>
-  <section class="booking-hero">
-    <div class="booking-orb one"></div>
-    <div class="booking-orb two"></div>
-    <div class="booking-hero-copy">
-      <span class="eyebrow glass"><span class="pulse"></span> Curated journeys, clear booking</span>
-      <h1>Find a trip that<br/><em>feels like yours.</em></h1>
-      <p>From island water to sacred journeys and city escapes. Pick a starting point; our team will tailor the details.</p>
-      <div class="package-search glass">
-        <input id="package-search" placeholder="Search destination or experience"/>
-        <button><i class="hgi-stroke hgi-search-01"></i></button>
-      </div>
-    </div>
-  </section>
-
-  <section class="packages section" id="packages">
-    <div class="package-toolbar">
-      <div class="package-tabs glass">
-        <button class="active" data-filter="all">All journeys</button>
-        <button data-filter="domestic">India</button>
-        <button data-filter="pilgrimage">Pilgrimage</button>
-        <button data-filter="international">International</button>
-        <button data-filter="local">Coastal &amp; local</button>
-        <button data-filter="family">Family</button>
-      </div>
-      <span><strong>41</strong> handpicked journeys</span>
-    </div>
-
-    <div class="package-grid" id="managed-package-grid"></div>
-
-    <div class="package-section-label">
-      <span class="kicker">More places, more possibilities</span>
-      <h2>Go further with Bahadur.</h2>
-      <p>Every card includes a verified map point and a freely licensed Wikimedia photo when available.</p>
-    </div>
-    <div class="package-grid expanded-grid" id="more-package-grid"></div>
-  </section>
-
-  
+<section class="page-hero"><img class="cloud" src="assets/sky/cloud-c.webp" alt="" style="width:24vw;left:6%;top:24%"><img class="cloud" src="assets/sky/cloud-b.webp" alt="" style="width:26vw;right:3%;top:38%"><img class="bank" src="assets/sky/cloud-bank.webp" alt=""><div class="wrap"><h1 id="blog-title">Find a trip that feels like yours</h1><p id="blog-sub">From island water to sacred journeys and city escapes. Pick a starting point and our team will tailor the details.</p><label class="search-bar"><i class="hgi-stroke hgi-search-01"></i><input id="package-search" placeholder="Search a destination or experience" aria-label="Search packages"></label></div></section>
+<div class="cat-bar"><div class="wrap cat-tools"><div class="tabs" id="filter-tabs"><button data-filter="all">All journeys</button><button data-filter="domestic">India</button><button data-filter="international">International</button><button data-filter="pilgrimage">Pilgrimage</button><button data-filter="transport">Vehicle hire</button></div><div class="cat-right"><span id="result-count"></span><select id="sort" aria-label="Sort packages"><option value="featured">Featured</option><option value="low">Price: low to high</option><option value="name">Name</option></select></div></div></div>
+<section class="section" style="padding-top:32px"><div class="wrap"><div class="pk-grid" id="catalogue"><div class="pk skel"></div><div class="pk skel"></div><div class="pk skel"></div></div>
+<div class="band" style="margin-top:64px;min-height:320px;align-items:center"><img src="assets/images/explorer/island-sunset-beach.jpg" alt="" loading="lazy"><div class="band-copy"><h2 class="h3">Can’t see your dream trip?</h2><p>Tell us where you want to go. We’ll build it around your dates and budget.</p><button class="btn btn-white" data-book>Request a custom trip <i class="hgi-stroke hgi-arrow-right-01"></i></button></div></div></div></section>
 </main>
-
-<footer class="site-footer">
-  <div class="footer-brand"><img alt="Bahadur Real-Estate Tours and Travels" src="assets/bahadur-logo.png"/><p>Island travel, thoughtfully arranged.</p></div>
-  <div><strong>Explore</strong><a href="index.html">Home</a><a href="#packages">Packages</a><a href="umrah.html">Umrah</a></div>
-  <div><strong>Company</strong><a href="terms.html">Terms &amp; Conditions</a><a href="admin.html">Admin</a></div>
-  <div class="footer-bottom">© 2026 Bahadur Tours &amp; Travels <span>WhatsApp: +91 91874 40916</span></div>
-</footer>
-
-<!-- BOOKING MODAL -->
-<div aria-hidden="true" class="modal" id="booking-modal">
-  <div class="modal-backdrop" data-close=""></div>
-  <div class="modal-panel glass">
-    <button class="modal-close" data-close="">×</button>
-    <span class="kicker">Request to book</span>
-    <h2>Let's shape your journey</h2>
-    <form id="booking-form">
-      <div class="form-grid">
-        <label>Full name<input name="name" placeholder="Your name" required=""/></label>
-        <label>WhatsApp<input name="phone" placeholder="+91" required=""/></label>
-        <label>Email<input name="email" placeholder="you@example.com" required="" type="email"/></label>
-        <label>Selected journey
-          <select id="trip-select" name="trip">
-            <option>Custom journey</option>
-            <optgroup label="🏝 Island Packages">
-              <option>Lakshadweep island escape</option>
-              <option>Lakshadweep Premium scuba</option>
-              <option>Lakshadweep water sports</option>
-            </optgroup>
-            <optgroup label="🕌 Umrah Pilgrimage">
-              <option>Umrah Economy (10-12 days)</option>
-              <option>Umrah Standard (12-14 days)</option>
-              <option>Umrah Premium (14-15 days)</option>
-            </optgroup>
-            <optgroup label="🏔 Domestic India">
-              <option>Kashmir valley tour</option>
-              <option>Kashmir snow trip</option>
-              <option>Kerala backwater tour</option>
-              <option>Goa beach holiday</option>
-              <option>Manali snow trip</option>
-              <option>Andaman island tour</option>
-              <option>Rajasthan Royal tour</option>
-              <option>Coorg coffee retreat</option>
-            </optgroup>
-            <optgroup label="🛕 Pilgrimage">
-              <option>Ajmer Sharif ziyarat</option>
-              <option>Tirupati Balaji package</option>
-            </optgroup>
-            <optgroup label="✈️ International">
-              <option>Dubai city and desert</option>
-              <option>Maldives honeymoon</option>
-              <option>Thailand island tour</option>
-              <option>Singapore city tour</option>
-            </optgroup>
-            <optgroup label="🚌 Urbania Transport">
-              <option>Force Urbania — airport transfer</option>
-              <option>Force Urbania — outstation trip</option>
-              <option>Force Urbania — pilgrimage journey</option>
-            </optgroup>
-          </select>
-        </label>
-        <label>Travel date<input name="date" required="" type="date"/></label>
-        <label>Guests
-          <select name="guests">
-            <option>1 guest</option><option>2 guests</option><option>3 guests</option>
-            <option>4 guests</option><option>5 guests</option><option>6 guests</option>
-            <option>7–10 guests</option><option>10+ guests</option>
-          </select>
-        </label>
-        <label>Starting city<input name="city" placeholder="Kochi"/></label>
-      </div>
-      <label>Notes<textarea name="note" placeholder="Budget, children, room type, special requests…"></textarea></label>
-      <label class="consent"><input required="" type="checkbox"/> I agree to the <a href="terms.html">Terms &amp; Conditions</a>.</label>
-      <button class="btn btn-dark full" type="submit">Send booking request <i class="hgi-stroke hgi-arrow-right-01"></i></button>
-      <p class="form-note">Our team will contact you within 2 hours via WhatsApp (+91 91874 40916) and email.</p>
-    </form>
-  </div>
-</div>
-
-<!-- AI PANEL -->
-<button class="ai-fab" id="ai-open" type="button" aria-label="Open Bahadur AI chat"><span>✦</span><div><strong>Ask Bahadur AI</strong><small>Plan in a few messages</small></div></button>
-<aside class="ai-panel glass" id="ai-panel">
-  <button id="ai-close">×</button>
-  <span class="kicker">Mistral travel concierge</span>
-  <h3>Where should we take you?</h3>
-  <div class="ai-suggestions">
-    <button type="button" class="ai-chip" data-q="Best Lakshadweep package for family of 4?">🏝 Lakshadweep</button>
-    <button type="button" class="ai-chip" data-q="What does Umrah Premium package include?">🕌 Umrah details</button>
-    <button type="button" class="ai-chip" data-q="Kashmir trip in August, 2 people, budget ₹50,000">🏔 Kashmir</button>
-    <button type="button" class="ai-chip" data-q="Maldives honeymoon package options?">💑 Maldives</button>
-    <button type="button" class="ai-chip" data-q="How to book Force Urbania for airport transfer?">🚌 Urbania</button>
-  </div>
-  <div class="chat" id="ai-messages"><div class="ai-msg ai-msg-bot">Tell me your dates, group size, budget and preferred destination.</div></div>
-  <form id="chat-form"><input id="ai-input" placeholder="e.g. Kerala, 4 people, August…"/><button id="ai-send" type="submit">↑</button></form>
-  <small>Final availability and pricing are confirmed by our team.</small>
-</aside>
-
-<script src="destinations.js" type="module"></script>
+<div id="site-footer"></div>
+<script src="site-ui.js"></script>
 <script src="app.js" type="module"></script>
 <script src="live-packages.js" type="module"></script>
-<script src="visitor-reviews.js" type="module"></script>
 <script src="performance.js" type="module"></script>
-<script src="site-ui.js"></script>
+<script src="assets/vendor/gsap.min.js"></script>
+<script src="assets/vendor/ScrollTrigger.min.js"></script>
+<script src="assets/vendor/MotionPathPlugin.min.js"></script>
+<script src="flow.js"></script>
 </body>
 </html>

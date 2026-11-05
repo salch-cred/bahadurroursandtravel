@@ -1,455 +1,144 @@
-/* ── Package Admin ─────────────────────────────────────── */
-const $ = s => document.querySelector(s);
-let items = [];
-let galleryImages = []; // [{src: string, primary: bool}]
+import { boot, api, esc, $, toast, confirmBox, dialog, debounce, compressImage } from './admin-ui.js';
 
-const token = () => localStorage.getItem('bahadur-admin-token') || '';
-const auth  = () => ({ Authorization: `Bearer ${token()}` });
-const lines = v => String(v || '').split('\n').map(x => x.trim()).filter(Boolean);
-const esc   = v => String(v || '').replace(/[&<>"']/g, c =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let rows = [], filter = 'all';
 
-/* ── Activity log ────────────────────────────────────────── */
-const actLog = [];
-function log(msg) {
-  actLog.unshift({ msg, t: new Date().toLocaleTimeString() });
-  if (actLog.length > 30) actLog.pop();
-  const feed = $('#activity-feed');
-  if (feed) feed.innerHTML = actLog.map(a =>
-    `<li><span></span><div><strong>${esc(a.msg)}</strong><small>${a.t}</small></div></li>`
-  ).join('') || '<li style="color:#96a09c;padding:10px 0">No activity yet.</li>';
-}
+await boot({
+  page: 'packages', title: 'Packages', subtitle: 'Everything here shows on the website',
+  actions: '<button class="btn primary" id="add"><i class="hgi-stroke hgi-add-01"></i>New package</button>',
+});
 
-/* ── Image compress ──────────────────────────────────────── */
-function compress(file, maxW = 1400, q = 0.82) {
-  return new Promise((ok, fail) => {
-    const r = new FileReader();
-    r.onerror = fail;
-    r.onload = e => {
-      const img = new Image();
-      img.onerror = fail;
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        ok(c.toDataURL('image/jpeg', q));
-      };
-      img.src = e.target.result;
-    };
-    r.readAsDataURL(file);
-  });
-}
+$('main.ad-main').innerHTML = `
+  <div class="grid g-4" id="stats"></div>
+  <section class="card mt">
+    <div class="card-head"><div class="tabs" id="tabs"></div><span class="sp"></span><label class="search"><i class="hgi-stroke hgi-search-01"></i><input id="q" placeholder="Search packages" aria-label="Search"></label></div>
+    <div class="card-body"><div class="tile-grid" id="grid"></div></div>
+  </section>`;
 
-/* ── Gallery manager ─────────────────────────────────────── */
-function renderGallery() {
-  const grid = $('#gallery-preview-container');
-  if (!grid) return;
+const TYPES = [['domestic', 'India'], ['international', 'International'], ['pilgrimage', 'Pilgrimage'], ['transport', 'Vehicle hire']];
+const slugify = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const asList = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string' && v) { try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return v.split('\n').filter(Boolean); } } return []; };
+const lineOf = (x) => (typeof x === 'string' ? x : [x.title, x.description || x.detail].filter(Boolean).join(': '));
+const parseLines = (v) => String(v || '').split('\n').map((x) => x.trim()).filter(Boolean);
 
-  if (!galleryImages.length) {
-    grid.innerHTML = '<div style="color:#96a09c;font-size:13px;padding:8px 0">No images yet — upload or paste a URL.</div>';
-  } else {
-    grid.innerHTML = galleryImages.map((img, i) => `
-      <div style="position:relative;width:110px;height:80px;border-radius:10px;overflow:hidden;
-        border:2px solid ${img.primary ? 'var(--green)' : 'var(--line)'};flex-shrink:0">
-        <img src="${esc(img.src)}" alt="Image ${i + 1}" loading="lazy"
-          style="width:100%;height:100%;object-fit:cover"
-          onerror="this.src='assets/images/island-beach.jpg'">
-        ${img.primary ? '<span style="position:absolute;bottom:3px;left:3px;background:#0b6655;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:4px;letter-spacing:.04em">COVER</span>' : ''}
-        <button type="button" title="Remove" data-rm="${i}"
-          style="position:absolute;top:3px;right:3px;border:0;background:#e53e3ecc;color:#fff;
-            border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:1;
-            display:flex;align-items:center;justify-content:center">×</button>
-        ${!img.primary ? `<button type="button" title="Set as cover" data-cover="${i}"
-          style="position:absolute;top:3px;left:3px;border:0;background:#0b6655cc;color:#fff;
-            border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:11px;line-height:1;
-            display:flex;align-items:center;justify-content:center">★</button>` : ''}
-      </div>`).join('');
-
-    grid.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => {
-      galleryImages.splice(Number(b.dataset.rm), 1);
-      if (galleryImages.length && !galleryImages.some(g => g.primary)) galleryImages[0].primary = true;
-      syncPrimaryToForm();
-      renderGallery();
-      updateLivePreview();
-    });
-    grid.querySelectorAll('[data-cover]').forEach(b => b.onclick = () => {
-      galleryImages.forEach(g => g.primary = false);
-      galleryImages[Number(b.dataset.cover)].primary = true;
-      syncPrimaryToForm();
-      renderGallery();
-      updateLivePreview();
-      log('Set cover photo');
-    });
-  }
-
-  const hidden = $('#gallery_json');
-  if (hidden) hidden.value = JSON.stringify(galleryImages.map(g => g.src));
-  updateLivePreview();
-}
-
-function syncPrimaryToForm() {
-  const primary = galleryImages.find(g => g.primary) || galleryImages[0];
-  const urlInput = $('[name="image_url"]');
-  if (urlInput) {
-    urlInput.value = primary ? primary.src : '';
-  }
-}
-
-/* ── Upload file handler ─────────────────────────────────── */
-async function handleFileUpload(files) {
-  const state = $('#package-state');
-  const arr = [...files];
-  if (state) state.textContent = `Compressing ${arr.length} image(s)…`;
-  let added = 0;
-  for (const f of arr) {
-    if (!f.type.startsWith('image/')) { if (state) state.textContent = 'Only image files accepted.'; continue; }
-    try {
-      const src = await compress(f, 1400, 0.82);
-      galleryImages.push({ src, primary: galleryImages.length === 0 });
-      added++;
-    } catch (err) { if (state) state.textContent = 'Image error: ' + err.message; }
-  }
-  syncPrimaryToForm();
-  renderGallery();
-  if (state) state.textContent = `${added} image(s) added. Gallery: ${galleryImages.length} total.`;
-  log(`Uploaded ${added} image(s)`);
-}
-
-/* ── Live preview ────────────────────────────────────────── */
-function updateLivePreview() {
-  const preview = $('#live-preview');
-  if (!preview) return;
-  const f = $('#package-form');
-  if (!f) return;
-  const name     = f.elements.name?.value || 'Package name';
-  const region   = f.elements.region?.value || '';
-  const duration = f.elements.duration?.value || '';
-  const price    = f.elements.price?.value || 'Custom quote';
-  const active   = f.elements.active?.checked;
-  const type     = f.elements.package_type?.value || 'domestic';
-  const primary  = galleryImages.find(g => g.primary) || galleryImages[0];
-  const img      = primary?.src || $('[name="image_url"]')?.value || '';
-  const galCount = galleryImages.length;
-
-  preview.innerHTML = `
-    <div style="display:flex;gap:10px;align-items:center;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff;">
-      <div style="width:72px;height:56px;flex-shrink:0;background:#0a2b26;position:relative;">
-        ${img ? `<img src="${esc(img)}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : '<div style="width:100%;height:100%;background:#d4e8e1"></div>'}
-      </div>
-      <div style="flex:1;min-width:0;padding:6px 8px 6px 0">
-        <div style="display:flex;gap:5px;align-items:center;margin-bottom:3px">
-          <span style="background:${active ? '#0b6655' : '#888'};color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px">${active ? 'LIVE' : 'HIDDEN'}</span>
-          <span style="color:#64716d;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${type === 'international' ? '✈ Intl' : '🏔 Dom'}</span>
-          ${galCount > 1 ? `<span style="color:#0b6655;font-size:10px">🖼 ${galCount}</span>` : ''}
-        </div>
-        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>
-        <div style="font-size:11px;color:#64716d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[region, duration].filter(Boolean).join(' · ')} ${price ? '· ' + esc(price) : ''}</div>
-      </div>
-    </div>`;
-}
-
-/* ── Fill form for editing ───────────────────────────────── */
-function fill(p = {}) {
-  const f = $('#package-form');
-  const skip = new Set(['id', 'flight_details', 'room_details', 'gallery',
-    'highlights', 'itinerary', 'included', 'excluded']);
-  for (const [k, v] of Object.entries(p)) {
-    if (skip.has(k)) continue;
-    const el = f.elements[k];
-    if (!el) continue;
-    if (el.type === 'checkbox') el.checked = Boolean(v);
-    else el.value = Array.isArray(v) ? v.join('\n') : (v ?? '');
-  }
-  // hidden arrays
-  for (const k of ['highlights', 'itinerary', 'included', 'excluded']) {
-    const el = f.elements[k];
-    if (el && Array.isArray(p[k])) el.value = p[k].join('\n');
-  }
-  f.elements.id.value = p.id || '';
-
-  // Sub-objects
-  const fl = p.flight_details || {}, rm = p.room_details || {};
-  const sub = {
-    flight_included: fl.included, flight_airline: fl.airline, flight_cabin: fl.cabin,
-    flight_from: fl.from, flight_to: fl.to, flight_baggage: fl.baggage,
-    hotel_included: rm.included, hotel_name: rm.name, hotel_city: rm.city,
-    hotel_category: rm.category, hotel_room_type: rm.room_type, hotel_rooms: rm.rooms, hotel_meals: rm.meals
-  };
-  for (const [k, v] of Object.entries(sub)) {
-    const el = f.elements[k]; if (!el) continue;
-    if (el.type === 'checkbox') el.checked = Boolean(v); else el.value = v ?? '';
-  }
-
-  // Load gallery
-  const raw = p.gallery;
-  if (Array.isArray(raw) && raw.length) {
-    galleryImages = raw.map((src, i) => ({ src: String(src), primary: i === 0 }));
-    if (p.image_url && p.image_url !== raw[0]) {
-      const exists = galleryImages.find(g => g.src === p.image_url);
-      if (!exists) galleryImages.unshift({ src: p.image_url, primary: true });
-      else { galleryImages.forEach(g => g.primary = false); exists.primary = true; }
-    }
-  } else if (p.image_url) {
-    galleryImages = [{ src: p.image_url, primary: true }];
-  } else {
-    galleryImages = [];
-  }
-  renderGallery();
-  toggleType();
-  updateLivePreview();
-  log(`Editing: ${p.name}`);
-  scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/* ── Render package list ─────────────────────────────────── */
 function render() {
-  const h = $('#admin-package-list');
-  if (!h) return;
-  h.innerHTML = items.length
-    ? items.map(p => {
-      const imgs = Array.isArray(p.gallery) ? p.gallery : [];
-      const cover = p.image_url || imgs[0] || 'assets/images/island-beach.jpg';
-      return `<article class="admin-pkg-card">
-        <img src="${esc(cover)}" alt="${esc(p.name)}"
-          onerror="this.src='assets/images/island-beach.jpg'" loading="lazy">
-        <div class="admin-pkg-info">
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-            <span class="${p.active ? 'status' : 'status pending'}">${p.active ? 'Live' : 'Hidden'}</span>
-            <small class="kicker">${p.package_type === 'international' ? '✈ International' : '🏔 Domestic'}</small>
-            ${imgs.length > 1 ? `<small class="kicker" style="color:var(--green)">🖼 ${imgs.length} photos</small>` : ''}
-          </div>
-          <h3>${esc(p.name)}</h3>
-          <p>${[p.region, p.duration, p.price].filter(Boolean).join(' · ')}</p>
-          ${p.summary ? `<p style="font-size:12px;color:#64716d;margin-top:4px">${esc(p.summary.slice(0, 100))}${p.summary.length > 100 ? '…' : ''}</p>` : ''}
-        </div>
-        <div class="admin-pkg-actions">
-          <button data-edit="${p.id}" class="btn btn-small btn-outline">
-            <i class="hgi-stroke hgi-edit-01"></i> Edit
-          </button>
-          <button data-toggle="${p.id}" data-active="${p.active}" class="btn btn-small btn-outline" title="${p.active ? 'Hide' : 'Publish'}">
-            <i class="hgi-stroke hgi-${p.active ? 'eye-off' : 'eye'}"></i> ${p.active ? 'Hide' : 'Publish'}
-          </button>
-          <button data-dup="${p.id}" class="btn btn-small btn-outline" title="Duplicate">
-            <i class="hgi-stroke hgi-copy-01"></i>
-          </button>
-          <button data-delete="${p.id}" class="btn btn-small danger-button">
-            <i class="hgi-stroke hgi-delete-02"></i> Delete
-          </button>
-        </div>
-      </article>`;
-    }).join('')
-    : '<div class="community-empty">No packages yet. Use the form to publish your first one.</div>';
-
-  h.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
-    const p = items.find(x => x.id === b.dataset.edit);
-    if (p) fill(p);
-  });
-  h.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
-    const id = b.dataset.toggle, nowActive = b.dataset.active === 'true';
-    const p = items.find(x => x.id === id); if (!p) return;
-    b.disabled = true;
-    try {
-      const r = await fetch('/api/packages?id=' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...auth() },
-        body: JSON.stringify({
-          ...p, active: !nowActive,
-          highlights: Array.isArray(p.highlights) ? p.highlights : [],
-          itinerary: Array.isArray(p.itinerary) ? p.itinerary : [],
-          included: Array.isArray(p.included) ? p.included : [],
-          excluded: Array.isArray(p.excluded) ? p.excluded : [],
-          gallery: Array.isArray(p.gallery) ? p.gallery : []
-        })
-      });
-      if (!r.ok) throw new Error((await r.json()).error);
-      p.active = !nowActive;
-      log(`${p.active ? 'Published' : 'Hidden'}: ${p.name}`);
-      render();
-    } catch (err) { alert('Toggle failed: ' + err.message); }
-    finally { b.disabled = false; }
-  });
-  h.querySelectorAll('[data-dup]').forEach(b => b.onclick = () => {
-    const p = items.find(x => x.id === b.dataset.dup); if (!p) return;
-    fill({ ...p, id: '', name: p.name + ' (copy)', slug: p.slug + '-copy', active: false });
-    log('Duplicating: ' + p.name);
-  });
-  h.querySelectorAll('[data-delete]').forEach(b => b.onclick = async () => {
-    const p = items.find(x => x.id === b.dataset.delete);
-    if (!confirm(`Delete "${p?.name || 'this package'}" permanently?`)) return;
-    b.disabled = true;
-    try {
-      const r = await fetch('/api/packages?id=' + b.dataset.delete, { method: 'DELETE', headers: auth() });
-      if (!r.ok) throw new Error((await r.json()).error);
-      log('Deleted: ' + (p?.name || b.dataset.delete));
-      load();
-    } catch (err) { alert('Delete failed: ' + err.message); b.disabled = false; }
-  });
-}
-
-/* ── Load packages ───────────────────────────────────────── */
-async function safeJson(r) {
-  const ct = r.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) {
-    throw new Error('Server error (' + r.status + '): ' + (await r.text()).slice(0, 200).replace(/<[^>]+>/g, '').trim());
-  }
-  return r.json();
+  const q = $('#q').value.trim().toLowerCase();
+  $('#stats').innerHTML = `
+    <div class="stat hero"><small>Live on website</small><strong>${rows.filter((p) => p.active !== false).length}</strong><span>${rows.length} in total</span></div>
+    ${TYPES.slice(0, 3).map(([k, l]) => `<div class="stat"><small>${l}</small><strong>${rows.filter((p) => (p.package_type || 'domestic') === k).length}</strong><span>Packages</span></div>`).join('')}`;
+  $('#tabs').innerHTML = [['all', 'All'], ...TYPES].map(([k, l]) => `<button data-f="${k}" class="${k === filter ? 'active' : ''}">${l}</button>`).join('');
+  const list = rows.filter((p) => (filter === 'all' || (p.package_type || 'domestic') === filter) && (!q || `${p.name} ${p.region}`.toLowerCase().includes(q)));
+  $('#grid').innerHTML = list.length ? list.map((p) => `<article class="tile">
+    <img src="${esc(p.image_url || 'assets/images/island-beach.jpg')}" alt="${esc(p.name)}" loading="lazy">
+    <div class="b"><strong>${esc(p.name)}</strong><small>${esc([p.region, p.duration].filter(Boolean).join(' · '))}</small><small>${esc(p.price || 'Custom quote')}</small></div>
+    <div class="f">
+      <span class="pill ${p.active === false ? 'draft' : 'active'}">${p.active === false ? 'Hidden' : 'Live'}</span>
+      <button class="btn sm" data-edit="${p.id}">Edit</button>
+      <a class="btn sm icon" href="package.html?slug=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" title="View"><i class="hgi-stroke hgi-view"></i></a>
+      <a class="btn sm icon" href="itinerary-print.html?slug=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" title="Print itinerary"><i class="hgi-stroke hgi-printer"></i></a>
+      <button class="btn sm icon" data-toggle="${p.id}" title="${p.active === false ? 'Show on website' : 'Hide from website'}"><i class="hgi-stroke hgi-${p.active === false ? 'view-off' : 'view'}"></i></button>
+      <button class="btn sm icon danger" data-del="${p.id}" title="Delete"><i class="hgi-stroke hgi-delete-02"></i></button>
+    </div></article>`).join('') : '<div class="empty" style="grid-column:1/-1"><i class="hgi-stroke hgi-layers-01"></i>No packages found.</div>';
 }
 
 async function load() {
-  if (!token()) { $('#package-login')?.showModal(); return; }
-  const list = $('#admin-package-list');
-  if (list) list.innerHTML = '<div class="community-empty">Loading packages…</div>';
-  try {
-    const r = await fetch('/api/packages?admin=1', { headers: auth() });
-    const d = await safeJson(r);
-    if (r.status === 401) { localStorage.removeItem('bahadur-admin-token'); $('#package-login')?.showModal(); return; }
-    if (!r.ok) throw new Error(d.error);
-    items = d.packages || [];
-    render();
-    const live = items.filter(x => x.active).length;
-    const state = $('#package-state');
-    if (state) state.textContent = `${items.length} packages · ${live} live`;
-    log(`Loaded ${items.length} packages (${live} live)`);
-  } catch (err) {
-    const list = $('#admin-package-list');
-    if (list) list.innerHTML = `<div class="community-empty" style="color:#c0392b">
-      <strong>Cannot load packages</strong><br>${esc(err.message)}<br>
-      <small>Make sure DATABASE_URL is set in Vercel → Settings → Environment Variables.</small>
-    </div>`;
-  }
+  rows = (await api('packages?admin=1')).packages;
+  render();
 }
 
-/* ── Form submit ─────────────────────────────────────────── */
-$('#package-form').onsubmit = async e => {
-  e.preventDefault();
-  const f = e.target, fd = new FormData(f), d = Object.fromEntries(fd);
-  const id = d.id;
-  const btn = f.querySelector('[type="submit"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-  const state = $('#package-state'); if (state) state.textContent = '';
-
-  d.active = f.elements.active.checked;
-  for (const k of ['highlights', 'itinerary', 'included', 'excluded']) d[k] = lines(d[k]);
-
-  // Gallery
-  d.gallery = galleryImages.map(g => g.src);
-  const primary = galleryImages.find(g => g.primary) || galleryImages[0];
-  if (primary) d.image_url = primary.src;
-
-  d.flight_details = {
-    included: f.elements.flight_included?.checked, airline: d.flight_airline,
-    cabin: d.flight_cabin, from: d.flight_from, to: d.flight_to, baggage: d.flight_baggage
-  };
-  d.room_details = {
-    included: f.elements.hotel_included?.checked, name: d.hotel_name, city: d.hotel_city,
-    category: d.hotel_category, room_type: d.hotel_room_type,
-    rooms: Number(d.hotel_rooms) || 1, meals: d.hotel_meals
-  };
-  for (const k of ['id', 'gallery_json', 'flight_included', 'flight_airline', 'flight_cabin',
-    'flight_from', 'flight_to', 'flight_baggage', 'hotel_included', 'hotel_name', 'hotel_city',
-    'hotel_category', 'hotel_room_type', 'hotel_rooms', 'hotel_meals']) delete d[k];
-
-  try {
-    const r = await fetch('/api/packages' + (id ? '?id=' + id : ''), {
-      method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth() },
-      body: JSON.stringify(d)
-    });
-    const out = await safeJson(r);
-    if (!r.ok) throw new Error(out.error || 'Save failed');
-
-    if (state) state.textContent = id ? '✅ Package updated.' : '✅ Package published.';
-    log((id ? 'Updated' : 'Published') + ': ' + d.name);
-
-    f.reset(); f.elements.id.value = ''; f.elements.active.checked = true;
-    galleryImages = []; renderGallery(); updateLivePreview(); toggleType();
-    load();
-  } catch (err) {
-    if (state) state.textContent = '⚠️ ' + err.message;
-    log('Save error: ' + err.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Save package'; }
-  }
-};
-
-/* ── Reset button ────────────────────────────────────────── */
-$('#package-reset')?.addEventListener('click', () => {
-  $('#package-form').reset();
-  $('#package-form').elements.id.value = '';
-  galleryImages = []; renderGallery(); updateLivePreview();
-  toggleType();
-  const state = $('#package-state'); if (state) state.textContent = '';
-  log('Form cleared');
-});
-
-/* ── Slug auto-gen ───────────────────────────────────────── */
-$('[name="name"]')?.addEventListener('input', e => {
-  const slugEl = $('[name="slug"]');
-  if (!slugEl || slugEl.dataset.manualEdit) return;
-  slugEl.value = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  updateLivePreview();
-});
-$('[name="slug"]')?.addEventListener('input', () => { $('[name="slug"]').dataset.manualEdit = '1'; });
-
-/* ── Type toggle ─────────────────────────────────────────── */
-function toggleType() {
-  const t = $('#package-type')?.value;
-  $('#package-flight-fields')?.classList.toggle('show', t === 'international');
+function thumbs(host, list) {
+  host.innerHTML = list.map((src, i) => `<div class="thumb"><img src="${esc(src)}" alt=""><button type="button" data-i="${i}" aria-label="Remove image">×</button>${i === 0 ? '<span class="cover">Cover</span>' : ''}</div>`).join('');
 }
-$('#package-type')?.addEventListener('change', () => { toggleType(); updateLivePreview(); });
 
-/* ── Gallery upload input ────────────────────────────────── */
-$('#gallery-upload-input')?.addEventListener('change', async e => {
-  await handleFileUpload(e.target.files);
-  e.target.value = '';
-});
+function editor(pkg) {
+  const p = pkg || { active: true, package_type: 'domestic', price: 'Custom quote' };
+  const flight = p.flight_details || {}, room = p.room_details || {};
+  const images = [p.image_url, ...asList(p.gallery)].filter((x, i, a) => x && a.indexOf(x) === i);
+  const area = (name, label, value, hint) => `<label class="field full"><span>${label}${hint ? ` <small style="font-weight:400;color:var(--faint)">${hint}</small>` : ''}</span><textarea name="${name}" rows="4">${esc(value)}</textarea></label>`;
+  const dlg = dialog({
+    title: pkg ? `Edit ${p.name}` : 'New package', wide: true,
+    body: `<form id="pf" class="form-grid">
+      <label class="field"><span>Package name</span><input name="name" required value="${esc(p.name ?? '')}"></label>
+      <label class="field"><span>Web address</span><input name="slug" required value="${esc(p.slug ?? '')}"></label>
+      <label class="field"><span>Type</span><select name="package_type">${TYPES.map(([k, l]) => `<option value="${k}"${k === p.package_type ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field"><span>Category</span><input name="category" value="${esc(p.category ?? '')}" placeholder="Lakshadweep, Honeymoon, Family"></label>
+      <label class="field"><span>Region</span><input name="region" value="${esc(p.region ?? '')}"></label>
+      <label class="field"><span>Duration</span><input name="duration" value="${esc(p.duration ?? '')}" placeholder="4 days · 3 nights"></label>
+      <label class="field"><span>Price shown</span><input name="price" value="${esc(p.price ?? '')}" placeholder="₹24,999 per person"></label>
+      <label class="field"><span>Price for billing ₹</span><input name="package_price" type="number" min="0" step="1" value="${esc(p.package_price ?? '')}"></label>
+      <label class="field full"><span>Short summary</span><textarea name="summary" rows="2">${esc(p.summary ?? '')}</textarea></label>
+      <label class="field full"><span>Full description</span><textarea name="description" rows="4">${esc(p.description ?? '')}</textarea></label>
+      <div class="full"><span class="lbl">Photos</span><div class="thumbs" id="pthumbs" style="margin:6px 0"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn sm"><i class="hgi-stroke hgi-upload-04"></i>Upload<input type="file" id="pfile" accept="image/*" multiple hidden></label><input id="purl" placeholder="Or paste an image link" style="flex:1;min-width:180px"><button type="button" class="btn sm" id="padd">Add link</button></div></div>
+      ${area('highlights', 'Highlights', asList(p.highlights).map(lineOf).join('\n'), 'one per line')}
+      ${area('itinerary', 'Day by day itinerary', asList(p.itinerary).map(lineOf).join('\n'), 'one day per line. Use “Title: details”')}
+      ${area('included', 'Included', asList(p.included).map(lineOf).join('\n'), 'one per line')}
+      ${area('excluded', 'Not included', asList(p.excluded).map(lineOf).join('\n'), 'one per line')}
+      ${area('faqs', 'Questions and answers', asList(p.faqs).map((f) => `${f.q} | ${f.a}`).join('\n'), 'one per line. Use “Question | Answer”')}
+      <label class="field full"><span>Package terms</span><textarea name="terms" rows="2">${esc(p.terms ?? '')}</textarea></label>
+      <label class="field"><span>Map latitude</span><input name="latitude" type="number" step="any" value="${esc(p.latitude ?? '')}"></label>
+      <label class="field"><span>Map longitude</span><input name="longitude" type="number" step="any" value="${esc(p.longitude ?? '')}"></label>
+      <fieldset class="full" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px"><legend class="lbl"><label class="check"><input type="checkbox" name="flight_included"${flight.included ? ' checked' : ''}> Flight details</label></legend><div class="form-grid">
+        <label class="field"><span>Airline</span><input name="flight_airline" value="${esc(flight.airline ?? '')}"></label><label class="field"><span>Cabin</span><input name="flight_cabin" value="${esc(flight.cabin ?? '')}"></label>
+        <label class="field"><span>From</span><input name="flight_from" value="${esc(flight.from ?? '')}"></label><label class="field"><span>To</span><input name="flight_to" value="${esc(flight.to ?? '')}"></label>
+        <label class="field full"><span>Baggage</span><input name="flight_baggage" value="${esc(flight.baggage ?? '')}"></label></div></fieldset>
+      <fieldset class="full" style="border:1px solid var(--line);border-radius:10px;padding:10px 12px"><legend class="lbl"><label class="check"><input type="checkbox" name="room_included"${room.included ? ' checked' : ''}> Stay details</label></legend><div class="form-grid">
+        <label class="field"><span>Hotel</span><input name="room_name" value="${esc(room.name ?? '')}"></label><label class="field"><span>Category</span><input name="room_category" value="${esc(room.category ?? '')}"></label>
+        <label class="field"><span>Room type</span><input name="room_room_type" value="${esc(room.room_type ?? '')}"></label><label class="field"><span>Meals</span><input name="room_meals" value="${esc(room.meals ?? '')}"></label></div></fieldset>
+      <label class="check full"><input type="checkbox" name="active"${p.active !== false ? ' checked' : ''}> Show on the website</label>
+    </form>`,
+    footer: '<button class="btn" data-c>Cancel</button><button class="btn primary" data-ok>Save package</button>',
+  });
+  const el = dlg.el, form = $('#pf', el), host = $('#pthumbs', el);
+  thumbs(host, images);
+  form.elements.name.addEventListener('input', () => { if (!pkg) form.elements.slug.value = slugify(form.elements.name.value); });
+  host.addEventListener('click', (e) => { if (e.target.dataset.i !== undefined) { images.splice(Number(e.target.dataset.i), 1); thumbs(host, images); } });
+  $('#padd', el).onclick = () => { const u = $('#purl', el).value.trim(); if (u) { images.push(u); $('#purl', el).value = ''; thumbs(host, images); } };
+  $('#pfile', el).onchange = async (e) => {
+    for (const f of e.target.files) { try { images.push(await compressImage(f)); } catch { toast(`Could not read ${f.name}`, 'bad'); } }
+    thumbs(host, images);
+    e.target.value = '';
+  };
+  $('[data-c]', el).onclick = dlg.close;
+  $('[data-ok]', el).onclick = async () => {
+    if (!form.reportValidity()) return;
+    const d = Object.fromEntries(new FormData(form));
+    const body = {
+      ...d, slug: slugify(d.slug), image_url: images[0] || '', gallery: images.slice(1), active: form.elements.active.checked,
+      highlights: parseLines(d.highlights), itinerary: parseLines(d.itinerary), included: parseLines(d.included), excluded: parseLines(d.excluded),
+      faqs: parseLines(d.faqs).map((l) => { const [q, ...a] = l.split('|'); return { q: q.trim(), a: a.join('|').trim() }; }).filter((f) => f.q && f.a),
+      flight_details: { included: form.elements.flight_included.checked, airline: d.flight_airline, cabin: d.flight_cabin, from: d.flight_from, to: d.flight_to, baggage: d.flight_baggage },
+      room_details: { included: form.elements.room_included.checked, name: d.room_name, category: d.room_category, room_type: d.room_room_type, meals: d.room_meals },
+    };
+    try {
+      await api(pkg ? `packages?id=${pkg.id}` : 'packages', { method: pkg ? 'PUT' : 'POST', body });
+      dlg.close();
+      toast('Package saved', 'good');
+      await load();
+    } catch (e) { toast(e.message, 'bad'); }
+  };
+}
 
-/* ── Primary image upload ────────────────────────────────── */
-$('#primary-upload-input')?.addEventListener('change', async e => {
-  const file = e.target.files[0]; if (!file) return;
-  const state = $('#package-state');
-  if (state) state.textContent = 'Compressing image…';
+$('#add').onclick = () => editor();
+$('main.ad-main').addEventListener('click', async (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
   try {
-    const src = await compress(file, 1400, 0.82);
-    // Set as first gallery image and mark primary
-    const existing = galleryImages.find(g => g.primary);
-    if (existing) existing.src = src;
-    else galleryImages.unshift({ src, primary: true });
-    $('[name="image_url"]').value = src;
-    renderGallery();
-    if (state) state.textContent = 'Primary image ready.';
-    log('Primary image uploaded');
-  } catch (err) { if (state) state.textContent = 'Image error: ' + err.message; }
-  e.target.value = '';
+    if (t.dataset.f) { filter = t.dataset.f; render(); }
+    if (t.dataset.edit) editor(rows.find((p) => p.id === t.dataset.edit));
+    if (t.dataset.toggle) {
+      const p = rows.find((x) => x.id === t.dataset.toggle);
+      await api(`packages?id=${p.id}`, { method: 'PUT', body: { ...p, active: p.active === false } });
+      toast(p.active === false ? 'Now live on the website' : 'Hidden from the website', 'good');
+      await load();
+    }
+    if (t.dataset.del) {
+      const p = rows.find((x) => x.id === t.dataset.del);
+      if (!(await confirmBox('Delete this package?', `${p.name} will be removed from the website permanently.`, 'Delete', true))) return;
+      await api(`packages?id=${p.id}`, { method: 'DELETE' });
+      toast('Deleted');
+      await load();
+    }
+  } catch (err) { toast(err.message, 'bad'); }
 });
-
-/* ── Live preview live updates ───────────────────────────── */
-document.querySelectorAll('#package-form input, #package-form textarea, #package-form select').forEach(el => {
-  el.addEventListener('input', updateLivePreview);
-  el.addEventListener('change', updateLivePreview);
-});
-
-/* ── Ctrl+S shortcut ─────────────────────────────────────── */
-document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault();
-    $('[type="submit"]')?.click();
-  }
-});
-
-/* ── Login ───────────────────────────────────────────────── */
-$('#package-login-form')?.addEventListener('submit', e => {
-  e.preventDefault();
-  localStorage.setItem('bahadur-admin-token', $('#package-token').value.trim());
-  $('#package-login').close();
-  load();
-});
-$('#package-refresh')?.addEventListener('click', load);
-
-/* ── Init ────────────────────────────────────────────────── */
-toggleType();
-renderGallery();
-updateLivePreview();
-load();
+$('#q').addEventListener('input', debounce(render, 120));
+load().catch((e) => toast(e.message, 'bad'));

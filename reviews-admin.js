@@ -1,147 +1,34 @@
-const $=s=>document.querySelector(s);
-const token=()=>localStorage.getItem('bahadur-admin-token')||'';
-const auth=()=>({Authorization:`Bearer ${token()}`});
+import { boot, api, esc, $, pill, toast, confirmBox, setBadge } from './admin-ui.js';
 
-let allReviews=[];
-let activeFilter='all';
+let rows = [], filter = 'pending';
+await boot({ page: 'reviews', title: 'Reviews', subtitle: 'Approve what guests can see on the website' });
 
-function login(){
-  if(!token()){$('#reviews-login').showModal();}
+$('main.ad-main').innerHTML = `<div class="grid g-4" id="stats"></div><section class="card mt"><div class="card-head"><div class="tabs" id="tabs"></div></div><div class="table-wrap"><table class="t"><thead><tr><th>Guest</th><th>Review</th><th>Rating</th><th>Booking</th><th>Status</th><th></th></tr></thead><tbody id="rows"></tbody></table></div></section>`;
+
+function render() {
+  const count = (s) => rows.filter((r) => r.status === s).length;
+  const approved = rows.filter((r) => r.status === 'approved');
+  $('#stats').innerHTML = `<div class="stat hero"><small>Average rating</small><strong>${approved.length ? (approved.reduce((s, r) => s + Number(r.rating), 0) / approved.length).toFixed(1) : '—'}</strong><span>From approved reviews</span></div><div class="stat warn"><small>Waiting</small><strong>${count('pending')}</strong><span>Need a decision</span></div><div class="stat good"><small>Approved</small><strong>${count('approved')}</strong><span>On the website</span></div><div class="stat"><small>Rejected</small><strong>${count('rejected')}</strong><span>Hidden</span></div>`;
+  $('#tabs').innerHTML = [['pending', 'Waiting'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['all', 'All']].map(([k, l]) => `<button data-f="${k}" class="${k === filter ? 'active' : ''}">${l}</button>`).join('');
+  const list = rows.filter((r) => filter === 'all' || r.status === filter);
+  $('#rows').innerHTML = list.length ? list.map((r) => `<tr>
+    <td><strong>${esc(r.name)}</strong><small>${esc(r.trip)}</small><small>${new Date(r.created_at).toLocaleDateString('en-IN')}</small></td>
+    <td style="max-width:420px">${esc(r.text)}${r.media_url ? `<small><a href="${esc(r.media_url)}" target="_blank" rel="noopener" style="color:var(--sky-700)">View ${esc(r.media_type || 'media')}</a></small>` : ''}</td>
+    <td class="nowrap" style="color:var(--gold)">${'★'.repeat(Number(r.rating) || 0)}</td><td class="nowrap">${esc(r.booking_ref || '—')}</td><td>${pill(r.status)}</td>
+    <td><div class="actions">${r.status !== 'approved' ? `<button class="btn sm" data-st="approved" data-id="${r.id}">Approve</button>` : ''}${r.status !== 'rejected' ? `<button class="btn sm" data-st="rejected" data-id="${r.id}">Reject</button>` : ''}<button class="btn sm icon danger" data-del="${r.id}" title="Delete"><i class="hgi-stroke hgi-delete-02"></i></button></div></td></tr>`).join('') : '<tr><td colspan="6"><div class="empty"><i class="hgi-stroke hgi-star"></i>Nothing here.</div></td></tr>';
+  setBadge('reviews', count('pending'));
 }
-
-$('#reviews-login-form').onsubmit=e=>{
-  e.preventDefault();
-  localStorage.setItem('bahadur-admin-token',$('#reviews-token').value.trim());
-  $('#reviews-login').close();
-  load();
-};
-
-const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-function stars(n){
-  return Array.from({length:5},(_, i)=>`<i class="hgi-stroke ${i<n?'hgi-star-01':'hgi-star'}" style="color:${i<n?'#d99e24':'#ccc'}"></i>`).join('');
-}
-
-function statusBadge(s){
-  const map={approved:'badge-approved',pending:'badge-pending',rejected:'badge-rejected'};
-  return `<span class="${map[s]||'badge-pending'}">${s||'pending'}</span>`;
-}
-
-function renderList(){
-  const list=$('#reviews-list');
-  const shown=activeFilter==='all'?allReviews:allReviews.filter(r=>(r.status||'pending')===activeFilter);
-
-  if(!shown.length){
-    list.innerHTML=`<div class="empty-reviews"><i class="hgi-stroke hgi-star-01"></i>No ${activeFilter==='all'?'':activeFilter+' '}reviews yet.</div>`;
-    return;
-  }
-
-  list.innerHTML=shown.map(r=>`
-    <article class="review-admin-card" id="rc-${r.id}">
-      <div>
-        <div class="rac-meta">
-          ${statusBadge(r.status)}
-          <span class="stars" style="font-size:14px">${stars(Number(r.rating)||5)}</span>
-          <span style="font-size:12px;color:#74807c">${r.trip?`<i class="hgi-stroke hgi-route-03"></i> ${esc(r.trip)}`:''}</span>
-          ${r.booking_ref?`<span style="font-size:11px;background:#f0f7f5;padding:3px 8px;border-radius:6px;color:var(--green);font-weight:700">Ref: ${esc(r.booking_ref)}</span>`:''}
-        </div>
-        <blockquote>"${esc(r.text)}"</blockquote>
-        <div class="rac-footer">
-          <strong>${esc(r.name)}</strong>
-          ${r.created_at?` · ${new Date(r.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`:''}</div>
-        ${r.media_url?`<img class="review-media-thumb" src="${esc(r.media_url)}" alt="Guest media" style="margin-top:10px">`:''}
-      </div>
-      <div class="rac-actions">
-        ${(r.status||'pending')!=='approved'?`<button class="approve-btn" data-approve="${r.id}"><i class="hgi-stroke hgi-tick-02"></i> Approve</button>`:''}
-        ${(r.status||'pending')!=='rejected'&&(r.status||'pending')!=='approved'?`<button class="danger-button" data-reject="${r.id}" style="background:#fff3e0;color:#d4821a"><i class="hgi-stroke hgi-cancel-01"></i> Reject</button>`:''}
-        <button class="danger-button" data-delete="${r.id}"><i class="hgi-stroke hgi-delete-02"></i> Delete</button>
-      </div>
-    </article>
-  `).join('');
-
-  // Wire up buttons
-  list.querySelectorAll('[data-approve]').forEach(btn=>{
-    btn.onclick=()=>updateStatus(btn.dataset.approve,'approved');
-  });
-  list.querySelectorAll('[data-reject]').forEach(btn=>{
-    btn.onclick=()=>updateStatus(btn.dataset.reject,'rejected');
-  });
-  list.querySelectorAll('[data-delete]').forEach(btn=>{
-    btn.onclick=()=>deleteReview(btn.dataset.delete);
-  });
-}
-
-function updateStats(){
-  const total=allReviews.length;
-  const approved=allReviews.filter(r=>r.status==='approved').length;
-  const pending=allReviews.filter(r=>(r.status||'pending')==='pending').length;
-  $('#s-total').textContent=total;
-  $('#s-approved').textContent=approved;
-  $('#s-pending').textContent=pending;
-}
-
-async function safeJson(res){
-  const ct=res.headers.get('content-type')||'';
-  if(!ct.includes('application/json')){
-    const text=await res.text();
-    throw new Error('Server error ('+res.status+'): '+text.slice(0,200).replace(/<[^>]+>/g,'').trim());
-  }
-  return res.json();
-}
-
-async function load(){
-  if(!token()){login();return;}
-  $('#reviews-state').textContent='Loading…';
-  try{
-    const r=await fetch('/api/reviews?admin=1&limit=200',{headers:auth()});
-    if(r.status===401){localStorage.removeItem('bahadur-admin-token');login();return;}
-    const d=await safeJson(r);
-    if(!r.ok)throw new Error(d.error);
-    allReviews=d.reviews||[];
-    updateStats();
-    renderList();
-    $('#reviews-state').textContent=`${allReviews.length} review(s) total`;
-  }catch(e){
-    $('#reviews-state').textContent='Error: '+e.message;
-    $('#reviews-list').innerHTML=`<div class="empty-reviews" style="color:#c0392b"><i class="hgi-stroke hgi-alert-diamond"></i>${e.message}</div>`;
-  }
-}
-
-async function updateStatus(id,status){
-  try{
-    const r=await fetch(`/api/reviews?id=${id}`,{method:'PATCH',headers:{'Content-Type':'application/json',...auth()},body:JSON.stringify({status})});
-    const d=await safeJson(r);
-    if(!r.ok)throw new Error(d.error);
-    const idx=allReviews.findIndex(x=>String(x.id)===String(id));
-    if(idx>-1)allReviews[idx].status=status;
-    updateStats();
-    renderList();
-  }catch(e){alert('Failed: '+e.message);}
-}
-
-async function deleteReview(id){
-  const review=allReviews.find(x=>String(x.id)===String(id));
-  if(!confirm(`Delete review by "${review?.name||id}"? This cannot be undone.`))return;
-  try{
-    const r=await fetch(`/api/reviews?id=${id}`,{method:'DELETE',headers:auth()});
-    const d=await safeJson(r);
-    if(!r.ok)throw new Error(d.error);
-    allReviews=allReviews.filter(x=>String(x.id)!==String(id));
-    updateStats();
-    renderList();
-    $('#reviews-state').textContent=`${allReviews.length} review(s) total — 1 deleted`;
-  }catch(e){alert('Delete failed: '+e.message);}
-}
-
-// Filter buttons
-document.querySelectorAll('[data-filter]').forEach(btn=>{
-  btn.onclick=()=>{
-    activeFilter=btn.dataset.filter;
-    document.querySelectorAll('[data-filter]').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    renderList();
-  };
+async function load() { rows = (await api('reviews?admin=1&limit=200')).reviews; render(); }
+$('main.ad-main').addEventListener('click', async (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  try {
+    if (t.dataset.f) { filter = t.dataset.f; render(); }
+    if (t.dataset.st) { await api(`reviews?id=${t.dataset.id}`, { method: 'PATCH', body: { status: t.dataset.st } }); toast('Review updated', 'good'); await load(); }
+    if (t.dataset.del) {
+      if (!(await confirmBox('Delete this review?', 'It will be removed permanently.', 'Delete', true))) return;
+      await api(`reviews?id=${t.dataset.del}`, { method: 'DELETE' }); toast('Deleted'); await load();
+    }
+  } catch (err) { toast(err.message, 'bad'); }
 });
-
-$('#reviews-refresh').onclick=load;
-load();
+load().catch((e) => toast(e.message, 'bad'));

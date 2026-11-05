@@ -1,225 +1,88 @@
-const $=s=>document.querySelector(s);let bookings=[];
-const money=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(v||0));
-const token=()=>localStorage.getItem('bahadur-admin-token')||'';
-const auth=()=>({Authorization:`Bearer ${token()}`});
-const statusClass=v=>{const s=String(v||'').toLowerCase();return s.includes('confirm')||s.includes('complet')||s==='paid'?'status':s.includes('cancel')?'status danger':'status pending'};
+import { boot, api, esc, money0, $, niceDate, statusOf, pill, setBadge, waNumber, toast } from './admin-ui.js';
 
-async function safeJson(res){
-  const ct=res.headers.get('content-type')||'';
-  if(!ct.includes('application/json')){
-    const text=await res.text();
-    throw new Error('Server error ('+res.status+'): '+text.slice(0,120).replace(/<[^>]+>/g,''));
-  }
-  return res.json();
-}
-
-function renderBookings(rows){
-  $('#booking-rows').innerHTML=rows.length
-    ?rows.map(x=>`<tr>
-      <td><strong>#${x.booking_ref||x.booking_id||'—'}</strong><small>${x.source||'website'}</small></td>
-      <td><strong>${x.name||'—'}</strong><small>${x.phone||''}</small><small>${x.email||''}</small></td>
-      <td>${x.trip||'—'}</td>
-      <td>${x.travel_date||'—'}</td>
-      <td>${x.guests||'—'}</td>
-      <td>${x.city||'—'}</td>
-      <td><span class="${statusClass(x.status)}">${x.status||'New request'}</span></td>
-      <td class="booking-actions">
-        <button class="mini-action-btn" data-action="wa" data-id="${x.id}" data-ref="${x.booking_ref||x.booking_id||''}" data-name="${(x.name||'').replace(/"/g,'&quot;')}" data-phone="${x.phone||''}" data-trip="${(x.trip||'').replace(/"/g,'&quot;')}" data-date="${x.travel_date||''}" data-guests="${x.guests||''}" data-city="${x.city||''}" title="Open WhatsApp"><i class="hgi-stroke hgi-whatsapp"></i></button>
-        <select class="status-select mini-select" data-id="${x.id}" title="Update status">
-          ${['pending','confirmed','completed','cancelled'].map(s=>`<option${x.status===s?' selected':''}>${s}</option>`).join('')}
-        </select>
-        <a href="billing.html?booking_ref=${x.booking_ref||x.booking_id||''}" class="mini-action-btn" title="Create/view invoice"><i class="hgi-stroke hgi-receipt-02"></i></a>
-      </td>
-    </tr>
-    ${x.note?`<tr class="booking-note-row"><td colspan="8"><small><i class="hgi-stroke hgi-note-01"></i> ${x.note}</small></td></tr>`:''}`).join('')
-    :'<tr><td colspan="8" class="empty-cell">No bookings recorded yet.</td></tr>';
-
-  // Bind status selects
-  document.querySelectorAll('.status-select').forEach(sel=>{
-    sel.onchange=async()=>{
-      const id=sel.dataset.id;
-      const status=sel.value;
-      try{
-        const r=await fetch(`/api/bookings?id=${encodeURIComponent(id)}`,{method:'PUT',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({status})});
-        const d=await safeJson(r);
-        if(!r.ok)throw new Error(d.error||'Update failed');
-        // Update in local array
-        const b=bookings.find(x=>x.id===id);
-        if(b)b.status=status;
-        // Update status badge in same row
-        const row=sel.closest('tr');
-        const badge=row?.querySelector('.status,.status.danger,.status.pending');
-        if(badge){badge.textContent=status;badge.className=statusClass(status);}
-      }catch(e){alert('Status update failed: '+e.message);sel.value=bookings.find(x=>x.id===id)?.status||sel.value;}
-    };
-  });
-
-  // Bind WA buttons
-  document.querySelectorAll('[data-action="wa"]').forEach(btn=>{
-    btn.onclick=()=>{
-      const {name,phone,trip,date,guests,city,ref}=btn.dataset;
-      const msg=`Hello Bahadur Tours! 👋\n\n*Booking Reference:* ${ref}\n*Name:* ${name}\n*Trip:* ${trip}\n*Travel Date:* ${date||'TBD'}\n*Guests:* ${guests||'—'}\n*Starting City:* ${city||'—'}\n*Phone:* ${phone}`;
-      window.open(`https://wa.me/919187440916?text=${encodeURIComponent(msg)}`,'_blank');
-    };
-  });
-}
-
-let allInvoices=[];
-function renderInvoices(rows){
-  $('#invoice-rows').innerHTML=rows.length
-    ?rows.map(x=>{
-      const isPaid=x.status==='Paid'||x.status==='Part paid';
-      return `<tr>
-        <td><strong>${x.invoice_number||'—'}</strong></td>
-        <td>${x.customer_name||'—'}<small>${x.phone||''}</small></td>
-        <td>${x.booking_ref||'—'}</td>
-        <td>${x.invoice_date||'—'}</td>
-        <td>
-          ${isPaid?'<i class="hgi-stroke hgi-checkmark-circle-02" style="color:#22753a;font-size:16px;vertical-align:-2px" title="Paid"></i> ':''}
-          <span class="${statusClass(x.status)}">${x.status||'Draft'}</span>
-        </td>
-        <td>${money(x.total)}</td>
-        <td class="invoice-actions">
-          <a href="billing.html?id=${x.id}" class="mini-action-btn" title="Edit invoice"><i class="hgi-stroke hgi-edit-01"></i></a>
-          ${isPaid
-            ?`<a href="paid-bill.html?id=${x.id}" class="mini-action-btn paid" title="Download paid receipt" target="_blank"><i class="hgi-stroke hgi-receipt-02"></i></a>`
-            :`<button class="mini-action-btn" title="Mark as Paid" data-mark-paid="${x.id}"><i class="hgi-stroke hgi-money-receive-02"></i></button>`
-          }
-        </td>
-      </tr>`;
-    }).join('')
-    :'<tr><td colspan="7" class="empty-cell">No invoices saved yet.</td></tr>';
-  // Bind Mark as Paid buttons
-  document.querySelectorAll('[data-mark-paid]').forEach(btn=>{
-    btn.onclick=async()=>{
-      const id=btn.dataset.markPaid;
-      if(!confirm('Mark this invoice as Paid?'))return;
-      btn.disabled=true;
-      try{
-        const r=await fetch('/api/admin',{method:'PATCH',headers:{'Content-Type':'application/json',...auth()},body:JSON.stringify({type:'invoice_status',id,status:'Paid'})});
-        if(!r.ok)throw new Error('Update failed');
-        // Update local data and re-render
-        const inv=allInvoices.find(i=>i.id===id);
-        if(inv){inv.status='Paid';}
-        renderInvoices(allInvoices);
-      }catch(e){alert('Could not update: '+e.message);btn.disabled=false;}
-    };
-  });
-}
-
-function renderActivity(rows){
-  $('#activity-list').innerHTML=rows.length
-    ?rows.map(x=>`<li><span></span><div><strong>${x.title}</strong><small>${x.detail||''} · ${new Date(x.created_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</small></div></li>`).join('')
-    :'<li><span></span><div><strong>No activity yet</strong><small>New bookings, invoices and reviews appear here.</small></div></li>';
-}
-
-function bars(target,rows,valueKey,label,format=x=>x){
-  const max=Math.max(1,...rows.map(x=>Number(x[valueKey]||0)));
-  $(target).innerHTML=rows.map(x=>`<div class="bar-column" title="${label(x)} · ${format(x[valueKey])}"><span style="height:${Math.max(4,Number(x[valueKey]||0)/max*100)}%"></span><small>${label(x)}</small></div>`).join('');
-}
-
-function login(message=''){
-  const d=$('#admin-login');
-  $('#login-error').textContent=message;
-  if(!d.open)d.showModal();
-  setTimeout(()=>$('#admin-token')?.focus(),50);
-}
-
-function setSyncState(state,text){
-  const pill=$('#admin-state');
-  if(!pill)return;
-  pill.classList.remove('is-live','is-busy','is-error');
-  if(state)pill.classList.add(state);
-  const t=pill.querySelector('.sync-text');
-  if(t)t.textContent=text; else pill.textContent=text;
-}
-
-function showSkeletons(){
-  ['#turnover-24h','#turnover-14d','#turnover-30d','#turnover-year','#metric-bookings','#metric-pending','#metric-rating','#visitors-daily','#visitors-monthly'].forEach(sel=>{
-    const el=$(sel);
-    if(el&&!el.dataset.loaded)el.innerHTML='<span class="skel-value"></span>';
-  });
-}
-
-function clearSkeletons(){
-  ['#turnover-24h','#turnover-14d','#turnover-30d','#turnover-year','#metric-bookings','#metric-pending','#metric-rating','#visitors-daily','#visitors-monthly'].forEach(sel=>{
-    const el=$(sel);
-    if(el&&!el.dataset.loaded)el.textContent='—';
-  });
-}
-
-function markLoaded(sel,html){
-  const el=$(sel);
-  if(!el)return;
-  el.dataset.loaded='1';
-  el.textContent=html;
-}
-
-async function load(){
-  if(!token()){login();return;}
-  const refreshBtn=$('#admin-refresh');
-  refreshBtn?.classList.add('is-loading');
-  refreshBtn?.setAttribute('disabled','');
-  setSyncState('is-busy','Refreshing business data…');
-  showSkeletons();
-  try{
-    const res=await fetch('/api/admin',{headers:auth()});
-    const d=await safeJson(res);
-    if(res.status===401){localStorage.removeItem('bahadur-admin-token');login('Incorrect or expired token.');return;}
-    if(!res.ok)throw new Error(d.error||'Unknown error');
-    bookings=d.bookings||[];
-    const m=d.metrics;
-    markLoaded('#turnover-24h',money(m.turnover.h24));
-    markLoaded('#turnover-14d',money(m.turnover.d14));
-    markLoaded('#turnover-30d',money(m.turnover.d30));
-    markLoaded('#turnover-year',money(m.turnover.yearly));
-    markLoaded('#metric-bookings',m.bookings);
-    markLoaded('#metric-pending',m.pending);
-    markLoaded('#metric-rating',m.rating?Number(m.rating).toFixed(1):'—');
-    $('#metric-rating-note').textContent=`${m.reviewCount} approved reviews`;
-    markLoaded('#visitors-daily',m.visitors.daily);
-    markLoaded('#visitors-monthly',m.visitors.monthly);
-    $('#views-daily').textContent=`${m.visitors.viewsDaily} page views`;
-    $('#views-monthly').textContent=`${m.visitors.viewsMonthly} page views`;
-    bars('#traffic-chart',d.traffic||[],'visitors',x=>new Date(x.d).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}));
-    bars('#revenue-chart',d.monthlyRevenue||[],'revenue',x=>new Date(x.m).toLocaleDateString('en-IN',{month:'short'}),money);
-    renderBookings(bookings);
-    allInvoices=d.invoices||[];renderInvoices(allInvoices);
-    renderActivity(d.activity||[]);
-    setSyncState('is-live',`Synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`);
-  }catch(e){
-    setSyncState('is-error','Error: '+e.message);
-    clearSkeletons();
-    $('#booking-rows').innerHTML='<tr><td colspan="8" class="empty-cell">'+e.message+'<br><small>Check that DATABASE_URL is set in Vercel environment variables.</small></td></tr>';
-  }finally{
-    refreshBtn?.classList.remove('is-loading');
-    refreshBtn?.removeAttribute('disabled');
-  }
-}
-
-$('#admin-login-form').onsubmit=e=>{
-  e.preventDefault();
-  localStorage.setItem('bahadur-admin-token',$('#admin-token').value.trim());
-  $('#admin-login').close();
-  load();
+const stat = (label, value, note = '', cls = '', icon = '') => `<div class="stat ${cls}"><small>${icon ? `<i class="hgi-stroke hgi-${icon}"></i>` : ''}${esc(label)}</small><strong>${value}</strong><span>${esc(note)}</span></div>`;
+const shortMoney = (v) => {
+  const n = Math.abs(Number(v || 0));
+  if (n >= 10000000) return (n / 10000000).toFixed(1) + 'Cr';
+  if (n >= 100000) return (n / 100000).toFixed(1) + 'L';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
+  return String(Math.round(n));
 };
-$('#admin-token-toggle')?.addEventListener('click',()=>{
-  const input=$('#admin-token');
-  input.type=input.type==='text'?'password':'text';
-  input.focus();
+
+function renderBars(host, rows, series, labelOf) {
+  const max = Math.max(1, ...rows.flatMap((r) => series.map((s) => Number(r[s.key] || 0))));
+  host.innerHTML = rows.map((r) => `<div class="col"><div class="tip">${esc(labelOf(r, true))}: ${series.map((s) => `${s.name} ${s.money ? money0(r[s.key]) : r[s.key]}`).join(' · ')}</div><div class="stack">${series.map((s, i) => `<div class="b ${i ? 'c' + (i + 1) : ''}" style="height:${Math.max(1, (Number(r[s.key] || 0) / max) * 100)}%"></div>`).join('')}</div><label>${esc(labelOf(r))}</label></div>`).join('');
+}
+
+async function load() {
+  const d = await api('admin');
+  const m = d.metrics;
+  const net = (d.monthly.at(-1)?.collected || 0) - m.expensesMonth;
+  $('#kpis').innerHTML = [
+    stat('Collected, last 30 days', money0(m.collected.d30), `${money0(m.collected.h24)} in the last 24 hours`, 'hero', 'credit-card'),
+    stat('Outstanding', money0(m.outstanding), `${d.overdue.length} overdue`, m.outstanding ? 'warn' : '', 'invoice-03'),
+    stat('Invoiced this year', money0(m.invoicedYear), `${money0(m.invoicedMonth)} this month`, '', 'chart-bar-line'),
+    stat('Expenses this month', money0(m.expensesMonth), `Net cash ${money0(net)}`, '', 'wallet-01'),
+  ].join('');
+  $('#ops').innerHTML = [
+    stat('Open booking requests', m.pending, `${m.bookings} bookings in total`, '', 'package'),
+    stat('Draft invoices', m.drafts, 'Not yet sent', '', 'edit-02'),
+    stat('Guest rating', m.rating ? m.rating.toFixed(1) : '—', `${m.reviewCount} approved reviews`, '', 'star'),
+    stat('Visitors today', m.visitors.daily, `${m.visitors.viewsDaily} page views`, '', 'user-group'),
+    stat('Visitors this month', m.visitors.monthly, `${m.visitors.viewsMonthly} page views`, '', 'analytics-01'),
+  ].join('');
+  renderBars($('#money-chart'), d.monthly, [{ key: 'invoiced', name: 'Invoiced', money: true }, { key: 'collected', name: 'Collected', money: true }, { key: 'expenses', name: 'Expenses', money: true }],
+    (r, long) => new Date(r.m).toLocaleDateString('en-IN', long ? { month: 'short', year: 'numeric' } : { month: 'short' }));
+  renderBars($('#traffic-chart'), d.traffic, [{ key: 'visitors', name: 'Visitors' }],
+    (r, long) => new Date(r.d).toLocaleDateString('en-IN', long ? { day: 'numeric', month: 'short' } : { day: 'numeric' }));
+
+  $('#overdue').innerHTML = d.overdue.length
+    ? d.overdue.map((x) => `<tr><td><a href="billing.html?id=${x.id}"><strong>${esc(x.invoice_number)}</strong></a><small>${esc(x.customer_name)}</small></td><td class="nowrap">${niceDate(x.due_date)}</td><td class="num">${money0(Number(x.total) - Number(x.paid_amount))}</td><td><div class="actions"><a class="btn sm icon" title="Remind on WhatsApp" href="https://wa.me/${waNumber(x.phone)}?text=${encodeURIComponent(`Hello ${x.customer_name}, a reminder that ${money0(Number(x.total) - Number(x.paid_amount))} is due on invoice ${x.invoice_number}. Thank you.`)}" target="_blank" rel="noopener"><i class="hgi-stroke hgi-whatsapp"></i></a></div></td></tr>`).join('')
+    : '<tr><td colspan="4"><div class="empty"><i class="hgi-stroke hgi-checkmark-circle-02"></i>Nothing overdue.</div></td></tr>';
+
+  $('#bookings').innerHTML = d.bookings.length
+    ? d.bookings.slice(0, 7).map((x) => `<tr><td><strong>${esc(x.name)}</strong><small>${esc(x.phone)}</small></td><td>${esc(x.trip)}<small>${esc(x.booking_ref || '')}</small></td><td class="nowrap">${esc(x.travel_date ? niceDate(x.travel_date) : 'Flexible')}</td><td>${pill(x.status)}</td><td><div class="actions"><a class="btn sm" href="billing.html?booking_ref=${encodeURIComponent(x.booking_ref || '')}">Bill</a></div></td></tr>`).join('')
+    : '<tr><td colspan="5"><div class="empty"><i class="hgi-stroke hgi-package"></i>Booking requests from the website will appear here.</div></td></tr>';
+
+  $('#invoices').innerHTML = d.invoices.length
+    ? d.invoices.slice(0, 7).map((x) => `<tr><td><a href="billing.html?id=${x.id}"><strong>${esc(x.invoice_number)}</strong></a><small>${esc(x.customer_name)}</small></td><td>${pill(statusOf(x))}</td><td class="num">${money0(x.total)}</td></tr>`).join('')
+    : '<tr><td colspan="3"><div class="empty"><i class="hgi-stroke hgi-invoice-03"></i>No invoices yet.</div></td></tr>';
+
+  $('#activity').innerHTML = d.activity.map((x) => `<li><i class="hgi-stroke hgi-${x.icon === 'receipt-02' ? 'invoice-03' : esc(x.icon)}"></i><div><strong>${esc(x.title)}</strong><small>${esc(x.detail)}</small><small>${new Date(x.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</small></div></li>`).join('') || '<li><div class="empty" style="width:100%">Nothing yet.</div></li>';
+  const line = [m.pending ? `${m.pending} booking ${m.pending === 1 ? 'request' : 'requests'} waiting` : 'No booking requests waiting', d.overdue.length ? `${d.overdue.length} overdue ${d.overdue.length === 1 ? 'invoice' : 'invoices'}` : 'nothing overdue', m.pendingReviews ? `${m.pendingReviews} ${m.pendingReviews === 1 ? 'review' : 'reviews'} to check` : ''].filter(Boolean).join(' · ');
+  $('#hello-line').textContent = line + '.';
+  setBadge('bookings', m.pending);
+  setBadge('reviews', m.pendingReviews);
+  setBadge('invoices', d.overdue.length);
+}
+
+await boot({
+  page: 'dashboard', title: 'Business dashboard', subtitle: 'Your business at a glance',
+  actions: '<button class="btn icon" id="refresh" aria-label="Refresh"><i class="hgi-stroke hgi-refresh"></i></button><a class="btn" href="billing.html?type=quotation"><i class="hgi-stroke hgi-add-01"></i>Quotation</a><a class="btn primary" href="billing.html"><i class="hgi-stroke hgi-add-01"></i>New invoice</a>',
 });
-$('#admin-refresh')?.addEventListener('click',load);
-$('#admin-lock')?.addEventListener('click',()=>{
-  localStorage.removeItem('bahadur-admin-token');
-  window.location.href='admin.html';
-});
-$('#invoice-search')?.addEventListener('input',e=>{
-  const q=e.target.value.toLowerCase();
-  renderInvoices(allInvoices.filter(x=>`${x.invoice_number} ${x.customer_name} ${x.booking_ref}`.toLowerCase().includes(q)));
-});
-$('#booking-search').oninput=e=>{
-  const q=e.target.value.toLowerCase();
-  renderBookings(bookings.filter(x=>`${x.booking_ref||x.booking_id||''} ${x.name} ${x.trip} ${x.phone} ${x.email||''} ${x.city||''}`.toLowerCase().includes(q)));
-};
-$('#admin-date').textContent=new Intl.DateTimeFormat('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());
-load();
+
+const hour = new Date().getHours();
+$('main.ad-main').innerHTML = `
+  <section class="ad-hello">
+    <img class="c-b" src="assets/sky/cloud-c.webp" alt=""><img class="c-a" src="assets/sky/cloud-b.webp" alt="">
+    <svg class="ad-plane" viewBox="0 0 24 24" aria-hidden="true"><path transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.500a1.500 1.500 0 0 0-3 0V9l-8 5v2l8-2.500V19l-2 1.500V22l3.500-1 3.500 1v-1.500L13 19v-5.500l8 2.500Z"/></svg>
+    <div><small>${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</small><h2>Good ${hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'}, Bahadur team</h2><p id="hello-line">Getting today’s figures…</p></div>
+    <div class="quick"><a href="bookings-admin.html"><i class="hgi-stroke hgi-package"></i>Bookings</a><a href="billing.html"><i class="hgi-stroke hgi-add-01"></i>Invoice</a><a href="reports-admin.html"><i class="hgi-stroke hgi-chart-bar-line"></i>Reports</a></div>
+  </section>
+  <div class="grid g-4" id="kpis">${'<div class="stat"><div class="skeleton"></div></div>'.repeat(4)}</div>
+  <div class="grid g-5 mt" id="ops"></div>
+  <div class="grid g-2-1 mt">
+    <section class="card"><div class="card-head"><h3>Money, last 12 months</h3><span class="sp"></span><div class="legend"><span><i></i>Invoiced</span><span><i style="background:var(--navy)"></i>Collected</span><span><i style="background:#f3b9a0"></i>Expenses</span></div></div><div class="card-body"><div class="bars" id="money-chart"></div></div></section>
+    <section class="card"><div class="card-head"><h3>Visitors, 14 days</h3></div><div class="card-body"><div class="bars" id="traffic-chart"></div></div></section>
+  </div>
+  <div class="grid g-2 mt">
+    <section class="card"><div class="card-head"><h3>Overdue payments</h3><span class="sp"></span><a class="btn sm" href="invoices-admin.html">All invoices</a></div><div class="table-wrap"><table class="t"><thead><tr><th>Invoice</th><th>Due</th><th class="num">Balance</th><th></th></tr></thead><tbody id="overdue"></tbody></table></div></section>
+    <section class="card"><div class="card-head"><h3>Latest invoices</h3></div><div class="table-wrap"><table class="t"><thead><tr><th>Invoice</th><th>Status</th><th class="num">Total</th></tr></thead><tbody id="invoices"></tbody></table></div></section>
+  </div>
+  <div class="grid g-2-1 mt">
+    <section class="card"><div class="card-head"><h3>Latest booking requests</h3><span class="sp"></span><a class="btn sm" href="bookings-admin.html">All bookings</a></div><div class="table-wrap"><table class="t"><thead><tr><th>Guest</th><th>Journey</th><th>Travel</th><th>Status</th><th></th></tr></thead><tbody id="bookings"></tbody></table></div></section>
+    <section class="card"><div class="card-head"><h3>Activity</h3></div><ul class="feed" id="activity"></ul></section>
+  </div>`;
+
+$('#refresh').onclick = () => load().then(() => toast('Updated')).catch((e) => toast(e.message, 'bad'));
+load().catch((e) => toast(e.message, 'bad'));

@@ -1,119 +1,86 @@
+// Booking window and AI concierge, shared by every visitor page. Markup comes from site-ui.js.
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+const WA = '919187440916';
 const bookingModal = $('#booking-modal');
-const reviewModal = $('#review-modal');
-const openModal = (element) => { if (!element) return; element.classList.add('show'); element.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; };
-const closeModal = (element) => { if (!element) return; element.classList.remove('show'); element.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
+const openModal = () => { bookingModal.classList.add('show'); document.body.classList.add('modal-open'); };
+const closeModal = () => { bookingModal.classList.remove('show'); document.body.classList.remove('modal-open'); };
 
-function bindBookingButtons() {
-  // Mark buttons so CSS/JS can detect readiness; clicks handled via delegation below
-  $$('[data-book]:not([data-book-bound])').forEach((button) => {
-    button.setAttribute('data-book-bound', 'true');
-  });
-}
-bindBookingButtons();
-window.addEventListener('bahadur:destinations-ready', bindBookingButtons);
-
-// Event delegation so static + dynamic Book buttons always open the modal
+// Event delegation so static and dynamic Book buttons always open the window
 document.addEventListener('click', (event) => {
+  if (event.target.closest('#booking-modal [data-close]')) { closeModal(); return; }
+  if (event.target === bookingModal) { closeModal(); return; }
   const button = event.target.closest('[data-book]');
   if (!button) return;
   event.preventDefault();
+  $('#bk-form-wrap').hidden = false;
+  $('#bk-done').hidden = true;
   const trip = button.getAttribute('data-trip');
-  const select = $('#trip-select');
-  if (trip && select) {
-    if (!Array.from(select.options).some((option) => option.value === trip)) select.add(new Option(trip, trip));
-    select.value = trip;
-  }
-  openModal(bookingModal);
+  if (trip) $('#trip-input').value = trip;
+  openModal();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+$('#ft-plan')?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  $('#bk-form-wrap').hidden = false;
+  $('#bk-done').hidden = true;
+  $('#booking-form [name=note]').value = $('#ft-text').value.trim();
+  if (!$('#trip-input').value) $('#trip-input').value = 'Custom journey';
+  openModal();
+  $('#booking-form [name=name]').focus();
 });
 
-// Load all packages from API into booking form trip select
-async function loadPackageOptions() {
-  const select = $('#trip-select');
-  if (!select) return;
+(async function loadTripOptions() {
   try {
     const res = await fetch('/api/packages');
     if (!res.ok) return;
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) return;
-    const data = await res.json();
-    const packages = data.packages || [];
-    packages.forEach(p => {
-      const name = p.name || p.slug;
-      if (name && !Array.from(select.options).some(o => o.value === name)) {
-        select.add(new Option(name, name));
-      }
-    });
-  } catch (e) { /* packages API not configured yet, skip */ }
-}
-loadPackageOptions();
+    const { packages = [] } = await res.json();
+    $('#trip-options').innerHTML = packages.map((p) => `<option value="${String(p.name).replace(/"/g, '&quot;')}"></option>`).join('');
+  } catch { /* the field still accepts free text */ }
+})();
 
-$$('[data-close]').forEach((button) => button.addEventListener('click', () => closeModal(bookingModal)));
-// Finder is handled by AI panel block when present; booking fallback below if no AI
-$('#add-review')?.addEventListener('click', () => { window.location.href = 'community.html#share'; });
-$$('[data-review-close]').forEach((button) => button.addEventListener('click', () => closeModal(reviewModal)));
+function whatsappMessage(ref, d) {
+  const parts = [
+    '*New trip request - Bahadur Tours and Travels*', '',
+    '*Reference:* ' + ref,
+    '*Name:* ' + (d.name || '-'),
+    '*Phone:* ' + (d.phone || '-'),
+    '*Email:* ' + (d.email || '-'),
+    '*Journey:* ' + (d.trip || 'Custom journey'),
+    '*Travel date:* ' + (d.date || 'Flexible'),
+    '*Guests:* ' + (d.guests || '-'),
+    '*Starting city:* ' + (d.city || '-'),
+  ];
+  if (d.note && d.note.trim()) parts.push('*Notes:* ' + d.note.trim());
+  return parts.join('\n');
+}
 
 $('#booking-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
-  const submit = form.querySelector('button[type="submit"], button:not([type])');
-  const originalHTML = submit?.innerHTML || 'Send booking request';
-  if (submit) { submit.disabled = true; submit.textContent = 'Sending...'; }
+  const submit = form.querySelector('button[type="submit"]');
+  const label = submit.innerHTML;
+  submit.disabled = true;
+  submit.textContent = 'Sending…';
   const payload = Object.fromEntries(new FormData(form));
-
-  // Build fully formatted WhatsApp message with all details in correct order
-  function buildWAMessage(ref) {
-    const parts = [
-      '*New Booking - Bahadur Tours & Travels*',
-      '',
-      '*Booking Ref:* ' + ref,
-      '*Name:* ' + (payload.name || '-'),
-      '*Phone:* ' + (payload.phone || '-'),
-      '*Email:* ' + (payload.email || '-'),
-      '*Trip / Experience:* ' + (payload.trip || 'Custom journey'),
-      '*Travel Date:* ' + (payload.date || 'Flexible'),
-      '*Number of Guests:* ' + (payload.guests || '-'),
-      '*Starting City:* ' + (payload.city || '-'),
-    ];
-    if (payload.note && payload.note.trim()) {
-      parts.push('*Special Requirements:* ' + payload.note.trim());
-    }
-    parts.push('', '_Booked via bahadurtours.com_');
-    return parts.join('\n');
-  }
-
-  let bookingRef = 'BT' + Date.now().toString().slice(-8);
+  let ref = 'BT' + Date.now().toString().slice(-8);
   try {
-    const response = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const response = await fetch('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Booking could not be saved');
-    bookingRef = result.bookingId || result.booking?.booking_ref || bookingRef;
+    ref = result.bookingId || ref;
   } catch (error) {
-    // DB save failed — still open WhatsApp so lead is not lost
-    console.warn('Booking DB save failed (will still open WhatsApp):', error.message);
+    // The WhatsApp button below still carries every detail, so the request is not lost
+    console.warn('Booking save failed:', error.message);
   }
-
   form.reset();
-  closeModal(bookingModal);
-  if (submit) { submit.disabled = false; submit.innerHTML = originalHTML; }
-  // Always open WhatsApp with full structured details
-  window.open('https://wa.me/919187440916?text=' + encodeURIComponent(buildWAMessage(bookingRef)), '_blank');
-});;
-
-$('#review-form')?.addEventListener('submit', (event) => {
-  event.preventDefault();
-  const form = event.target;
-  const pending = JSON.parse(localStorage.getItem('bahadur-reviews') || '[]');
-  pending.push({ ...Object.fromEntries(new FormData(form)), status: 'pending', createdAt: new Date().toISOString() });
-  localStorage.setItem('bahadur-reviews', JSON.stringify(pending));
-  alert('Thank you. Your review was submitted for booking verification.');
-  closeModal(reviewModal);
-  form.reset();
+  submit.disabled = false;
+  submit.innerHTML = label;
+  $('#bk-ref').textContent = ref;
+  $('#bk-wa').href = `https://wa.me/${WA}?text=${encodeURIComponent(whatsappMessage(ref, payload))}`;
+  $('#bk-form-wrap').hidden = true;
+  $('#bk-done').hidden = false;
 });
 
 function cleanAiText(text) {
@@ -131,167 +98,81 @@ function cleanAiText(text) {
     .trim();
 }
 
-// ── AI Quick Chat ─────────────────────────────────────────────
+// ── AI concierge ─────────────────────────────────────────────
 (function () {
-  const aiPanel    = document.querySelector('#ai-panel');
-  const aiMessages = document.querySelector('#ai-messages');
-  const aiInput    = document.querySelector('#ai-input');
-  const aiSend     = document.querySelector('#ai-send');
-  const aiClose    = document.querySelector('#ai-close');
+  const aiPanel = $('#ai-panel'), aiMessages = $('#ai-messages'), aiInput = $('#ai-input'), aiSend = $('#ai-send');
   if (!aiPanel || !aiMessages) return;
+  const chatHistory = [];
+  let isThinking = false;
 
-  // Persistent conversation history
-  let chatHistory = [];
-  let isThinking   = false;
+  const show = (open) => {
+    aiPanel.classList.toggle('show', open);
+    aiPanel.setAttribute('aria-hidden', String(!open));
+    if (open) aiInput?.focus();
+  };
 
-  function scrollBottom () {
-    if (aiMessages) aiMessages.scrollTop = aiMessages.scrollHeight;
-  }
-
-  function addMsg (role, text) {
+  function addMsg(role, text) {
     const div = document.createElement('div');
     div.className = role === 'user' ? 'ai-msg ai-msg-user' : 'ai-msg ai-msg-bot';
     div.textContent = role === 'user' ? text : cleanAiText(text);
     aiMessages.appendChild(div);
-    scrollBottom();
+    aiMessages.scrollTop = aiMessages.scrollHeight;
   }
 
-  function addTyping () {
-    const div = document.createElement('div');
-    div.className = 'ai-msg ai-msg-bot ai-typing';
-    div.id = 'ai-typing-indicator';
-    div.innerHTML = '<span></span><span></span><span></span>';
-    aiMessages.appendChild(div);
-    scrollBottom();
-    return div;
-  }
-
-  function removeTyping () {
-    document.querySelector('#ai-typing-indicator')?.remove();
-  }
-
-  async function send (text) {
+  async function send(text) {
     text = (text || '').trim();
     if (!text || isThinking) return;
     isThinking = true;
-    if (aiInput) { aiInput.value = ''; aiInput.disabled = true; }
-    if (aiSend) aiSend.disabled = true;
-
+    aiInput.value = '';
+    aiInput.disabled = true;
+    aiSend.disabled = true;
     addMsg('user', text);
     chatHistory.push({ role: 'user', content: text });
-
-    const typing = addTyping();
-
+    const typing = document.createElement('div');
+    typing.className = 'ai-msg ai-msg-bot ai-typing';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    aiMessages.appendChild(typing);
+    aiMessages.scrollTop = aiMessages.scrollHeight;
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history: chatHistory.slice(-10) }),
-      });
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, history: chatHistory.slice(-10) }) });
       const data = await res.json();
-      removeTyping();
+      typing.remove();
       const reply = cleanAiText(data.reply || 'Please WhatsApp us at +91 91874 40916 for help!');
       addMsg('bot', reply);
       chatHistory.push({ role: 'assistant', content: reply });
     } catch {
-      removeTyping();
+      typing.remove();
       addMsg('bot', 'Our AI is briefly unavailable. WhatsApp us at +91 91874 40916 for instant help!');
     } finally {
       isThinking = false;
-      if (aiInput) { aiInput.disabled = false; aiInput.focus(); }
-      if (aiSend) aiSend.disabled = false;
+      aiInput.disabled = false;
+      aiSend.disabled = false;
+      aiInput.focus();
     }
   }
 
-  // Send button, form submit, and Enter key
-  const chatForm = document.querySelector('#chat-form');
-  if (chatForm) {
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      send(aiInput?.value);
-    });
-  }
-  if (aiSend) aiSend.addEventListener('click', (e) => {
-    e.preventDefault();
-    send(aiInput?.value);
-  });
-  if (aiInput) {
-    aiInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(aiInput.value); }
-    });
-  }
-
-  // Open AI panel — the FAB button
-  const aiOpen = document.querySelector('#ai-open');
-  if (aiOpen) {
-    aiOpen.addEventListener('click', () => {
-      const isOpen = aiPanel.classList.contains('show');
-      if (isOpen) {
-        aiPanel.classList.remove('show');
-        aiPanel.setAttribute('aria-hidden', 'true');
-      } else {
-        aiPanel.classList.add('show');
-        aiPanel.setAttribute('aria-hidden', 'false');
-        if (aiInput) aiInput.focus();
-      }
-    });
-  }
-
-  // Close AI panel
-  if (aiClose) aiClose.addEventListener('click', () => {
-    aiPanel.classList.remove('show');
-    aiPanel.setAttribute('aria-hidden', 'true');
-  });
-
-  // Quick-reply chips send the chip text to the AI
-  document.querySelectorAll('.ai-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const q = chip.dataset.q || chip.textContent.trim();
-      if (!aiPanel.classList.contains('show')) {
-        aiPanel.classList.add('show');
-        aiPanel.setAttribute('aria-hidden', 'false');
-      }
-      send(q);
-    });
-  });
-
-  // Finder form opens AI panel
-  document.querySelector('#finder')?.addEventListener('submit', e => {
-    e.preventDefault();
-    aiPanel.classList.add('show');
-    aiPanel.setAttribute('aria-hidden', 'false');
-    const dest = document.querySelector('#finder-destination')?.value?.trim();
-    if (dest) send('I want to plan a trip to ' + dest);
-  });
+  $('#chat-form')?.addEventListener('submit', (e) => { e.preventDefault(); send(aiInput.value); });
+  $('#ai-open')?.addEventListener('click', () => show(!aiPanel.classList.contains('show')));
+  $('#ai-close')?.addEventListener('click', () => show(false));
+  $$('.ai-chip').forEach((chip) => chip.addEventListener('click', () => { show(true); send(chip.dataset.q || chip.textContent.trim()); }));
 })();
 
-// If no AI panel on page, finder opens booking modal
-if (!document.querySelector('#ai-panel')) {
-  $('#finder')?.addEventListener('submit', (event) => { event.preventDefault(); openModal(bookingModal); });
+// ── Agatti map ───────────────────────────────────────────────
+// MapLibre is heavy, so it only loads once the visitor scrolls near a map.
+export function lazyMap(id, { center = [72.1934, 10.8589], zoom = 13.6, label = '<strong>Sand Castle Agx</strong><br>Western Road, Agatti Island<br><small>Lakshadweep 682553</small>' } = {}) {
+  const host = document.getElementById(id);
+  if (!host) return;
+  const start = async () => {
+    try {
+      if (!window.maplibregl) {
+        document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">');
+        await new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'; s.onload = resolve; s.onerror = reject; document.head.append(s); });
+      }
+      const map = new maplibregl.Map({ container: id, style: 'https://tiles.openfreemap.org/styles/liberty', center, zoom, pitch: 55, bearing: -28, attributionControl: true, cooperativeGestures: true });
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+      new maplibregl.Marker({ color: '#0ea5e9' }).setLngLat(center).setPopup(new maplibregl.Popup().setHTML(label)).addTo(map);
+    } catch (error) { console.warn('Map unavailable', error); }
+  };
+  new IntersectionObserver((entries, io) => { if (entries[0].isIntersecting) { io.disconnect(); start(); } }, { rootMargin: '500px' }).observe(host);
 }
-
-
-
-$$('[data-filter]').forEach((tab) => tab.addEventListener('click', () => {
-  const filter = tab.getAttribute('data-filter');
-  $$('[data-filter]').forEach((item) => item.classList.remove('active'));
-  tab.classList.add('active');
-  $$('.package-card').forEach((card) => { const tags = `${card.getAttribute('data-category') || ''} ${card.getAttribute('data-tags') || ''}`.split(/\s+/); card.classList.toggle('hidden', filter !== 'all' && !tags.includes(filter)); });
-}));
-const packageSearch = $('#package-search');
-packageSearch?.addEventListener('input', () => {
-  const query = packageSearch.value.toLowerCase();
-  $$('.package-card').forEach((card) => card.classList.toggle('hidden', !(card.getAttribute('data-name') || '').toLowerCase().includes(query)));
-});
-
-try {
-  if (typeof maplibregl !== 'undefined' && $('#map')) {
-    const map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty', center: [72.1934, 10.8589], zoom: 14.5, pitch: 60, bearing: -30, attributionControl: true }); map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right'); map.addControl(new maplibregl.FullscreenControl(), 'top-right');
-    new maplibregl.Marker({ color: '#e3b64d' }).setLngLat([72.1934, 10.8589]).setPopup(new maplibregl.Popup().setHTML('<strong>Sand Castle Agx — Seaside Serenity</strong><br>Western Road, Agatti Island<br><small>Lakshadweep 682553</small>')).addTo(map);
-    map.on('load', () => { const fallback = document.querySelector('.map-fallback'); if (fallback) fallback.style.display = 'none'; try { map.addLayer({'id': '3d-buildings','source': 'openmaptiles','source-layer': 'building','filter': ['==', 'extrude', 'true'],'type': 'fill-extrusion','minzoom': 14,'paint': {'fill-extrusion-color': '#aaa','fill-extrusion-height': ['get', 'height'],'fill-extrusion-base': ['get', 'min_height'],'fill-extrusion-opacity': 0.6}}); } catch(e) {} });
-  }
-} catch (error) { console.warn('Map fallback active', error); }
-
-function slugify(value){return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-function bindPackageDetailLinks(){document.querySelectorAll('.package-card:not([data-detail-ready])').forEach(card=>{card.dataset.detailReady='true';const title=card.querySelector('h3')?.textContent||card.getAttribute('data-trip')||'';const footer=card.querySelector('.package-footer');if(footer&&!footer.querySelector('a[href*="package.html"]')){const link=document.createElement('a');link.className='details-link';link.href='package.html?slug='+(card.dataset.slug||slugify(title));link.innerHTML='Full details <i class="hgi-stroke hgi-arrow-right-01"></i>';footer.prepend(link)}card.addEventListener('click',event=>{if(event.target.closest('button,a'))return;location.href='package.html?slug='+(card.dataset.slug||slugify(title))})})}
-bindPackageDetailLinks();window.addEventListener('bahadur:destinations-ready',bindPackageDetailLinks);
+lazyMap('map');

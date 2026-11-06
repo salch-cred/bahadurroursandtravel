@@ -25,8 +25,8 @@ const NAV = [
   ['System', [['settings-admin.html', 'settings', 'Business settings', 'settings-01']]],
 ];
 
-// The desktop billing app shows only the billing pages.
-export const IN_BILLING_APP = /BahadurBilling/.test(navigator.userAgent);
+// The installed billing app shows only the billing pages.
+export const IN_BILLING_APP = /BahadurBilling/.test(navigator.userAgent) || matchMedia('(display-mode: standalone)').matches;
 const BILLING_APP_PAGES = ['billing', 'invoices', 'customers', 'finance', 'reports', 'settings'];
 const HOME_PAGE = IN_BILLING_APP ? 'invoices-admin.html' : 'admin.html';
 const MENU = IN_BILLING_APP
@@ -160,6 +160,10 @@ function countUpStats(root) {
 }
 
 export function boot({ page, title, subtitle = '', actions = '' }) {
+  if (IN_BILLING_APP && !BILLING_APP_PAGES.includes(page)) {
+    location.replace(HOME_PAGE);
+    return new Promise(() => {});
+  }
   document.body.classList.add('ad');
   const main = $('main.ad-main');
   const side = document.createElement('aside');

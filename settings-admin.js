@@ -1,6 +1,8 @@
 import { boot, api, $, $$, toast, IN_BILLING_APP } from './admin-ui.js';
 
-const APP_DOWNLOAD = 'https://github.com/salch-cred/bahadurroursandtravel/releases/latest/download/Bahadur-Billing-Setup.exe';
+// The browser offers this once the page can be installed; it may never fire, so the button also explains the manual way.
+let installPrompt = null;
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });
 
 await boot({
   page: 'settings', title: 'Business settings', subtitle: 'These details print on every invoice and receipt',
@@ -36,12 +38,25 @@ $('main.ad-main').innerHTML = `<form id="f" class="grid g-2">
     <label class="field full"><span>Default invoice note</span><textarea name="default_note" rows="2"></textarea></label>
     <label class="field full"><span>Booking conditions (one per line)</span><textarea name="terms" rows="4"></textarea></label>
   </div></section>
-  ${IN_BILLING_APP ? '' : `<section class="card app-card"><div class="card-head"><h3>Billing desktop app</h3><small>Windows, about 120 MB</small></div><div class="card-body">
-    <p>Install billing on a Windows PC. It uses the same bills and the same admin password as this panel, and it needs internet.</p>
-    <a class="btn primary" href="${APP_DOWNLOAD}"><i class="hgi-stroke hgi-download-04"></i>Download for Windows</a>
-    <p class="app-note">If Windows shows a warning, choose More info, then Run anyway.</p>
+  ${IN_BILLING_APP ? '' : `<section class="card app-card"><div class="card-head"><h3>Billing desktop app</h3><small>Edge or Chrome on Windows</small></div><div class="card-body">
+    <p>Install billing on this PC in one click. It opens in its own window with a desktop icon, uses the same bills and admin password as this panel, and needs internet.</p>
+    <button type="button" class="btn primary" id="install-app"><i class="hgi-stroke hgi-download-04"></i>Install billing app</button>
+    <p class="app-note" id="install-help" aria-live="polite"></p>
   </div></section>`}
 </form>`;
+
+const installHelp = $('#install-help');
+addEventListener('appinstalled', () => { installHelp.textContent = 'Installed. Open Bahadur Billing from your desktop or Start menu.'; });
+if ($('#install-app')) $('#install-app').onclick = async () => {
+  if (!installPrompt) {
+    installHelp.textContent = 'In Edge, open the … menu, then Apps, then Install this site as an app. In Chrome, click the install icon at the right of the address bar. If it is already installed, open Bahadur Billing from your desktop.';
+    return;
+  }
+  const prompt = installPrompt;
+  installPrompt = null;
+  prompt.prompt();
+  await prompt.userChoice;
+};
 
 const { settings } = await api('admin?type=settings');
 $$('#f [name]').forEach((el) => { el.value = settings[el.name] ?? ''; });

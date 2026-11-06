@@ -110,8 +110,24 @@
 .inv-title{width:calc(var(--u)*188);padding:calc(var(--u)*11) calc(var(--u)*13)}
 .inv-title strong{font-size:calc(var(--u)*16)}
 .inv-grid3{grid-template-columns:1.2fr 1.1fr 1.05fr}
-.inv-kv dd{white-space:nowrap}
+.inv-kv dt{white-space:nowrap}
+.inv-kv dd{min-width:0}
+.inv-grid3>*{min-width:0}
+.inv-wave-solid{display:none}
 .inv-pay .kv span{width:calc(var(--u)*50)}
 .inv-pay .kv b{word-break:normal;overflow-wrap:anywhere}
-@page{size:A4;margin:0}
-@media print{.inv{width:210mm;min-height:296.5mm;page-break-after:auto}.inv-table tr,.inv-box,.inv-low{break-inside:avoid}}
+/* Printers cannot reach the paper edge, so the sheet sits just inside a 5mm margin. */
+@page{size:A4 portrait;margin:5mm}
+@media print{
+  .inv{zoom:.95;min-height:1120px;break-after:auto}
+  .inv-table tr,.inv-box,.inv-low{break-inside:avoid}
+  /* Flat colours: shadows, see-through layers and gradients print as stripes on office printers. */
+  .inv,.inv *{box-shadow:none!important}
+  .inv-wm,.inv-wave{display:none}
+  .inv-wave-solid{display:block;width:100%;height:calc(var(--u)*30);margin-top:calc(var(--u)*6)}
+  .inv-top{background:#0ea5e9}
+  .inv-head{background:#eef8fe}
+  .inv-words{background:#eff8ff}
+  .inv-table th{background:#0284c7}
+  .inv-title,.inv-totals .bal,.inv-receipt .inv-rcpt-amt,.inv-foot{background:#0369a1}
+}

@@ -53,7 +53,7 @@ const PLANE_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
 const WAVE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 794 38' preserveAspectRatio='none'%3E%3Cpath fill='%237dd3fc' fill-opacity='.45' d='M0 26C130 2 260 2 400 18S660 36 794 10V38H0Z'/%3E%3Cpath fill='%230284c7' d='M0 32C150 12 290 14 420 26S670 38 794 22V38H0Z'/%3E%3C/svg%3E";
 const routeLine = `<div class="inv-route" aria-hidden="true"><span>Lakshadweep</span><i></i><img src="${PLANE_ICON}" alt=""><i></i><span>Umrah</span><i></i><img src="${PLANE_ICON}" alt=""><i></i><span>The world</span></div>`;
 const watermark = '<img class="inv-wm" src="assets/brand/bahadur-mark.png" alt="">';
-const footer = (s) => `<img class="inv-wave" src="${WAVE}" alt=""><footer class="inv-foot"><strong>Thank you for travelling with Bahadur.</strong><span>${esc(s.website)} · ${esc(s.phone)} · ${esc(s.email)}</span></footer>`;
+const footer = (s) => `<img class="inv-wave" src="${WAVE}" alt=""><svg class="inv-wave-solid" viewBox="0 0 794 30" preserveAspectRatio="none" aria-hidden="true"><path fill="#0369a1" d="M0 16C180 2 300 2 460 14S700 26 794 6V30H0Z"/></svg><footer class="inv-foot"><strong>Thank you for travelling with Bahadur.</strong><span>${esc(s.website)} · ${esc(s.phone)} · ${esc(s.email)}</span></footer>`;
 
 const dateTime = (v) => {
   if (!v) return '';
@@ -76,7 +76,7 @@ export function renderInvoice(doc, settings, payments = []) {
   const dateLabel = isQuote ? 'Valid until' : 'Due date';
   const pax = (td.passenger_names || []).filter((p) => p.name);
   const half = Math.ceil(pax.length / 2);
-  const paxRows = (rows, start) => `<table class="inv-pax">${rows.map((p, i) => `<tr><td>${start + i + 1}.</td><td>${esc(p.name)}</td><td>${p.type === 'kid' ? 'Child' : 'Adult'}${p.age ? ' · ' + esc(p.age) + ' yrs' : ''}${p.passport ? ' · ' + esc(p.passport) : ''}</td></tr>`).join('')}</table>`;
+  const paxRows = (rows, start) => `<table class="inv-pax">${rows.map((p, i) => `<tr><td>${start + i + 1}.</td><td>${esc(p.name)}</td><td>${p.type === 'kid' ? 'Child' : 'Adult'}${Number(p.age) > 0 ? ' · ' + esc(p.age) + ' yrs' : ''}${p.passport ? ' · ' + esc(p.passport) : ''}</td></tr>`).join('')}</table>`;
   const flight = td.flight || {}, hotel = td.hotel || {};
   // The two halves must always add back to the tax on the total line
   const cgst = Math.round((t.tax / 2) * 100) / 100;
@@ -93,8 +93,8 @@ export function renderInvoice(doc, settings, payments = []) {
     ${routeLine}${watermark}
     <div class="inv-body">
       <section class="inv-grid3 brk">
-        <div class="inv-box"><h4>Billed to</h4><strong class="big">${esc(doc.customer_name || 'Customer name')}</strong><p>${esc(doc.customer_address || '')}</p><p>${esc([doc.phone, doc.email].filter(Boolean).join(' · '))}</p>${doc.customer_gstin ? `<p>GSTIN: ${esc(doc.customer_gstin)}</p>` : ''}</div>
-        <div class="inv-box"><h4>Journey</h4><strong class="big">${esc(td.package_name || 'Travel package')}</strong>${kv([['Destination', td.destination], ['Travel', [niceDate(td.travel_date), td.return_date ? niceDate(td.return_date) : ''].filter((x) => x && x !== '—').join(' → ')], ['Travellers', pax.length ? `${pax.filter((p) => p.type !== 'kid').length} adult, ${pax.filter((p) => p.type === 'kid').length} child` : '']])}</div>
+        <div class="inv-box"><h4>Billed to</h4><strong class="big">${esc(doc.customer_name || 'Customer name')}</strong><p>${esc(doc.customer_address || '')}</p>${doc.phone ? `<p>${esc(doc.phone)}</p>` : ''}${doc.email ? `<p>${esc(doc.email)}</p>` : ''}${doc.customer_gstin ? `<p>GSTIN: ${esc(doc.customer_gstin)}</p>` : ''}</div>
+        <div class="inv-box"><h4>Journey</h4><strong class="big">${esc(td.package_name || 'Travel package')}</strong>${kv([['Destination', td.destination], ['Travel', [niceDate(td.travel_date), td.return_date ? niceDate(td.return_date) : ''].map((x) => String(x).replace(/ /g, ' ')).filter((x) => x && x !== '—').join(' → ')], ['Travellers', pax.length ? [[pax.filter((p) => p.type !== 'kid').length, 'adult'], [pax.filter((p) => p.type === 'kid').length, 'child']].filter(([n]) => n).map(([n, w]) => `${n} ${w}`).join(', ') : '']])}</div>
         <div class="inv-box"><h4>Details</h4>${kv([[isQuote ? 'Quote date' : 'Invoice date', niceDate(doc.invoice_date)], [dateLabel, doc.due_date ? niceDate(doc.due_date) : ''], ['Booking ref', doc.booking_ref], ['Supply', doc.place_of_supply]])}</div>
       </section>
       ${pax.length ? `<section class="inv-box line brk"><h4>Travellers (${pax.length})</h4><div class="inv-paxcols">${paxRows(pax.slice(0, half), 0)}${paxRows(pax.slice(half), half)}</div></section>` : ''}

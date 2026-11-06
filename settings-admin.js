@@ -1,4 +1,6 @@
-import { boot, api, $, $$, toast } from './admin-ui.js';
+import { boot, api, $, $$, toast, IN_BILLING_APP } from './admin-ui.js';
+
+const APP_DOWNLOAD = 'https://github.com/salch-cred/bahadurroursandtravel/releases/latest/download/Bahadur-Billing-Setup.exe';
 
 await boot({
   page: 'settings', title: 'Business settings', subtitle: 'These details print on every invoice and receipt',
@@ -34,6 +36,11 @@ $('main.ad-main').innerHTML = `<form id="f" class="grid g-2">
     <label class="field full"><span>Default invoice note</span><textarea name="default_note" rows="2"></textarea></label>
     <label class="field full"><span>Booking conditions (one per line)</span><textarea name="terms" rows="4"></textarea></label>
   </div></section>
+  ${IN_BILLING_APP ? '' : `<section class="card app-card"><div class="card-head"><h3>Billing desktop app</h3><small>Windows, about 120 MB</small></div><div class="card-body">
+    <p>Install billing on a Windows PC. It uses the same bills and the same admin password as this panel, and it needs internet.</p>
+    <a class="btn primary" href="${APP_DOWNLOAD}"><i class="hgi-stroke hgi-download-04"></i>Download for Windows</a>
+    <p class="app-note">If Windows shows a warning, choose More info, then Run anyway.</p>
+  </div></section>`}
 </form>`;
 
 const { settings } = await api('admin?type=settings');

@@ -25,6 +25,14 @@ const NAV = [
   ['System', [['settings-admin.html', 'settings', 'Business settings', 'settings-01']]],
 ];
 
+// The desktop billing app shows only the billing pages.
+export const IN_BILLING_APP = /BahadurBilling/.test(navigator.userAgent);
+const BILLING_APP_PAGES = ['billing', 'invoices', 'customers', 'finance', 'reports', 'settings'];
+const HOME_PAGE = IN_BILLING_APP ? 'invoices-admin.html' : 'admin.html';
+const MENU = IN_BILLING_APP
+  ? NAV.map(([group, items]) => [group, items.filter(([, key]) => BILLING_APP_PAGES.includes(key))]).filter(([, items]) => items.length)
+  : NAV;
+
 export const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export const money = (v, digits = 2) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number(v || 0));
 export const money0 = (v) => money(v, 0);
@@ -156,7 +164,7 @@ export function boot({ page, title, subtitle = '', actions = '' }) {
   const main = $('main.ad-main');
   const side = document.createElement('aside');
   side.className = 'ad-side';
-  side.innerHTML = `<a class="ad-brand" href="admin.html"><img src="${LOGO}" alt="Bahadur Tours and Travels"></a><nav class="ad-nav" aria-label="Admin">${NAV.map(([group, items]) => `<div class="ad-group">${group}</div>${items.map(([href, key, label, icon]) => `<a href="${href}" class="${key === page ? 'active' : ''}"><i class="hgi-stroke hgi-${icon}"></i>${label}<span class="badge" data-badge="${key}" hidden></span></a>`).join('')}`).join('')}</nav><div class="ad-side-foot"><a href="index.html" target="_blank" rel="noopener"><i class="hgi-stroke hgi-link-square-02"></i>Website</a><button id="ad-logout" type="button"><i class="hgi-stroke hgi-logout-03"></i>Sign out</button></div>`;
+  side.innerHTML = `<a class="ad-brand" href="${HOME_PAGE}"><img src="${LOGO}" alt="Bahadur Tours and Travels"></a><nav class="ad-nav" aria-label="Admin">${MENU.map(([group, items]) => `<div class="ad-group">${group}</div>${items.map(([href, key, label, icon]) => `<a href="${href}" class="${key === page ? 'active' : ''}"><i class="hgi-stroke hgi-${icon}"></i>${label}<span class="badge" data-badge="${key}" hidden></span></a>`).join('')}`).join('')}</nav><div class="ad-side-foot"><a href="index.html" target="_blank" rel="noopener"><i class="hgi-stroke hgi-link-square-02"></i>Website</a><button id="ad-logout" type="button"><i class="hgi-stroke hgi-logout-03"></i>Sign out</button></div>`;
   const wrap = document.createElement('div');
   wrap.className = 'ad-wrap';
   wrap.innerHTML = `<header class="ad-top"><button class="ad-burger" aria-label="Menu"><i class="hgi-stroke hgi-menu-01"></i></button><div><h1>${esc(title)}</h1>${subtitle ? `<p id="ad-sub">${esc(subtitle)}</p>` : ''}</div><div class="sp"></div>${actions}</header>`;
@@ -172,7 +180,7 @@ export function boot({ page, title, subtitle = '', actions = '' }) {
   countUpStats(main);
   $('.ad-burger').onclick = () => document.body.classList.toggle('nav-open');
   scrim.onclick = () => document.body.classList.remove('nav-open');
-  $('#ad-logout').onclick = () => { localStorage.removeItem(TOKEN_KEY); location.href = 'admin.html'; };
+  $('#ad-logout').onclick = () => { localStorage.removeItem(TOKEN_KEY); location.href = HOME_PAGE; };
   if (localStorage.getItem(TOKEN_KEY)) return Promise.resolve();
   return new Promise((resolve) => { loginResolve = resolve; showLogin(); });
 }

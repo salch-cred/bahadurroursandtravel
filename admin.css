@@ -279,3 +279,6 @@ dialog.dlg::backdrop{background:rgba(11,34,57,.45);backdrop-filter:blur(4px)}
 @media(max-width:860px){.ad-hello{flex-direction:column;align-items:flex-start;padding:20px}.ad-hello .quick{justify-content:flex-start}.ad-hello h2{font-size:25px}.ad-hello .c-b{display:none}}
 @media(prefers-reduced-motion:reduce){.ad-decor img,.ad-side::after,.ad-hello img,.ad-plane,.ad-login-sky img,.ad-main>*,.ad-main>.grid>*,.tile-grid>.tile,.bars .b,.meter span{animation:none}}
 @media print{.ad-decor,.ad-login-sky,.ad-side::after{display:none!important}.ad-main>*,.ad-main>.grid>*{animation:none!important}}
+.app-card{grid-column:1/-1}
+.app-card p{margin:0 0 12px;color:#47606f}
+.app-card .app-note{margin:12px 0 0;font-size:12px}

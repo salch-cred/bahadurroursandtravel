@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Bahadur Billing</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 "Segoe UI",sans-serif;color:#0f3b57;background:linear-gradient(#e8f6fd,#fff);text-align:center}
+  main{max-width:420px;padding:24px}
+  h1{font-size:24px;margin:0 0 8px}
+  p{margin:0 0 20px;color:#47606f}
+  button{font:inherit;font-weight:600;color:#fff;background:#0b86c9;border:0;border-radius:10px;padding:11px 26px;cursor:pointer}
+  button:hover{background:#0973ad}
+</style>
+</head>
+<body>
+<main>
+  <h1>Can't reach your billing data</h1>
+  <p>Bills are saved online, so this app needs internet. Check your connection and try again. Nothing you already saved has been lost.</p>
+  <button id="retry">Try again</button>
+</main>
+<script>
+  const next = new URLSearchParams(location.search).get('next');
+  const retry = () => { if (next) location.href = next; };
+  document.getElementById('retry').onclick = retry;
+  addEventListener('online', retry);
+</script>
+</body>
+</html>

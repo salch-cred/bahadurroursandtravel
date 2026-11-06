@@ -1,6 +1,6 @@
 // Standalone view of an invoice (?id=) or payment receipt (?receipt=), ready to print or save.
 import { boot, api, $, toast } from './admin-ui.js';
-import { renderInvoice, renderReceipt, savePdf, pdfName } from './invoice-render.js';
+import { renderInvoice, renderReceipt, savePdf, pdfName, fitInvoice } from './invoice-render.js';
 
 const params = new URLSearchParams(location.search);
 await boot({
@@ -31,6 +31,7 @@ function fit() {
   if (!stage) return;
   stage.style.maxWidth = '860px';
   stage.style.margin = '0 auto';
+  fitInvoice(inner);
   const scale = Math.min(1, (stage.clientWidth - 32) / 794);
   inner.style.transform = `scale(${scale})`;
   stage.style.height = Math.ceil(inner.offsetHeight * scale + 34) + 'px';

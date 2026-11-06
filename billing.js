@@ -1,6 +1,6 @@
 // Invoice and quotation editor. The form edits one `doc` object; the sheet re-renders from it on every change.
 import { boot, api, esc, $, $$, money, toast, confirmBox, dialog, today, addDays, isoDay, niceDate, waNumber, debounce } from './admin-ui.js';
-import { renderInvoice, computeTotals, savePdf, pdfName } from './invoice-render.js';
+import { renderInvoice, computeTotals, savePdf, pdfName, fitInvoice } from './invoice-render.js';
 
 const blankTravel = () => ({ package_name: '', package_type: 'domestic', destination: '', travel_date: '', return_date: '', passenger_names: [], flight: { included: false, cabin: 'Economy' }, hotel: { included: false, rooms: 1 } });
 let settings = {};
@@ -109,7 +109,16 @@ function renderLedger() {
   $('#ledger').innerHTML = rows.join('') || '<tr><td colspan="2" style="color:var(--muted)">No payments recorded yet.</td></tr>';
 }
 
+// A percentage follows the charges, so the amount stays right when a line changes.
+function applyPercent() {
+  const percent = Math.min(Math.max(0, Number(doc.travel_details.discount_percent) || 0), 100);
+  if (!percent) return;
+  doc.discount = Math.round(computeTotals(doc).subtotal * percent) / 100;
+  $('[name=discount]').value = doc.discount;
+}
+
 const summaries = () => {
+  applyPercent();
   const t = computeTotals(doc);
   const paid = doc.id ? payments.reduce((s, p) => s + Number(p.amount), 0) : Number($('#advance-amount').value || 0);
   const pax = doc.travel_details.passenger_names.filter((p) => p.name);
@@ -120,7 +129,7 @@ const summaries = () => {
   $('#sum-extra').textContent = [doc.travel_details.flight.included && 'Flight', doc.travel_details.hotel.included && 'Hotel'].filter(Boolean).join(' + ') || 'Not included';
   $('#sum-total').textContent = money(t.total);
   $('#sum-paid').textContent = doc.doc_type === 'quotation' ? '' : `${money(paid)} paid`;
-  $('#sum-box').innerHTML = `<div><span>Subtotal</span><b>${money(t.subtotal)}</b></div>${t.discount ? `<div><span>Discount</span><b>− ${money(t.discount)}</b></div>` : ''}${t.tax ? `<div><span>Tax @ ${t.rate}%</span><b>${money(t.tax)}</b></div>` : ''}<div class="tot"><span>Total</span><b>${money(t.total)}</b></div>`;
+  $('#sum-box').innerHTML = `<div><span>Subtotal</span><b>${money(t.subtotal)}</b></div>${t.discount ? `<div><span>Discount${t.percent ? ` (${t.percent}%)` : ''}</span><b>− ${money(t.discount)}</b></div>` : ''}${t.tax ? `<div><span>Tax @ ${t.rate}%</span><b>${money(t.tax)}</b></div>` : ''}<div class="tot"><span>Total</span><b>${money(t.total)}</b></div>`;
 };
 
 const renderSheet = () => {
@@ -134,6 +143,7 @@ const refreshSoon = debounce(refresh, 60);
 function fitStage() {
   const stage = $('#stage'), inner = $('#sheet');
   if (!stage.clientWidth) return;
+  fitInvoice(inner);
   const scale = Math.min(1, (stage.clientWidth - 32) / 794);
   inner.style.transform = `scale(${scale})`;
   stage.style.height = Math.ceil(inner.offsetHeight * scale + 34) + 'px';
@@ -147,6 +157,8 @@ function onField(e) {
   const value = el.type === 'checkbox' ? el.checked : el.value;
   setPath(doc, fieldPath(el), value);
   if (el.name === 'invoice_number') numberEdited = true;
+  if (el.name === 'discount') { doc.travel_details.discount_percent = ''; $('[name="td.discount_percent"]').value = ''; }
+  if (el.name === 'td.discount_percent' && !Number(value)) { doc.discount = 0; $('[name=discount]').value = ''; }
   if (el.name === 'customer_name') pickCustomer(value);
   if (el.name === 'td.package_name') pickPackage(value);
   if (el.name === 'booking_ref') pickBooking(value);
@@ -214,6 +226,7 @@ function toPayload() {
 }
 
 async function save() {
+  applyPercent();
   if (!doc.customer_name.trim()) { toast('Add the customer name first', 'bad'); $('[name=customer_name]').focus(); return null; }
   if (!computeTotals(doc).lines.some((l) => l.description || l.amount)) { toast('Add at least one charge', 'bad'); return null; }
   const btn = $('#btn-save');
@@ -433,6 +446,7 @@ function bind() {
   $('#btn-more').onclick = moreMenu;
   $('#btn-print').onclick = async () => {
     if (!(await ensureSaved())) return;
+    $('#mobile-tabs [data-view=preview]').click();
     document.title = doc.invoice_number;
     window.print();
   };

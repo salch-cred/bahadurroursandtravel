@@ -34,7 +34,8 @@ export function computeTotals(doc) {
   const taxable = round(subtotal - discount);
   const rate = doc.tax_mode === 'none' ? 0 : Number(doc.tax_rate || 0);
   const tax = round(taxable * rate / 100);
-  return { lines, subtotal, discount, taxable, rate, tax, total: round(taxable + tax) };
+  const percent = Number(doc.travel_details?.discount_percent) || 0;
+  return { lines, subtotal, discount, percent, taxable, rate, tax, total: round(taxable + tax) };
 }
 
 function upiQr(settings, amount, ref) {
@@ -46,9 +47,13 @@ function upiQr(settings, amount, ref) {
   return `<div class="inv-qr"><img src="${qr.createDataURL(5, 0)}" alt="UPI QR code">Scan to pay by UPI</div>`;
 }
 
-const companyBlock = (s) => `<div class="inv-brand"><img src="${LOGO}" alt="${esc(s.company_name)}"><div class="inv-co"><strong>${esc(s.company_name)}</strong>${esc(s.address_line1)}<br>${esc(s.address_line2)}<br>${esc(s.phone)} · ${esc(s.email)}${s.gstin ? `<br>GSTIN: ${esc(s.gstin)}` : ''}${s.pan ? ` · PAN: ${esc(s.pan)}` : ''}</div></div>`;
+const companyBlock = (s) => `<div class="inv-brand"><img src="${LOGO}" width="128" height="86" alt="${esc(s.company_name)}"><div class="inv-co"><strong>${esc(s.company_name)}</strong>${esc(s.address_line1)}<br>${esc(s.address_line2)}<br>${esc(s.phone)}<br>${esc(s.email)}${s.gstin ? `<br>GSTIN: ${esc(s.gstin)}` : ''}${s.pan ? ` · PAN: ${esc(s.pan)}` : ''}</div></div>`;
 
-const footer = (s) => `<footer class="inv-foot"><strong>Thank you for travelling with Bahadur.</strong><span>${esc(s.website)} · ${esc(s.phone)}</span></footer>`;
+const PLANE_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%230284c7' transform='rotate(90 12 12)' d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.500L13 19v-5.500l8 2.500Z'/%3E%3C/svg%3E";
+const WAVE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 794 38' preserveAspectRatio='none'%3E%3Cpath fill='%237dd3fc' fill-opacity='.45' d='M0 26C130 2 260 2 400 18S660 36 794 10V38H0Z'/%3E%3Cpath fill='%230284c7' d='M0 32C150 12 290 14 420 26S670 38 794 22V38H0Z'/%3E%3C/svg%3E";
+const routeLine = `<div class="inv-route" aria-hidden="true"><span>Lakshadweep</span><i></i><img src="${PLANE_ICON}" alt=""><i></i><span>Umrah</span><i></i><img src="${PLANE_ICON}" alt=""><i></i><span>The world</span></div>`;
+const watermark = '<img class="inv-wm" src="assets/brand/bahadur-mark.png" alt="">';
+const footer = (s) => `<img class="inv-wave" src="${WAVE}" alt=""><footer class="inv-foot"><strong>Thank you for travelling with Bahadur.</strong><span>${esc(s.website)} · ${esc(s.phone)} · ${esc(s.email)}</span></footer>`;
 
 const dateTime = (v) => {
   if (!v) return '';
@@ -85,6 +90,7 @@ export function renderInvoice(doc, settings, payments = []) {
     <div class="inv-top"></div>
     ${status === 'Paid' ? '<div class="inv-stamp">PAID</div>' : status === 'Cancelled' ? '<div class="inv-stamp void">CANCELLED</div>' : ''}
     <header class="inv-head brk">${companyBlock(settings)}<div class="inv-title"><span>${title}</span><strong>${esc(doc.invoice_number || 'Auto-numbered on save')}</strong><em class="${status === 'Paid' ? 'paid' : status === 'Overdue' ? 'due' : ''}">${esc(status)}</em></div></header>
+    ${routeLine}${watermark}
     <div class="inv-body">
       <section class="inv-grid3 brk">
         <div class="inv-box"><h4>Billed to</h4><strong class="big">${esc(doc.customer_name || 'Customer name')}</strong><p>${esc(doc.customer_address || '')}</p><p>${esc([doc.phone, doc.email].filter(Boolean).join(' · '))}</p>${doc.customer_gstin ? `<p>GSTIN: ${esc(doc.customer_gstin)}</p>` : ''}</div>
@@ -107,7 +113,7 @@ export function renderInvoice(doc, settings, payments = []) {
         </div>
         <div class="inv-totals">
           <div><span>Subtotal</span><b>${money(t.subtotal)}</b></div>
-          ${t.discount ? `<div><span>Discount</span><b>− ${money(t.discount)}</b></div><div><span>Taxable value</span><b>${money(t.taxable)}</b></div>` : ''}
+          ${t.discount ? `<div><span>Discount${t.percent ? ` (${t.percent}%)` : ''}</span><b>− ${money(t.discount)}</b></div><div><span>Taxable value</span><b>${money(t.taxable)}</b></div>` : ''}
           ${taxRows}
           <div class="grand"><span>${isQuote ? 'Quoted total' : 'Invoice total'}</span><b>${money(t.total)}</b></div>
           ${isQuote ? '' : `<div class="paid"><span>Paid</span><b>${money(paid)}</b></div><div class="bal ${balance <= 0 && t.total > 0 ? 'settled' : ''}"><span>${balance <= 0 && t.total > 0 ? 'Fully paid' : 'Balance due'}</span><b>${money(balance)}</b></div>`}
@@ -116,6 +122,7 @@ export function renderInvoice(doc, settings, payments = []) {
       ${payments.length ? `<section class="inv-box line brk"><h4>Payments received</h4><table class="inv-ledger"><thead><tr><th>Date</th><th>Receipt</th><th>Mode</th><th>Reference</th><th class="r">Amount</th></tr></thead><tbody>${payments.map((p) => `<tr><td>${niceDate(p.paid_on)}</td><td>${esc(p.receipt_no)}</td><td>${esc(p.mode)}</td><td>${esc(p.reference || '—')}</td><td class="r">${money(p.amount)}</td></tr>`).join('')}</tbody></table></section>` : ''}
       <section class="inv-sign brk">
         <div class="terms"><h4>Booking conditions</h4><ol>${terms.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>
+        <div class="inv-seal">Company<br>seal</div>
         <div class="s"><div class="gap"></div><strong>For ${esc(settings.company_name)}</strong>${esc(settings.signatory)}</div>
       </section>
     </div>
@@ -130,6 +137,7 @@ export function renderReceipt(payment, invoice, settings) {
   return `<article class="inv inv-receipt">
     <div class="inv-top"></div>
     <header class="inv-head">${companyBlock(settings)}<div class="inv-title"><span>${refund ? 'Refund voucher' : 'Payment receipt'}</span><strong>${esc(payment.receipt_no)}</strong><em class="paid">${niceDate(payment.paid_on)}</em></div></header>
+    ${routeLine}${watermark}
     <div class="inv-body">
       <div class="inv-rcpt-amt"><div><span>${refund ? 'Refunded to' : 'Received from'}</span><strong style="font-size:18px">${esc(invoice.customer_name)}</strong></div><div style="text-align:right"><span>${refund ? 'Amount refunded' : 'Amount received'}</span><strong>${money(amount)}</strong></div></div>
       <div class="inv-words"><b>Amount in words</b>${esc(amountInWords(amount))}</div>
@@ -137,10 +145,37 @@ export function renderReceipt(payment, invoice, settings) {
         <div class="inv-box"><h4>Payment</h4>${kv([['Mode', payment.mode], ['Reference', payment.reference], ['Date', niceDate(payment.paid_on)], ['Note', payment.note]])}</div>
         <div class="inv-box"><h4>Against</h4>${kv([['Invoice', invoice.invoice_number], ['Journey', td.package_name], ['Booking ref', invoice.booking_ref], ['Invoice total', money(invoice.total)], ['Total paid', money(invoice.paid_amount)], ['Balance due', money(Math.max(0, Number(invoice.total) - Number(invoice.paid_amount)))]])}</div>
       </section>
-      <section class="inv-sign"><div class="terms">This is a computer-generated receipt for ${esc(settings.company_name)}.</div><div class="s"><div class="gap"></div><strong>For ${esc(settings.company_name)}</strong>${esc(settings.signatory)}</div></section>
+      <section class="inv-sign"><div class="terms">This is a computer-generated receipt for ${esc(settings.company_name)}.</div><div class="inv-seal">Company<br>seal</div><div class="s"><div class="gap"></div><strong>For ${esc(settings.company_name)}</strong>${esc(settings.signatory)}</div></section>
     </div>
     ${footer(settings)}
   </article>`;
+}
+
+// Sizes a document to its A4 sheet: short ones grow to fill the page, full ones shrink a little to stay on one.
+export function fitInvoice(sheet) {
+  const inv = sheet?.matches?.('.inv') ? sheet : sheet?.querySelector?.('.inv');
+  if (!inv || !inv.offsetWidth) return;
+  const PAGE = 1100, LARGEST = 1.22, SMALLEST = 0.86, MOST_GAP = 60;
+  const fits = (u) => { inv.style.setProperty('--u', `${u}px`); return inv.scrollHeight <= PAGE; };
+  inv.style.minHeight = '0';
+  inv.style.setProperty('--xg', '0px');
+  let size = LARGEST;
+  if (!fits(SMALLEST)) {
+    // Too long for one page at any size: normal size, split between rows
+    size = 1;
+    inv.style.setProperty('--u', '1px');
+  } else if (!fits(LARGEST)) {
+    let low = SMALLEST, high = LARGEST;
+    for (let i = 0; i < 7; i += 1) {
+      const mid = (low + high) / 2;
+      if (fits(mid)) low = mid; else high = mid;
+    }
+    size = low;
+    inv.style.setProperty('--u', `${size}px`);
+  }
+  const spare = PAGE - inv.scrollHeight, gaps = inv.querySelector('.inv-body').children.length - 1;
+  if (spare > 0 && gaps > 0) inv.style.setProperty('--xg', `${Math.min(spare / gaps, MOST_GAP).toFixed(1)}px`);
+  inv.style.minHeight = '';
 }
 
 function loadScript(src) {
@@ -161,6 +196,7 @@ export async function savePdf(sheet, filename) {
   holder.append(sheet.cloneNode(true));
   document.body.append(holder);
   const inv = holder.querySelector('.inv');
+  fitInvoice(inv);
   try {
     const top = inv.getBoundingClientRect().top;
     const breaks = [...inv.querySelectorAll('.brk')].flatMap((el) => { const r = el.getBoundingClientRect(); return [r.top - top, r.bottom - top]; });

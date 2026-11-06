@@ -90,7 +90,8 @@
         <div class="rows" id="line-rows"></div>
         <div class="chips" id="quick-lines"><button type="button" data-line="">+ Add charge</button><button type="button" data-line="Package cost – adult">Adult</button><button type="button" data-line="Package cost – child">Child</button><button type="button" data-line="Flight tickets">Flight</button><button type="button" data-line="Hotel accommodation">Hotel</button><button type="button" data-line="Visa charges">Visa</button><button type="button" data-line="Ground transfers">Transfers</button><button type="button" data-line="Service fee">Service fee</button></div>
         <div class="form-grid" style="margin-top:12px">
-          <label class="field"><span>Discount ₹</span><input type="number" min="0" step="0.01" name="discount"></label>
+          <label class="field"><span>Discount %</span><input type="number" min="0" max="100" step="0.01" name="td.discount_percent" placeholder="0"></label>
+          <label class="field"><span>Discount ₹</span><input type="number" min="0" step="0.01" name="discount" placeholder="0"></label>
           <label class="field"><span>Tax</span><select name="tax_mode"><option value="none">No tax</option><option value="cgst_sgst">CGST + SGST (in state)</option><option value="igst">IGST (other state)</option></select></label>
           <label class="field" id="tax-rate-field"><span>GST rate %</span><input type="number" min="0" step="0.01" name="tax_rate"></label>
         </div>
